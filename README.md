@@ -1,4 +1,4 @@
-rocon_comms
+rocon_tools
 ===========
 
-Communication software (middleware) for rocon.
+A set of utilities and tools usable beyond rocon.

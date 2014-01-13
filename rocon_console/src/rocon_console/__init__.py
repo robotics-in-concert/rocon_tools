@@ -3,12 +3,7 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
-# Exceptions
+# Imports
 ##############################################################################
 
-
-class ServicePairException(Exception):
-    pass
-
-class ServicePairIOException(Exception):
-    pass
+import console

@@ -4,10 +4,10 @@ from distutils.core import setup
 from catkin_pkg.python_setup import generate_distutils_setup
 
 d = generate_distutils_setup(
-    packages=['rocon_python_comms'],
+    packages=['rocon_console'],
     package_dir={'': 'src'},
-    scripts=['scripts/rospair',
-             ],
+#    scripts=['scripts/concert_roles_and_apps',
+#             ],
 )
 
 setup(**d)

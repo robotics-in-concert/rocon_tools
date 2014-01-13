@@ -14,6 +14,7 @@
   <author email="d.stonier@gmail.com">Daniel Stonier</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>rocon_console</run_depend>
   <run_depend>rocon_python_comms</run_depend>
   
   <export>

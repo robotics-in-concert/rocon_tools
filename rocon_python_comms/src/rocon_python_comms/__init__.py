@@ -8,3 +8,4 @@
 
 from .service_pair_client import ServicePairClient
 from .service_pair_server import ServicePairServer
+from .exceptions import *

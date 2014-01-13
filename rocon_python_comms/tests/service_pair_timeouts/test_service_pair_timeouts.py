@@ -39,7 +39,7 @@ class TestServicePairTimeouts(unittest.TestCase):
     def test_wait_for_service_pair_server(self):
         wait_failed = False
         with self.assertRaises(rospy.ROSException):
-            self.testies.wait_for_service_pair_server(1.0)
+            self.testies.wait_for_service_pair_server(rospy.Duration(1.0))
 
     def callback(self, msg_id, msg):
         """ User callback to feed into non-blocking requests.

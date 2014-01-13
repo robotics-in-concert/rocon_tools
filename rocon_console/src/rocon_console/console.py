@@ -70,31 +70,31 @@ def pretty_println(msg, colour=white):
 
 
 def debug(msg):
-    pretty_print("%s\n" % msg, green)
+    print(green + msg + reset)
 
 
 def warning(msg):
-    pretty_print("%s\n" % msg, yellow)
+    print(yellow + msg + reset)
 
 
 def error(msg):
-    pretty_print("%s\n" % msg, red)
+    print(red + msg + reset)
 
 
 def logdebug(message):
-    pretty_print("[debug] " + message + "\n", green)
+    print(green + "[debug] " + message + reset)
 
 
 def logwarn(message):
-    pretty_print("[warning] " + message + "\n", yellow)
+    print(yellow + "[warning] " + message + reset)
 
 
 def logerror(message):
-    pretty_print("[error] " + message + "\n", red)
+    print(red + "[error] " + message + reset)
 
 
 def logfatal(message):
-    pretty_print("[error] " + message + "\n", bold_red)
+    print(bold_red + "[error] " + message + reset)
 
 
 ##############################################################################

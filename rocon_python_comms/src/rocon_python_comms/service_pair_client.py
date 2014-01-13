@@ -97,17 +97,17 @@ class ServicePairClient(object):
         self._publisher = rospy.Publisher(name + "/request", self.ServicePairRequest)
         self._request_handlers = {}  # [uuid_msgs/UniqueId]
 
-    def wait_for_service_pair_server(self, timeout):
+    def wait_for_service(self, timeout):
         '''
           Waits for the service pair server to appear.
 
-          @param timeout : timeout time in seconds
-          @type double
+          @param timeout : time to wait for data
+          @type rospy.Duration
 
           @raise ROSException: if specified timeout is exceeded
           @raise ROSInterruptException: if shutdown interrupts wait
         '''
-        timeout_time = time.time() + timeout
+        timeout_time = time.time() + timeout.to_sec()
         while not rospy.is_shutdown() and time.time() < timeout_time:
             if self._subscriber.get_num_connections() > 0 and self._publisher.get_num_connections() > 0:
                 return

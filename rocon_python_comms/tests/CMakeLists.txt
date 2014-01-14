@@ -17,3 +17,4 @@
 find_package(catkin REQUIRED COMPONENTS rostest)
 add_rostest(service_pairs/service_pairs.test)
 add_rostest(service_pair_timeouts/service_pair_timeouts.test)
+add_rostest(subscriber_proxy/subscriber_proxy.test)

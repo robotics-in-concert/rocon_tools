@@ -20,7 +20,7 @@ catkin_python_setup()
 
 #install(
 #    PROGRAMS 
-#        scripts/concert_roles_and_apps
+#        scripts/rocon_interactions
 #    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 #    )
 

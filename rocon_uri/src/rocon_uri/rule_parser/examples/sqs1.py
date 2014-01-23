@@ -2,7 +2,8 @@
 #
 # first sample using rule
 #
-import sys,rp                       #import the rp module
+import sys
+import rocon_uri.rule_parser as rule_parser
 #
 # we define the rule as a list of (sub)rules
 #
@@ -16,7 +17,7 @@ rule=['sqs  ::=  parms  fileid ',
 parms=' '.join(sys.argv[1:])
 #
 # we make the parsing 
-cmp=rp.match(rule,parms)
+cmp=rule_parser.rp.match(rule,parms)
 # 
 #as re module, if the result object is None, 
 # the parsing is unsuccessful

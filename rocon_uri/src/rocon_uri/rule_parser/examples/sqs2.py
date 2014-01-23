@@ -1,7 +1,9 @@
 #!c:/python26/python.exe
 #
 # syntax:   sqs2.py  "/string to locate/" fileid 
-import sys,rp
+import sys
+import rocon_uri.rule_parser as rule_parser
+
 rule=['sqs  ::=  parms  fileid ',
       'parms::=  sep car* sep ',
 	  'sep  ::=  r"\S" ',

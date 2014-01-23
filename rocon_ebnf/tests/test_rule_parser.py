@@ -3,6 +3,8 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+# This is more just an example and a check to ensure that the parts we
+# use stay working.
 
 ##############################################################################
 # Imports
@@ -13,11 +15,41 @@
 from __future__ import absolute_import, print_function
 
 from nose.tools import assert_raises
-import rocon_uri.rule_parser as rule_parser
+import rocon_ebnf.rule_parser as rule_parser
 
 ##############################################################################
 # Tests
 ##############################################################################
+
+def try_using_windoze_attribute(parser_result):
+    '''
+      Used to check if one of the parser's variables is set or not. If not, it raises
+      an AttributeError
+    '''
+    print("%s" % parser_result.windoze)
+
+def print_linux_parsing(input_string, parser_result):
+    print("Input: %s" % input_string)
+    if parser_result is not None:
+        try:
+            print("  OS list: %s" % parser_result.operating_systems_list)
+        except AttributeError:
+            pass
+        try:
+            print("  Ubuntu : %s" % parser_result.ubuntu)
+        except AttributeError:
+            pass
+        try:
+            print("  Linux  : %s" % parser_result.linux)
+        except AttributeError:
+            pass
+        try:
+            print("  OS : %s" % parser_result.os)
+        except AttributeError:
+            pass
+        #print("  Windows: %s" % result.windows) throws an AttributeError
+    else:
+        print("Error in parsing")
 
 def test_message_to_string():
     # about this rule:
@@ -27,21 +59,33 @@ def test_message_to_string():
              'pattern           ::= os_zero operating_systems*',
              'os_zero           ::= os                          @operating_systems_list.append("$os")', 
              'operating_systems ::= "|" os                      @operating_systems_list.append("$os")', 
-             'os                ::= "*" | windows | linux | "osx" | "freebsd"',
-               'windows         ::= "winxp" | "windows7"',
+             'os                ::= "*" | windoze | linux | "osx" | "freebsd"',
+               'windoze         ::= "winxp" | "windows7"',
                'linux           ::= "arch" | "debian" | "fedora" | "gentoo" | "opensuse" | ubuntu | "linux"',
-               'ubuntu          ::= "precise" | "quantal" | "raring" | "ubuntu"' 
+                 'ubuntu        ::= "precise" | "quantal" | "raring" | "ubuntu"' 
               ]
-    operating_systems_input = "precise|quantal"
-    result = rule_parser.rp.match(operating_systems_rule, operating_systems_input)
-    print("Input: %s" % operating_systems_input)
-    if result is not None:
-        print("  OS list: %s" % result.operating_systems_list)
-        print("  Ubuntu : %s" % result.ubuntu)
-        print("  Linux  : %s" % result.linux)
-        #print("  Windows: %s" % result.windows) throws an AttributeError
-    else:
-        print("Error in parsing")
+    input_string = "precise|quantal"
+    result = rule_parser.match(operating_systems_rule, input_string)
+    assert result is not None
+    assert "precise" in result.operating_systems_list
+    assert "quantal" in result.operating_systems_list
+    assert result.ubuntu == "quantal"
+    assert result.linux == "quantal"
+    assert result.os == "quantal"
+    assert_raises(AttributeError, try_using_windoze_attribute, result)
+    print_linux_parsing(input_string, result)
+
+    input_string = "*"
+    result = rule_parser.match(operating_systems_rule, input_string)
+    assert result is not None
+    assert result.os == "*"
+    print_linux_parsing(input_string, result)
+
+    input_string = "ubuntu"
+    result = rule_parser.match(operating_systems_rule, input_string)
+    assert result is not None
+    assert result.os == "ubuntu"
+    print_linux_parsing(input_string, result)
     
     rule = [ 'uri      ::= sep os* sep system* sep platform* sep name* sep?',
              'sep      ::= r"/"',
@@ -53,7 +97,7 @@ def test_message_to_string():
              ]
     rocon_uri = "/precise/ros/turtlebot/dude"
     print("Input: %s" % rocon_uri)
-    result = rule_parser.rp.match(rule, rocon_uri)
+    result = rule_parser.match(rule, rocon_uri)
     if result is not None:
         print("  os      : %s" % result.os)
         print("  system  : %s" % result.system)

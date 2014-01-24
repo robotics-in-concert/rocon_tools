@@ -380,11 +380,14 @@ class _RpTerminal:
         self.rp=rp
         term=term.strip()
         min=len(term)
-        if term.isalnum():
-            m=re.match(r'([A-Z0-9_]*)([a-z0-9_]*)',term)
-            if m!=None:
-                term=term.upper()
-                min=len(m.group(1))
+        ##############################
+        # Previously had this in a 'if term.isalnum():' scope, but that
+        # eliminates underscores
+        m=re.match(r'([A-Z0-9_]*)([a-z0-9_]*)',term)
+        if m!=None:
+            term=term.upper()
+            min=len(m.group(1))
+        ##############################
         self.terminal=term
         self.min=min
     def _parse(self,_tk,mult='',n_val=None):

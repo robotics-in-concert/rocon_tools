@@ -351,7 +351,7 @@ class _RpDefinition:
             #  => group(1)='the_string="' 
             #  => group(2)='char'        ==> the variable that will be found in _VALS
             #  => group(3)='"+"---" '
-            m=re.match(r'^([^\$]*)\$([A-Za-z0-9]*)(.*)$',cc,re.DOTALL)   #0.91
+            m=re.match(r'^([^\$]*)\$([A-Za-z0-9_]*)(.*)$',cc,re.DOTALL)   #0.91
             while m!=None:
                 _deb=m.group(1)
                 _var=m.group(2)

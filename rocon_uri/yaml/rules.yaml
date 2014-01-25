@@ -44,3 +44,8 @@
       - saucy
   - osx
   - freebsd
+  - android:
+    - honeycomb
+    - ice_cream_sandwich
+    - jellybean
+    - kitkat

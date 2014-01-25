@@ -6,5 +6,6 @@
 # Imports
 ##############################################################################
 
+default_uri_string = 'rocon://'
 from .exceptions import RoconURIValueError
-from uri import parse, is_compatible
+from uri import parse, is_compatible, RoconURI

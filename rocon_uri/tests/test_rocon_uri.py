@@ -24,8 +24,10 @@ import rocon_console.console as console
 #     print(console.bold + "\n****************************************************************************************" + console.reset)
 #     print(console.bold + "* Experiments" + console.reset)
 #     print(console.bold + "****************************************************************************************" + console.reset)
+#     rocon_uri_string = 'rocon://'
 #     rocon_uri_string = 'rocon:///turtlebot2/dude/hydro/precise#rocon_apps/chirp'
 #     rocon_uri_object = rocon_uri.parse(rocon_uri_string)
+#     print("Rocon URI Object: %s" % rocon_uri_object)  
 #     rocon_uri_object2 = rocon_uri.parse('rocon:///turtlebot2|waiterbot/dude/hydro/precise#rocon_apps/chirp')
 #     print("Rocon URI Object: %s" %  str(rocon_uri_object.hardware_platform))
 #     print("Rocon URI Object : %s" %  rocon_uri_object.hardware_platform.string)

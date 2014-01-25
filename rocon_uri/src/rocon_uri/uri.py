@@ -147,7 +147,7 @@ class RoconURI(object):
     ##########################################################################
     # Initialisation
     ##########################################################################
-    def __init__(self, rocon_uri_string):
+    def __init__(self, rocon_uri_string="rocon://"):
         """
           @param rocon_uri_string : a rocon uri in string format.
           @type str

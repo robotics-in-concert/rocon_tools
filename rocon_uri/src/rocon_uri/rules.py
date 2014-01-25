@@ -64,8 +64,10 @@ def walk_yaml_rules(name, root=load_rules_into_dictionary()):
 def load_ebnf_rules():
     yaml_rule_sets = {}
     yaml_rules = load_rules_into_dictionary()
-    for yaml_rule_set in yaml_rules:  # each of hardware_platform, name, application_framework, os
+    for yaml_rule_set in yaml_rules:  # merge each of hardware_platform, application_framework, os into one dictionary
         yaml_rule_sets.update(yaml_rule_set)
+    # special case, add the names as an empty list
+    yaml_rule_sets['name'] = []
     for yaml_rule_set_name, yaml_rule_set in yaml_rule_sets.iteritems():
         rules = []
         #rules.append('option verbose')
@@ -74,14 +76,14 @@ def load_ebnf_rules():
         rules.append('zero    ::= %s  @%s_list.append("$%s")' % (yaml_rule_set_name, yaml_rule_set_name, yaml_rule_set_name))
         rules.append('element ::= "|" %s   @%s_list.append("$%s")' % (yaml_rule_set_name, yaml_rule_set_name, yaml_rule_set_name))
         for name, groups, elements in walk_yaml_rules(yaml_rule_set_name, yaml_rule_set):
-            rule = '%s ::= ' % name.split('/')[-1]
+            # Accept a wildcard for each
+            rule = '%s ::= "*"' % name.split('/')[-1]
             element_rules = ' | '.join(['"%s"' % element for element in elements])
             group_rules = ' | '.join(groups)
-            rule += group_rules
-            if groups and elements:
+            if groups:
+                rule += " | " + group_rules
+            if elements:
                 rule += " | " + element_rules
-            elif elements:
-                rule += element_rules
             # special case - let anything through for names.
             if yaml_rule_set_name == "name":
                 rule += ' | r"\S"*'

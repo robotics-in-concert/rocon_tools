@@ -7,5 +7,5 @@
 ##############################################################################
 
 
-class RoconURIInvalidException(Exception):
+class RoconURIValueError(Exception):
     pass

@@ -16,95 +16,158 @@ getattr(urlparse, 'uses_netloc').append('rocon')
 #getattr(urlparse, 'uses_query').append('rocon')
 #getattr(urlparse, 'uses_relative').append('rocon')
 import rocon_ebnf.rule_parser as rule_parser
+import re
+from collections import namedtuple
 
 # Local imports
-from .exceptions import RoconURIInvalidException
+from .exceptions import RoconURIValueError
 import rules
 
 ##############################################################################
-# RoconURI Class
+# Public Methods
 ##############################################################################
 
 
 def parse(rocon_uri_string):
     """
+      Alternative method for creating RoconURI objects
+      (convenience purposes only).
+
       @param rocon_uri_string : a rocon uri in string format.
       @type str
       @return a validated rocon uri object
       @rtype RoconURI
-      @raise RoconUriInvalidException
+      @raise RoconURIValueError
     """
     return RoconURI(rocon_uri_string)
+
+
+def is_compatible(rocon_uri_a, rocon_uri_b):
+    '''
+      Checks if two rocon uri's are compatible.
+
+      @param rocon_uri_a : a rocon uri in either string or RoconURI object format
+      @type str || RoconURI
+
+      @param rocon_uri_b : a rocon uri in either string or RoconURI object format
+      @type str || RoconURI
+
+      @return true if compatible, i.e. wildcards or intersections of fields are nonempty
+      @type bool
+
+      @todo return the compatible rocon uri?
+      @todo tighten up the name pattern matching.
+    '''
+    try:  # python 2.7 (use basestring to get unicode objects)
+        requires_conversion_a = isinstance(rocon_uri_a, basestring)
+        requires_conversion_b = isinstance(rocon_uri_b, basestring)
+    except NameError:  # python3
+        requires_conversion_a = isinstance(rocon_uri_a, str)
+        requires_conversion_b = isinstance(rocon_uri_b, str)
+    a = parse(rocon_uri_a) if requires_conversion_a else rocon_uri_a
+    b = parse(rocon_uri_b) if requires_conversion_b else rocon_uri_b
+    no_wildcards = lambda l1, l2: '*' not in l1 and '*' not in l2
+    intersection = lambda l1, l2: [x for x in l1 if x in l2]
+    for field in ["hardware_platform", "application_framework", "operating_system"]:
+        if no_wildcards(getattr(a, field).list, getattr(b, field).list):
+            if not intersection(getattr(a, field).list, getattr(b, field).list):
+                return False
+    # do some subset of regex pattern matching for names.
+    if no_wildcards(a.name.list, b.name.list):
+        if not intersection(a.name.list, b.name.list):
+            # check for our regex subset (i.e. '*' at the end of a string)
+            matches = False
+            for a_name in a.name.list:
+                if matches == True:
+                    break
+                for b_name in b.name.list:
+                    match_result_a = re.match(r"(.*)[*]+$", a_name)
+                    match_result_b = re.match(r"(.*)[*]+$", b_name)
+                    a_name_substring = match_result_a.group(1) if match_result_a is not None else a_name
+                    b_name_substring = match_result_b.group(1) if match_result_b is not None else b_name
+                    if match_result_a is not None:
+                        if re.match(a_name_substring, b_name_substring):
+                            matches = True
+                            break
+                    if match_result_b is not None:
+                        if re.match(b_name_substring, a_name_substring):
+                            matches = True
+                            break
+            if not matches:
+                return False
+    return True
+
+##############################################################################
+# RoconURI Class
+##############################################################################
+
+# Descriptors are defined as class variables - use weak reference dictionaries
+# to store data from each instance of the classes. Refer to:
+#   http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb
+from weakref import WeakKeyDictionary
+
+
+class RoconURIField(object):
+    """A descriptor that does rule parsing on rocon uri field strings"""
+
+    Value = namedtuple('RoconURIField', 'string list')
+
+    def __init__(self, name, rules):
+        self.rules = rules
+        self.field_name = name
+        self.field = WeakKeyDictionary()
+        self.field_list = WeakKeyDictionary()
+
+    def __get__(self, instance, unused_owner):
+        return RoconURIField.Value(self.field.get(instance, '*'),
+                                   self.field_list.get(instance, ['*']))
+
+    def __set__(self, instance, new_field):
+        try:
+            match_result = rule_parser.match(self.rules(), new_field)
+            self.field[instance] = new_field
+            self.field_list[instance] = getattr(match_result, self.field_name + "s_list")
+        except AttributeError:  # result of match is None
+            raise RoconURIValueError("%s specification is invalid [%s]" % (self.field_name, new_field))
 
 
 class RoconURI(object):
     '''
       A rocon uri container.
     '''
-    __slots__ = [
-            'concert_name',    # urlparse scheme element
-            'concert_version', # urlparse path elements
-            'hardware_platforms',
-            'operating_systems',
-            'application_frameworks',
-            'names',
-            'rapp_name',       # urlparse fragment
-        ]
+    # Can't use slots here if we wish to have weak references to this object (see the descriptor).
+
+    # These are descriptors - required to be defined in the class area and instantiated separately in __init__
+    hardware_platform     = RoconURIField("hardware_platform", getattr(rules, "hardware_platforms"))  #@IgnorePep8
+    name                  = RoconURIField("name", getattr(rules, "names"))  #@IgnorePep8
+    application_framework = RoconURIField("application_framework", getattr(rules, "application_frameworks"))  #@IgnorePep8
+    operating_system      = RoconURIField("operating_system", getattr(rules, "operating_systems"))  #@IgnorePep8
 
     ##########################################################################
     # Initialisation
     ##########################################################################
-
     def __init__(self, rocon_uri_string):
         """
           @param rocon_uri_string : a rocon uri in string format.
           @type str
-          @raise RoconUriInvalidException
+          @raise RoconURIValueError
         """
         parsed_url = urlparse.urlparse(rocon_uri_string)
         if parsed_url.scheme != 'rocon':
-            raise RoconURIInvalidException("uri scheme '%s' != 'rocon'" % parsed_url.scheme)
+            raise RoconURIValueError("uri scheme '%s' != 'rocon'" % parsed_url.scheme)
         self.concert_name = parsed_url.netloc
         uri_path_elements = [element for element in parsed_url.path.split('/') if element]
-        if len(uri_path_elements) < 3 or len(uri_path_elements) > 5:
-            raise RoconURIInvalidException("uri path element invalid, need at least concert_version/platform and at most concert_version/platform/os/system/name fields [%s]" % parsed_url.path)
-        self.concert_version = uri_path_elements[0]
+        if len(uri_path_elements) > 4:
+            raise RoconURIValueError("uri path element invalid, need at most platform/os/system/name fields [%s]" % parsed_url.path)
         try:
-            self.hardware_platforms = rule_parser.match(rules.hardware_platforms(), uri_path_elements[1]).hardware_platforms_list
-        except AttributeError: # result of match is None
-            raise RoconURIInvalidException("hardware platforms specification is invalid [%s]" % uri_path_elements[1])
-        try:
-            self.operating_systems = rule_parser.match(rules.operating_systems(), uri_path_elements[2]).operating_systems_list
-        except AttributeError: # result of match is None
-            raise RoconURIInvalidException("operating system specification is invalid [%s]" % uri_path_elements[2])
-        try:
-            self.application_frameworks = rule_parser.match(rules.application_frameworks(), uri_path_elements[3]).application_frameworks_list
-        except IndexError:
-            self.application_frameworks = ["*"]
-        except AttributeError: # result of match is None
-            raise RoconURIInvalidException("application framework specification is invalid [%s]" % uri_path_elements[3])
-        try:
-            self.names = rule_parser.match(rules.names(), uri_path_elements[4]).names_list
-        except IndexError:
-            self.names = ["*"]
-        except AttributeError: # result of match is None
-            raise RoconURIInvalidException("name specification is invalid [%s]" % uri_path_elements[4])
+            self.hardware_platform     = uri_path_elements[0]  #@IgnorePep8
+            self.name                  = uri_path_elements[1]  #@IgnorePep8
+            self.application_framework = uri_path_elements[2]  #@IgnorePep8
+            self.operating_system      = uri_path_elements[3]  #@IgnorePep8
+        except IndexError:  # if optional fields are left off, we end up here
+            pass  # ok, since defaults are suitably set by the descriptor
         self.rapp_name = parsed_url.fragment
 
     def __str__(self):
-        hardware_platforms = _collapse_string_list(self.hardware_platforms)
-        operating_systems = _collapse_string_list(self.operating_systems)
-        application_frameworks = _collapse_string_list(self.application_frameworks)
-        names = _collapse_string_list(self.names)
-        return "rocon://%s/%s/%s/%s/%s/%s#%s" % (self.concert_name, self.concert_version, hardware_platforms, operating_systems, application_frameworks, names, self.rapp_name)
+        return "rocon://%s/%s/%s/%s/%s%s" % (self.concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp_name if self.rapp_name else "")
 
-def _collapse_string_list(string_list):
-    # len = 0 already guaranteed before here
-    s = ""
-    if len(string_list) == 1:
-        return string_list[0]
-    else:
-        s += string_list[0]
-    for l in string_list[1:]:
-        s += "|%s" % l
-    return s

@@ -6,5 +6,5 @@
 # Imports
 ##############################################################################
 
-from .exceptions import *
-from uri import parse
+from .exceptions import RoconURIValueError
+from uri import parse, is_compatible

@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#       
+# License: BSD
+#   https://raw.github.com/robotics-in-concert/tools/license/LICENSE
+#
+##############################################################################
+# Imports
+##############################################################################
+
+import rospy
+import rocon_uri
+import os
+import copy
+import rocon_console.console as console
+import re
+
+##############################################################################
+# Simple Printout of Rocon URI Rules
+##############################################################################
+
+if __name__ == '__main__':
+    rospy.init_node('load_rocon_uri_profiles')
+#     for name, group, elements in rocon_uri.rules.walk_yaml_rules('rocon_uri_rules'):
+#         split_name = name.split('/')
+#         prefix = ''
+#         for i in range(0, 2*(len(split_name)-1)):
+#             prefix += ' '
+#         print(prefix + console.cyan + "+ %s" % split_name[-1] + console.reset)
+#         for element in elements:
+#             print(prefix + console.yellow + "  - " + element + console.reset)
+    yaml_rules = rocon_uri.rules.load_rules_into_dictionary()
+    rule_sets = {}
+    for yaml_rule_set in yaml_rules:  # each of hardware_platform, name, application_framework, os
+        rule_sets.update(yaml_rule_set)
+    for rule_set_name, rule_set in rule_sets.iteritems():
+        for name, group, elements in rocon_uri.rules.walk_yaml_rules(rule_set_name, rule_set):
+            split_name = name.split('/')
+            prefix = ''
+            for i in range(0, 2*(len(split_name)-1)):
+                prefix += ' '
+            print(prefix + console.cyan + "+ %s" % split_name[-1] + console.reset)
+            for element in elements:
+                print(prefix + console.yellow + "  - " + element + console.reset)
+
+    print("")
+    print(console.bold + "EBNF Rules" + console.reset)
+    rules = rocon_uri.rules.load_ebnf_rules()
+    for name, rules in rules.iteritems():
+        print(console.cyan + "  " + name + console.reset)
+        for rule in rules:
+            print(console.green + "    " + rule + console.reset)

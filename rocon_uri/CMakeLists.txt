@@ -29,5 +29,5 @@ catkin_python_setup()
 ##############################################################################
 
 if (CATKIN_ENABLE_TESTING)
-  add_subdirectory(tests)
+  catkin_add_nosetests(tests)
 endif()

@@ -124,9 +124,9 @@ class RoconURIField(object):
 
     def __set__(self, instance, new_field):
         try:
-            match_result = rule_parser.match(self.rules(), new_field)
+            match_result = rule_parser.match(self.rules, new_field)
             self.field[instance] = new_field
-            self.field_list[instance] = getattr(match_result, self.field_name + "s_list")
+            self.field_list[instance] = getattr(match_result, self.field_name + "_list")
         except AttributeError:  # result of match is None
             raise RoconURIValueError("%s specification is invalid [%s]" % (self.field_name, new_field))
 
@@ -137,11 +137,12 @@ class RoconURI(object):
     '''
     # Can't use slots here if we wish to have weak references to this object (see the descriptor).
 
+    ebnf_rules = rules.load_ebnf_rules()
     # These are descriptors - required to be defined in the class area and instantiated separately in __init__
-    hardware_platform     = RoconURIField("hardware_platform", getattr(rules, "hardware_platforms"))  #@IgnorePep8
-    name                  = RoconURIField("name", getattr(rules, "names"))  #@IgnorePep8
-    application_framework = RoconURIField("application_framework", getattr(rules, "application_frameworks"))  #@IgnorePep8
-    operating_system      = RoconURIField("operating_system", getattr(rules, "operating_systems"))  #@IgnorePep8
+    hardware_platform     = RoconURIField("hardware_platform", ebnf_rules["hardware_platform"])  #@IgnorePep8
+    name                  = RoconURIField("name", ebnf_rules["name"])  #@IgnorePep8
+    application_framework = RoconURIField("application_framework", ebnf_rules["application_framework"])  #@IgnorePep8
+    operating_system      = RoconURIField("operating_system", ebnf_rules["operating_system"])  #@IgnorePep8
 
     ##########################################################################
     # Initialisation
@@ -166,6 +167,9 @@ class RoconURI(object):
             self.operating_system      = uri_path_elements[3]  #@IgnorePep8
         except IndexError:  # if optional fields are left off, we end up here
             pass  # ok, since defaults are suitably set by the descriptor
+        except RoconURIValueError as e:
+            #print("Raised %s %s" % type(e), str(e))
+            raise e
         self.rapp_name = parsed_url.fragment
 
     def __str__(self):

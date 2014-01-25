@@ -6,6 +6,10 @@
 # Imports
 ##############################################################################
 
+import os
+import yaml
+import roslib
+
 # Local imports
 
 ##############################################################################
@@ -13,53 +17,74 @@
 ##############################################################################
 
 
-def hardware_platforms():
-    hardware_platforms_rule = [
-             'init hardware_platforms_list=[] ',
-             'pattern           ::= hp_zero hardware_platforms*',
-             'hp_zero           ::= hp                          @hardware_platforms_list.append("$hp")',
-             'hardware_platforms::= "|" hp                      @hardware_platforms_list.append("$hp")',
-             'hp                ::= "*" | "pc" | robot | mobile_device',
-               'robot           ::= "turtlebot2" | "pr2" | "waiterbot" | "robot_other"',
-               'mobile_device   ::= smart_phone | tablet',
-               'smart_phone     ::= "galaxy" | "mega" | "note3" | "smart_phone_other"',
-               'tablet          ::= "xoom" | "note10" | "tablet_other"',
-              ]
-    return hardware_platforms_rule
+def load_rules_into_dictionary():
+    yaml_filename = os.path.join(roslib.packages.get_pkg_dir('rocon_uri'), 'yaml', 'rules.yaml')
+    with open(yaml_filename) as f:
+        yaml_rules = yaml.load(f)
+    return yaml_rules
 
 
-def operating_systems():
-    operating_systems_rule = [
-             'init operating_systems_list=[] ',
-             'pattern           ::= os_zero operating_systems*',
-             'os_zero           ::= os                          @operating_systems_list.append("$os")',
-             'operating_systems ::= "|" os                      @operating_systems_list.append("$os")',
-             'os                ::= "*" | windoze | linux | "osx" | "freebsd"',
-               'windoze         ::= "winxp" | "windows7"',
-               'linux           ::= "arch" | "debian" | "fedora" | "gentoo" | "opensuse" | ubuntu | "linux"',
-                 'ubuntu        ::= "precise" | "quantal" | "raring"'
-              ]
-    return operating_systems_rule
+def walk_yaml_rules(name, root=load_rules_into_dictionary()):
+    '''
+      A generator which walks through the yaml list of rules.
+      Works in almost exactly the same way as os.path.walk.
+      Usage:
+
+        for name, group, elements in walk_yaml('hardware_platform', yaml_rules['hardware_platform']):
+        print("Name: %s" % name)
+        print("  Group: %s" % group)
+        print("  Elements: %s" % elements)
+
+      @param name : a name to attach to the current 3-tuple that gets returned.
+      @type str
+      @param yaml_root : the yaml structure, defaults to the root yaml file.
+      @type list
+      one of the fields ['hardware_platform', 'name', 'application_framework', 'operating_system']
+
+    '''
+    #print("Walking %s" % name)
+    groups = {}
+    elements = []
+    for element in root:
+        if isinstance(element, dict):
+            groups.update(element)
+        else:
+            elements.append(element)
+    #print("  Groups: %s" % groups.keys())
+    #print("  Elements: %s" % elements)
+    yield (name, groups.keys(), elements)
+    if not groups.keys():
+        return
+    for key, value in groups.iteritems():
+        for x in walk_yaml_rules(name + '/' + key, value):
+            yield x
+    return
 
 
-def application_frameworks():
-    application_frameworks_rule = [
-             'init application_frameworks_list=[] ',
-             'pattern           ::= af_zero application_frameworks*',
-             'af_zero           ::= af                           @application_frameworks_list.append("$af")',
-             'application_frameworks ::= "|" af                  @application_frameworks_list.append("$af")',
-             'af                 ::= "*" | ros | "opros" | "application_other"',
-               'ros              ::= "groovy" | "hydro" | "ros_other"',
-              ]
-    return application_frameworks_rule
-
-
-def names():
-    names_rule = [
-             'init names_list=[] ',
-             'pattern           ::= name_zero names*',
-             'name_zero         ::= name                          @names_list.append("$name")',
-             'names             ::= "|" name                      @names_list.append("$name")',
-             'name              ::= "*" | r"\S"*',
-              ]
-    return names_rule
+def load_ebnf_rules():
+    yaml_rule_sets = {}
+    yaml_rules = load_rules_into_dictionary()
+    for yaml_rule_set in yaml_rules:  # each of hardware_platform, name, application_framework, os
+        yaml_rule_sets.update(yaml_rule_set)
+    for yaml_rule_set_name, yaml_rule_set in yaml_rule_sets.iteritems():
+        rules = []
+        #rules.append('option verbose')
+        rules.append('init %s_list=[]' % yaml_rule_set_name)
+        rules.append('pattern ::= zero element*')
+        rules.append('zero    ::= %s  @%s_list.append("$%s")' % (yaml_rule_set_name, yaml_rule_set_name, yaml_rule_set_name))
+        rules.append('element ::= "|" %s   @%s_list.append("$%s")' % (yaml_rule_set_name, yaml_rule_set_name, yaml_rule_set_name))
+        for name, groups, elements in walk_yaml_rules(yaml_rule_set_name, yaml_rule_set):
+            rule = '%s ::= ' % name.split('/')[-1]
+            element_rules = ' | '.join(['"%s"' % element for element in elements])
+            group_rules = ' | '.join(groups)
+            rule += group_rules
+            if groups and elements:
+                rule += " | " + element_rules
+            elif elements:
+                rule += element_rules
+            # special case - let anything through for names.
+            if yaml_rule_set_name == "name":
+                rule += ' | r"\S"*'
+            rules.append(rule)
+        yaml_rule_sets[yaml_rule_set_name] = rules
+    return yaml_rule_sets

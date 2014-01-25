@@ -12,6 +12,7 @@
   <author email="d.stonier@gmail.com">Daniel Stonier</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rostest</build_depend> <!-- testing only -->
   
   <run_depend>genpy</run_depend>
   <run_depend>rospy</run_depend>
@@ -22,6 +23,5 @@
   <run_depend>rocon_service_pair_msgs</run_depend>
   <run_depend>uuid_msgs</run_depend>
 
-  <test_depend>rostest</test_depend>
   <test_depend>rosunit</test_depend>
 </package>

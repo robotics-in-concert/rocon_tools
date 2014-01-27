@@ -15,6 +15,7 @@ from __future__ import absolute_import, print_function
 from nose.tools import assert_raises
 import rocon_uri
 import rocon_console.console as console
+import rocon_std_msgs.msg as rocon_std_msgs
 
 ##############################################################################
 # Tests
@@ -102,25 +103,25 @@ def test_wildcards():
     print(console.bold + "* Wildcards" + console.reset)
     print(console.bold + "****************************************************************************************" + console.reset)
     rocon_uri_string = 'rocon:///turtlebot2/dude/hydro/precise#rocon_apps/chirp'
-    hardware_platform_uri = rocon_uri_string.replace('turtlebot2', '*')
+    hardware_platform_uri = rocon_uri_string.replace('turtlebot2', rocon_std_msgs.Strings.URI_WILDCARD)
     print(console.cyan + " - %s" % hardware_platform_uri + console.reset)
     rocon_uri_object = rocon_uri.parse(hardware_platform_uri)
-    assert rocon_uri_object.hardware_platform.string == '*'
+    assert rocon_uri_object.hardware_platform.string == rocon_std_msgs.Strings.URI_WILDCARD
   
-    operating_systems_uri = rocon_uri_string.replace('precise', '*')
+    operating_systems_uri = rocon_uri_string.replace('precise', rocon_std_msgs.Strings.URI_WILDCARD)
     print(console.cyan + " - %s" % operating_systems_uri + console.reset)
     rocon_uri_object = rocon_uri.parse(operating_systems_uri)
-    assert rocon_uri_object.operating_system.string == '*'
+    assert rocon_uri_object.operating_system.string == rocon_std_msgs.Strings.URI_WILDCARD
   
-    application_framework_uri = rocon_uri_string.replace('hydro', '*')
+    application_framework_uri = rocon_uri_string.replace('hydro', rocon_std_msgs.Strings.URI_WILDCARD)
     print(console.cyan + " - %s" % application_framework_uri + console.reset)
     rocon_uri_object = rocon_uri.parse(application_framework_uri)
-    assert rocon_uri_object.application_framework.string == '*'
+    assert rocon_uri_object.application_framework.string == rocon_std_msgs.Strings.URI_WILDCARD
   
-    name_uri = rocon_uri_string.replace('dude', '*')
+    name_uri = rocon_uri_string.replace('dude', rocon_std_msgs.Strings.URI_WILDCARD)
     print(console.cyan + " - %s" % name_uri + console.reset)
     rocon_uri_object = rocon_uri.parse(name_uri)
-    assert rocon_uri_object.name.string == '*'
+    assert rocon_uri_object.name.string == rocon_std_msgs.Strings.URI_WILDCARD
   
 def test_missing_fields():
     print(console.bold + "\n****************************************************************************************" + console.reset)
@@ -132,17 +133,17 @@ def test_missing_fields():
     no_operating_system = 'rocon:///turtlebot2/dude/hydro'
     rocon_uri_object = rocon_uri.parse(no_operating_system)
     print(console.cyan + " - %s -> %s" % (no_operating_system, rocon_uri_object) + console.reset)
-    assert(rocon_uri_object.operating_system.list[0] == '*')
+    assert(rocon_uri_object.operating_system.list[0] == rocon_std_msgs.Strings.URI_WILDCARD)
  
     no_application_framework = 'rocon:///turtlebot2/dude'
     rocon_uri_object = rocon_uri.parse(no_application_framework)
     print(console.cyan + " - %s -> %s" % (no_application_framework, rocon_uri_object) + console.reset)
-    assert(rocon_uri_object.application_framework.list[0] == '*')
+    assert(rocon_uri_object.application_framework.list[0] == rocon_std_msgs.Strings.URI_WILDCARD)
  
     no_name = 'rocon:///turtlebot2'
     rocon_uri_object = rocon_uri.parse(no_name)
     print(console.cyan + " - %s -> %s" % (no_name, rocon_uri_object) + console.reset)
-    assert(rocon_uri_object.name.list[0] == '*')
+    assert(rocon_uri_object.name.list[0] == rocon_std_msgs.Strings.URI_WILDCARD)
   
 def test_compatibility():
     print(console.bold + "\n****************************************************************************************" + console.reset)
@@ -160,12 +161,12 @@ def test_compatibility():
     modified_rocon_uri_string = 'rocon:///turtlebot2/dude'
     print(console.cyan + " - %s  ~ %s" % (rocon_uri_string, modified_rocon_uri_string) + console.reset)
     assert(rocon_uri.is_compatible(rocon_uri_string, modified_rocon_uri_string) == True)
-    # Missing everything
-    modified_rocon_uri_string = 'rocon:///'
+    # Missing everything (equivalent to full wildcards)
+    modified_rocon_uri_string = 'rocon://'
     print(console.cyan + " - %s  ~ %s" % (rocon_uri_string, modified_rocon_uri_string) + console.reset)
     assert(rocon_uri.is_compatible(rocon_uri_string, modified_rocon_uri_string) == True)
     # Wildcards
-    modified_rocon_uri_string = 'rocon:///*/*/*/*'
+    modified_rocon_uri_string = 'rocon:///%s/%s/%s/%s' % (rocon_std_msgs.Strings.URI_WILDCARD, rocon_std_msgs.Strings.URI_WILDCARD, rocon_std_msgs.Strings.URI_WILDCARD, rocon_std_msgs.Strings.URI_WILDCARD)
     print(console.cyan + " - %s  ~ %s" % (rocon_uri_string, modified_rocon_uri_string) + console.reset)
     assert(rocon_uri.is_compatible(rocon_uri_string, modified_rocon_uri_string) == True)
     # Regex names

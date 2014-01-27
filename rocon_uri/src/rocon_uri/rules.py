@@ -77,7 +77,7 @@ def load_ebnf_rules():
         rules.append('element ::= "|" %s   @%s_list.append("$%s")' % (yaml_rule_set_name, yaml_rule_set_name, yaml_rule_set_name))
         for name, groups, elements in walk_yaml_rules(yaml_rule_set_name, yaml_rule_set):
             # Accept a wildcard for each
-            rule = '%s ::= "any"' % name.split('/')[-1]
+            rule = '%s ::= "*"' % name.split('/')[-1]
             element_rules = ' | '.join(['"%s"' % element for element in elements])
             group_rules = ' | '.join(groups)
             if groups:

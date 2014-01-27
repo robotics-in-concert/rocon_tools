@@ -18,7 +18,6 @@ getattr(urlparse, 'uses_netloc').append('rocon')
 import rocon_ebnf.rule_parser as rule_parser
 import re
 from collections import namedtuple
-import rocon_std_msgs.msg as rocon_std_msgs
 
 # Local imports
 from .exceptions import RoconURIValueError
@@ -67,7 +66,7 @@ def is_compatible(rocon_uri_a, rocon_uri_b):
         requires_conversion_b = isinstance(rocon_uri_b, str)
     a = parse(rocon_uri_a) if requires_conversion_a else rocon_uri_a
     b = parse(rocon_uri_b) if requires_conversion_b else rocon_uri_b
-    no_wildcards = lambda l1, l2: rocon_std_msgs.Strings.URI_WILDCARD not in l1 and rocon_std_msgs.Strings.URI_WILDCARD not in l2
+    no_wildcards = lambda l1, l2: '*' not in l1 and '*' not in l2
     intersection = lambda l1, l2: [x for x in l1 if x in l2]
     for field in ["hardware_platform", "application_framework", "operating_system"]:
         if no_wildcards(getattr(a, field).list, getattr(b, field).list):
@@ -120,8 +119,8 @@ class RoconURIField(object):
         self.field_list = WeakKeyDictionary()
 
     def __get__(self, instance, unused_owner):
-        return RoconURIField.Value(self.field.get(instance, rocon_std_msgs.Strings.URI_WILDCARD),  # could also use the empty string here
-                                   self.field_list.get(instance, [rocon_std_msgs.Strings.URI_WILDCARD]))
+        return RoconURIField.Value(self.field.get(instance, '*'),
+                                   self.field_list.get(instance, ['*']))
 
     def __set__(self, instance, new_field):
         try:
@@ -174,11 +173,5 @@ class RoconURI(object):
         self.rapp_name = parsed_url.fragment
 
     def __str__(self):
-        concert_name = self.concert_name if self.concert_name != rocon_std_msgs.Strings.URI_WILDCARD else ''
-        hardware_platform = self.hardware_platform.string if self.hardware_platform.string != rocon_std_msgs.Strings.URI_WILDCARD else ''
-        name = self.name.string if self.name.string != rocon_std_msgs.Strings.URI_WILDCARD else ''
-        application_framework = self.application_framework.string if self.application_framework.string != rocon_std_msgs.Strings.URI_WILDCARD else ''
-        operating_system = self.operating_system.string if self.operating_system.string != rocon_std_msgs.Strings.URI_WILDCARD else ''
-        s = "%s/%s/%s/%s/%s" % (concert_name, hardware_platform, name, application_framework, operating_system)
-        return "rocon://%s%s" % (s.rstrip('/'), '#' + self.rapp_name if self.rapp_name else "")  # remove trailing slashes and add fragment
+        return "rocon://%s/%s/%s/%s/%s%s" % (self.concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp_name if self.rapp_name else "")
 

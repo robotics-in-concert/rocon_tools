@@ -112,8 +112,8 @@ def test_message_to_string():
 #     print("\nResult: %s" % result)
 #     print("rosdistro: %s" % result.rosdistro)
 
-#     assert_raises(rocon_uri.RoconURIInvalidException, rocon_uri.parse, 'http:///precise/hydro/turtlebot/dude#rocon_apps/chirp')
-#     assert_raises(rocon_uri.RoconURIInvalidException, rocon_uri.parse, 'rocon:///precise//turtlebot/dude#rocon_apps/chirp')
+#     assert_raises(rocon_uri.RoconURIInvalidException, rocon_uri.parse, 'http:/precise/hydro/turtlebot/dude#rocon_apps/chirp')
+#     assert_raises(rocon_uri.RoconURIInvalidException, rocon_uri.parse, 'rocon:/precise//turtlebot/dude#rocon_apps/chirp')
 #     assert(str(rocon_uri_object), rocon_uri_string)
         
 # #

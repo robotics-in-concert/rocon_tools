@@ -22,6 +22,8 @@
     - ros_other
   - opros
   - application_framework_other
+# Try and keep sync of operating system names with:
+#    https://github.com/ros-infrastructure/rospkg/blob/master/src/rospkg/os_detect.py#L499
 - operating_system:
   - windows:
     - winxp

@@ -173,5 +173,6 @@ class RoconURI(object):
         self.rapp_name = parsed_url.fragment
 
     def __str__(self):
-        return "rocon://%s/%s/%s/%s/%s%s" % (self.concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp_name if self.rapp_name else "")
-
+        # according to uri specifications, must be preceded by '//'
+        concert_name = '//' + self.concert_name if self.concert_name else ''
+        return "rocon:%s/%s/%s/%s/%s%s" % (concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp_name if self.rapp_name else "")

@@ -170,9 +170,9 @@ class RoconURI(object):
         except RoconURIValueError as e:
             #print("Raised %s %s" % type(e), str(e))
             raise e
-        self.rapp_name = parsed_url.fragment
+        self.rapp = parsed_url.fragment
 
     def __str__(self):
         # according to uri specifications, must be preceded by '//'
         concert_name = '//' + self.concert_name if self.concert_name else ''
-        return "rocon:%s/%s/%s/%s/%s%s" % (concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp_name if self.rapp_name else "")
+        return "rocon:%s/%s/%s/%s/%s%s" % (concert_name, self.hardware_platform.string, self.name.string, self.application_framework.string, self.operating_system.string, '#' + self.rapp if self.rapp else "")

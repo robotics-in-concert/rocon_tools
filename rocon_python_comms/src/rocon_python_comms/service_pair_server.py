@@ -7,7 +7,7 @@
 ##############################################################################
 
 import rospy
-#import unique_id
+import threading
 
 # Local imports
 from .exceptions import ServicePairException
@@ -25,6 +25,7 @@ class ServicePairServer(object):
             '_publisher',
             '_subscriber',
             '_callback',
+            '_use_threads',
             #'_request_handlers',  # initiate, track and execute requests with these { hex string ids : dic of RequestHandler objects (Blocking/NonBlocking) }
             'ServicePairSpec',
             'ServicePairRequest',
@@ -35,7 +36,7 @@ class ServicePairServer(object):
     # Initialisation
     ##########################################################################
 
-    def __init__(self, name, callback, ServicePairSpec):
+    def __init__(self, name, callback, ServicePairSpec, use_threads=False):
         '''
           @param name : resource name of service pair (e.g. testies for pair topics testies/request, testies/response)
           @type str
@@ -44,6 +45,7 @@ class ServicePairServer(object):
           @type str
         '''
         self._callback = callback
+        self._use_threads = use_threads
         try:
             p = ServicePairSpec()
             self.ServicePairSpec = ServicePairSpec
@@ -81,4 +83,8 @@ class ServicePairServer(object):
           @type self.ServicePairRequest
         '''
         # Check if it is a blocking call that has requested it.
-        self._callback(msg.id, msg.request)
+        if self._use_threads:
+            thread = threading.Thread(target=self._callback, args=(msg.id, msg.request))
+            thread.start()
+        else:
+            self._callback(msg.id, msg.request)

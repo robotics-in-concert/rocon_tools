@@ -19,6 +19,7 @@
   - ros:
     - groovy
     - hydro
+    - indigo
     - ros_other
   - opros
   - application_framework_other

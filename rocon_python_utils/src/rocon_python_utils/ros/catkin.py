@@ -1,21 +1,14 @@
 #
 # License: BSD
-#   https://raw.github.com/robotics-in-concert/rocon_multimaster/license/LICENSE
+#   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 
 ##############################################################################
 # Imports
 ##############################################################################
 
-import os
-import time
-import rospy
-import rospkg
-import roslib.names
 from catkin_pkg.packages import find_packages
-from rosservice import rosservice_find
 
-from .exceptions import ServiceNotFoundException
 ##############################################################################
 # Resources
 ##############################################################################

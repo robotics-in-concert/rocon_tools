@@ -1,0 +1,25 @@
+<!-- 
+   A simple launch for a regular ros master environment.
+-->
+<launch>
+  
+  <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
+    <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/qt, rocon_interactions/web_apps]</rosparam>
+  </node>
+  
+  <!-- instead of params, use the external loader and configure groups with default namespaces -->
+  <node pkg="rocon_interactions" type="load_interactions" name="load_interactions" args="-n '/web' rocon_interactions web">
+    <remap from="load_interactions/set_interactions" to="interactions/set_interactions"/>
+  </node>
+  
+  <!-- Attach a fake remocon for test purposes -->
+  <node pkg="rocon_interactions" type="fake_remocon" name="fake_remocon"/>
+
+  <!-- Advertise ourselves for the rocon remocon -->
+  <node ns="zeroconf" pkg="zeroconf_avahi" type="zeroconf" name="zeroconf">
+    <rosparam param="services" subst_value="true">
+        [ { name: "Ros Interactions", type: _ros-master._tcp, port: 11311, domain: local, description: "Test ros environment for rocon interactions" } ] 
+    </rosparam>
+  </node>
+</launch>
+

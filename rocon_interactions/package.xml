@@ -1,0 +1,28 @@
+<package>
+  <name>rocon_interactions</name>
+  <version>0.5.5</version>
+  <description>
+    Interaction management for human interactive agents in the concert.
+  </description>
+  <maintainer email="d.stonier@gmail.com">Daniel Stonier</maintainer>
+  <license>BSD</license>
+  <url type="website">http://ros.org/wiki/rocon_interactions</url>
+  <url type="repository">https://github.com/robotics-in-concert/rocon_concert</url>
+  <url type="bugtracker">https://github.com/robotics-in-concert/rocon_concert/issues</url>
+  <author>Daniel Stonier</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>genpy</run_depend>
+  <run_depend>python-rospkg</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>rocon_console</run_depend>
+  <run_depend>rocon_interaction_msgs</run_depend>
+  <run_depend>rocon_python_comms</run_depend>
+  <run_depend>rocon_python_utils</run_depend>
+  <run_depend>rocon_std_msgs</run_depend>
+  <run_depend>rocon_uri</run_depend>
+  <run_depend>unique_id</run_depend>
+
+  <run_depend></run_depend>
+</package>

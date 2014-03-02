@@ -1,0 +1,35 @@
+###############################################################################
+# Rqt
+###############################################################################
+
+- name: rocon_gateway_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Gateway Graph
+  description: Graph of all elements in a rocon gateway network.
+  max: -1
+
+- name: concert_conductor_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Conductor Graph
+  description: Graph of all elements in a rocon conductor network.
+  max: -1
+
+- name: rqt_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Ros Graph
+  description: Graph of all topics and services in the concert workspace.
+  max: -1
+
+###############################################################################
+# PyQt
+###############################################################################
+
+- name: concert_info
+  role: 'PyQt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Concert Info
+  description: Generic information about this concert.
+  max: -1

@@ -1,0 +1,102 @@
+###############################################################################
+# Rqt
+###############################################################################
+
+- name: rocon_gateway_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Gateway Graph
+  description: Graph of all elements in a rocon gateway network.
+  max: -1
+
+- name: concert_conductor_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Conductor Graph
+  description: Graph of all elements in a rocon conductor network.
+  max: -1
+
+- name: rqt_graph
+  role: 'Rqt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Ros Graph
+  description: Graph of all topics and services in the concert workspace.
+  max: -1
+
+###############################################################################
+# PyQt
+###############################################################################
+
+- name: concert_info
+  role: 'PyQt'
+  compatibility: rocon:/pc/*/hydro/*
+  display_name: Concert Info
+  description: Generic information about this concert.
+  max: -1
+
+###############################################################################
+# Android
+###############################################################################
+
+- name: com.github.robotics_in_concert.rocon_android.SolutionManager
+  role: 'Android'
+  compatibility: rocon:/mega/*/hydro/jellybean
+  display_name: Solution Manager
+  description: Configuration manager for the concert
+  max: -1
+- name: com.github.robotics_in_concert.rocon_android.SolutionMonitor
+  role: 'Android'
+  compatibility: rocon:/*/*/hydro/jellybean
+  display_name: Solution Monitor
+  description: Monitors various aspects of the solution
+  max: -1
+
+###############################################################################
+# Dev
+###############################################################################
+
+- name: com.github.robotics_in_concert.rocon_android.Pizza
+  role: 'Dev'
+  compatibility: rocon:/*/*/hydro/jellybean|ice_cream_sandwich
+  display_name: Pizza Delivery
+  description: Tantalises and tickles the taste buds with a virtual pizza
+  parameters: "{type: super_supreme}"
+- name: com.github.robotics_in_concert.rocon_android.Beer
+  role: 'Dev'
+  compatibility: rocon:/*/*/hydro/jellybean|ice_cream_sandwich
+  display_name: Beer
+  description: The super sopper
+  remappings:
+    - remap_from: /fosters
+      remap_to: /beer/leffe
+
+##############################################################################
+# Pirate
+###############################################################################
+
+- name: http://www.google.com
+  role: 'Pirate'
+  compatibility: rocon:/
+  display_name: Google
+  description: Our beloved Google browser
+  icon:
+    resource_name: rocon_interactions/google_icon.png
+
+##############################################################################
+# Pirate
+###############################################################################
+
+- name: http://chimek.yujinrobot.com/dorothy/dorothy_web_menu.html
+  role: 'Pirate'
+  compatibility: rocon:/*/*/hydro
+  display_name: Cafe Dorothy
+  description: Cafe Dorothy web menu
+  icon:
+    resource_name: rocon_interactions/coffee_icon.png
+  parameters: "{'rosbridge_ip':'%rosbridge_ip%','rosbridge_port':%rosbridge_port%,'tableid':3}"
+  remappings:
+    - remap_from: /fosters
+      remap_to: /beer/leffe
+    - remap_from: /kk
+      remap_to: /pedo
+    

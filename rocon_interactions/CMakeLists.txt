@@ -3,7 +3,7 @@
 ##############################################################################
 
 cmake_minimum_required(VERSION 2.8.3)
-project(rocon_python_utils)
+project(rocon_interactions)
 
 ##############################################################################
 # Catkin
@@ -15,11 +15,10 @@ catkin_package()
 catkin_python_setup()
 
 ##############################################################################
-# Tests
+# Unit Tests
 ##############################################################################
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED rostest rosunit)
   add_subdirectory(tests)
 endif()
 
@@ -27,11 +26,14 @@ endif()
 # Installs
 ##############################################################################
 
-#install(
-#    PROGRAMS 
-#        scripts/rocon_interactions
-#    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#    )
+install(
+    PROGRAMS 
+        scripts/rocon_interactions
+        scripts/interactions_manager.py
+        scripts/load_interactions
+        scripts/fake_remocon
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )
 
-#install(DIRECTORY launch
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>rocon_python_wifi</name>
+  <version>0.1.0</version>
+  <description>
+    The pythonwifi package is available through pypi, but not through a 
+    deb package. This is copy of the package suitable for use through the
+    ROS ecosystem.
+  </description>
+
+  <maintainer email="piyushk@todo.todo">piyushk</maintainer>
+  <license>GPLv2</license>
+  <url type="website">http://pythonwifi.wikispot.org/</url>
+  <url type="repository">https://github.com/robotics-in-concert/rocon_tools</url>
+  <url type="bugtracker">https://github.com/robotics-in-concert/rocon_tools/issues</url>
+
+  <author>Róman Joost</author>
+  <author email="seankrobinson@gmail.com">Sean Robinson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

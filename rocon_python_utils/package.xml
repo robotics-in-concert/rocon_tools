@@ -12,5 +12,14 @@
   <author email="d.stonier@gmail.com">Daniel Stonier</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>python-rospkg</run_depend>
+  <run_depend>python-catkin-pkg</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>rocon_std_msgs</run_depend>
+  <run_depend>roslib</run_depend>
+
+  <!-- testing only -->
+  <build_depend>rostest</build_depend>
+  <test_depend>rosunit</test_depend>
 
 </package>

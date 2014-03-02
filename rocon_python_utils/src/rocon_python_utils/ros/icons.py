@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 #
 # License: BSD
-#   https://raw.github.com/robotics-in-concert/rocon_multimaster/license/LICENSE
+#   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
 # Imports
 ##############################################################################
 
+# system
 import os
+
+# ros
 import rocon_std_msgs.msg as rocon_std_msgs
-from ros_utilities import find_resource_from_string
+
+# local
+from .resources import find_resource_from_string
 
 ##############################################################################
 # Functions

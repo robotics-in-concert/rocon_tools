@@ -24,5 +24,4 @@
   <run_depend>rocon_uri</run_depend>
   <run_depend>unique_id</run_depend>
 
-  <run_depend></run_depend>
 </package>

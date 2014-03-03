@@ -9,7 +9,7 @@
   description: Cafe Dorothy web menu
   icon:
     resource_name: rocon_interactions/coffee_icon.png
-  parameters: "{'rosbridge_ip':'%rosbridge_ip%','rosbridge_port':%rosbridge_port%,'tableid':3}"
+  parameters: "{'rosbridge_address':'%ROSBRIDGE_ADDRESS%','rosbridge_port':'%ROSBRIDGE_PORT%','tableid':3}"
   remappings:
     - remap_from: /fosters
       remap_to: /beer/leffe

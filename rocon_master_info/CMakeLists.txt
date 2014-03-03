@@ -20,7 +20,7 @@ catkin_python_setup()
 
 install(
     PROGRAMS 
-        scripts/master_info
+        scripts/rocon_master_info
         scripts/master.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )

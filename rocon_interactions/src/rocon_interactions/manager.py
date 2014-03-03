@@ -56,6 +56,7 @@ class InteractionsManager(object):
         for resource_name in self.parameters['interactions']:
             try:
                 msg_interactions = interactions.load_msgs_from_yaml_resource(resource_name)
+                msg_interactions = self._bind_dynamic_symbols(msg_interactions)
                 (new_interactions, invalid_interactions) = self.interactions_table.load(msg_interactions)
                 for i in new_interactions:
                     rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
@@ -126,6 +127,8 @@ class InteractionsManager(object):
     def _setup_parameters(self):
         param = {}
         param['rosbridge_address'] = rospy.get_param('~rosbridge_address', "")
+        if param['rosbridge_address'] == "":
+            param['rosbridge_address'] = 'http://localhost'
         param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
         param['interactions'] = rospy.get_param('~interactions', [])
         return param
@@ -180,6 +183,22 @@ class InteractionsManager(object):
             response.interactions.append(i.msg)
         return response
 
+    def _bind_dynamic_symbols(self, interactions):
+        '''
+          Provide some intelligence to the interactions specification by binding designated
+          symbols at runtime.
+
+          @param interaction : parse this interaction scanning and replacing symbols.
+          @type request_interactions_msgs.Interaction[]
+
+          @return the updated interaction list
+          @rtype request_interactions_msgs.Interaction[]
+        '''
+        for interaction in interactions:
+            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_ADDRESS%', self.parameters['rosbridge_address'])
+            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_PORT%', str(self.parameters['rosbridge_port']))
+        return interactions
+
     def _ros_service_set_interactions(self, request):
         '''
           Add or remove interactions from the interactions table.
@@ -190,7 +209,8 @@ class InteractionsManager(object):
           @type concert_srvs.SetInteractionsRequest
         '''
         if request.load:
-            (new_interactions, invalid_interactions) = self.interactions_table.load(request.interactions)
+            interactions = self._bind_dynamic_symbols(request.interactions)
+            (new_interactions, invalid_interactions) = self.interactions_table.load(interactions)
             for i in new_interactions:
                 rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:

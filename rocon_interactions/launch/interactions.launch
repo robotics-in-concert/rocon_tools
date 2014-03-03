@@ -2,7 +2,9 @@
    A simple launch for a regular ros master environment.
 -->
 <launch>
-  
+  <!-- Publish master info for the remocon -->
+  <node pkg="rocon_master_info" type="master.py" name="master"/>
+
   <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
     <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/qt, rocon_interactions/web_apps]</rosparam>
   </node>

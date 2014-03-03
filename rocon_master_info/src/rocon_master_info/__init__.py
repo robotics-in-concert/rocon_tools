@@ -7,3 +7,4 @@
 ##############################################################################
 
 from .master import RoconMaster
+from .master_info import main

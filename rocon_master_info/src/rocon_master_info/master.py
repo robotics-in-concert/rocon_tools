@@ -29,7 +29,7 @@ class RoconMaster(object):
         self.publishers = {}
         # efficient latched publisher, put in the public concert namespace.
         self.param = self._setup_ros_parameters()
-        self.publishers["info"] = rospy.Publisher("info", rocon_std_msgs.ConcertInfo, latch=True)
+        self.publishers["info"] = rospy.Publisher("info", rocon_std_msgs.MasterInfo, latch=True)
         master_info = rocon_std_msgs.MasterInfo()
         master_info.name = self.param['name']
         master_info.description = self.param['description']

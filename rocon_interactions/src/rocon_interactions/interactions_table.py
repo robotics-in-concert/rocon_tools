@@ -134,7 +134,13 @@ class InteractionsTable(object):
 
     def find(self, interaction_hash):
         '''
-          Find the interaction with the corresponding crc32 hash.
+          Find the specified interaction.
+
+          @param interaction_hash in crc32 format
+          @type str
+
+          @return interaction if found, None otherwise.
+          @rtype rocon_interactions.Interaction
         '''
         interaction = next((interaction for interaction in self.interactions if interaction.hash == interaction_hash), None)
         return interaction

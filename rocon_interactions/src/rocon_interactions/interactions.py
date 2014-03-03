@@ -83,6 +83,7 @@ class Interaction(object):
             'display_name',
             'role',
             'hash',
+            'max',
         ]
 
     def __init__(self, msg):
@@ -117,6 +118,7 @@ class Interaction(object):
         self.display_name = self.msg.display_name
         self.hash = self.msg.hash
         self.compatibility = self.msg.compatibility
+        self.max = self.msg.max
 
     def _eq__(self, other):
         if type(other) is type(self):

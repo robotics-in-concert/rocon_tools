@@ -143,7 +143,8 @@ class InteractionsManager(object):
                 interactive_client.id = unique_id.toMsg(uuid.UUID(remocon.status.uuid))
                 interactive_client.platform_info = remocon.status.platform_info
                 if remocon.status.running_app:
-                    interactive_client.app_name = remocon.status.app_name
+                    interaction = self.interactions_table.find(remocon.status.hash)
+                    interactive_client.app_name = interaction.display_name if interaction is not None else "unknown"
                     interactive_clients.running_clients.append(interactive_client)
                 else:
                     interactive_clients.idle_clients.append(interactive_client)
@@ -198,6 +199,12 @@ class InteractionsManager(object):
             removed_interactions = self.interactions_table.unload(request.interactions)
             for i in removed_interactions:
                 rospy.loginfo("Interactions : unloading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
+        # could check explicitly if roles were added/removed, but this isn't called often, so it's not expensive
+        # just to republish the list (so long as nothing is assuming there HAS to be state changes this is ok.
+        msg = interaction_msgs.Roles()
+        msg.list = self.interactions_table.roles()
+        self.publishers['roles'].publish(msg)
+        # send response
         response = interaction_srvs.SetInteractionsResponse()
         response.result = True
         return response
@@ -207,6 +214,28 @@ class InteractionsManager(object):
         response.result = True
         response.error_code = interaction_msgs.ErrorCodes.SUCCESS
         maximum_quota = None
+        interaction = self.interactions_table.find(request.hash)
+        if interaction is not None:
+            if interaction.max == 0:
+                return response
+            else:
+                maximum_quota = interaction.max
+                count = 0
+                for remocon_monitor in self._remocon_monitors.values():
+                    if remocon_monitor.status is not None and remocon_monitor.status.running_app:
+                        # Todo this is a weak check as it is not necessarily uniquely identifying the app
+                        # Todo - reintegrate this
+                        pass
+                        #if remocon_monitor.status.app_name == request.application:
+                        #    count += 1
+                if count < max:
+                    return response
+                else:
+                    response.error_code = interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED
+                    response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED
+        else:
+            response.error_code = interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE
+            response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE
         if request.role in self.role_and_app_table.keys():
             for app in self.role_and_app_table[request.role]:  # app is interaction_msgs.RemoconApp
                 if app.name == request.application and app.namespace == request.namespace:

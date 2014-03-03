@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+#
+# License: BSD
+#   https://raw.github.com/robotics-in-concert/rocon_concert/license/LICENSE
+#
+##############################################################################
+# Imports
+##############################################################################
+
+import argparse
+import rospy
+import rocon_python_comms
+import rocon_python_utils
+import rocon_console.console as console
+import rocon_std_msgs.msg as rocon_std_msgs
+
+import sys
+import signal
+from PyQt4 import QtGui, QtCore
+
+##############################################################################
+# Globals
+##############################################################################
+
+topic_name = '/concert/info'
+
+##############################################################################
+# Functions
+##############################################################################
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Prettifies concert information.')
+    myargs = rospy.myargv(argv=sys.argv)
+    return parser.parse_args(args=myargs[1:])
+
+##############################################################################
+# Classes
+##############################################################################
+
+
+class Window(QtGui.QWidget):
+
+    def __init__(self, name, description, version, icon):
+        super(Window, self).__init__()
+        self._description = description
+        self._icon = icon
+        self._name = name
+        self._version = version
+        self.initUI()
+
+    def initUI(self):
+        pixmap = QtGui.QPixmap(self._icon)
+        self.pic = QtGui.QLabel(self)
+        self.pic.setPixmap(pixmap)
+        self.pic.resize(pixmap.width(), pixmap.height())
+        #self.pic.setGeometry(10, 10, pixmap.width(), pixmap.height())
+
+        self.text = QtGui.QLabel(self)
+        self.text.resize(200, pixmap.height())
+        self.text.move(pixmap.width() + 10, 0)
+        self.text.setText("<b>Version:</b> %s<br/><b>Description:</b> %s" % (self._version, self._description))
+        self.text.setWordWrap(True)
+        self.text.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+
+        self.setWindowTitle(self._name)
+        self.setWindowIcon(QtGui.QIcon(self._icon))
+        self.putUnderMouse()
+
+    def putUnderMouse(self):
+        mouse = QtGui.QCursor.pos()
+        self.move(mouse.x() - (210 + self.pic.geometry().width()) / 2,
+                    mouse.y() - (self.pic.geometry().height()) / 2)
+
+
+##############################################################################
+# Main
+##############################################################################
+
+if __name__ == '__main__':
+
+    rospy.init_node('concert_info')
+    args = parse_arguments()
+    concert_info_proxy = rocon_python_comms.SubscriberProxy(topic_name, concert_msgs.ConcertInfo)
+    try:
+        concert_info_proxy.wait_for_publishers()
+    except rospy.exceptions.ROSInterruptException:
+        rospy.logwarn("Concert Info : ros shut down before concert info could be found.")
+
+    concert_info = concert_msgs.ConcertInfo()
+    while not rospy.is_shutdown():
+        result = concert_info_proxy(rospy.Duration(0.2))
+        if result:
+            concert_info = result
+            break
+        rospy.rostime.wallsleep(1.0)  # human time
+
+    console.pretty_println("Concert Information", console.bold)
+    print(console.cyan + "  Name: " + console.yellow + concert_info.name + console.reset)
+    print(console.cyan + "  Description: " + console.yellow + concert_info.description + console.reset)
+    print(console.cyan + "  Version: " + console.yellow + concert_info.version + console.reset)
+
+    icon = rocon_python_utils.ros.find_resource_from_string(rospy.get_param('/concert/icon'))
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # make sure this comes after the rospy call, otherwise it will handle signals.
+    app = QtGui.QApplication(sys.argv)
+    window = Window(concert_info.name, concert_info.description, concert_info.version, icon)
+    window.show()
+    sys.exit(app.exec_())

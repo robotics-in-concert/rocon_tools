@@ -106,7 +106,7 @@ class Interaction(object):
             raise InvalidInteraction("role not configured [%s]" % self.msg.display_name)
         if self.msg.icon.resource_name == "":
             self.msg.icon.resource_name = 'concert_master/rocon_text.png'
-        if self.msg.icon == None:
+        if not self.msg.icon.data:
             self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
             self.msg.namespace = '/'

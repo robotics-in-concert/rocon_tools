@@ -16,7 +16,7 @@ import rocon_interaction_msgs.srv as interaction_srvs
 
 from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
-import interactions
+from . import interactions
 from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
 
 ##############################################################################
@@ -188,6 +188,10 @@ class InteractionsManager(object):
           Provide some intelligence to the interactions specification by binding designated
           symbols at runtime.
 
+          - interaction.compatibility - %ROSDISTRO% (depracated - use | instead)
+          - interaction.parameters - %ROSBRIDGE_ADDRESS%
+          - interaction.parameters - %ROSBRIDGE_ADDRESS%
+
           @param interaction : parse this interaction scanning and replacing symbols.
           @type request_interactions_msgs.Interaction[]
 
@@ -197,6 +201,7 @@ class InteractionsManager(object):
         for interaction in interactions:
             interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_ADDRESS%', self.parameters['rosbridge_address'])
             interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_PORT%', str(self.parameters['rosbridge_port']))
+            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%', rocon_python_utils.ros.get_rosdistro())
         return interactions
 
     def _ros_service_set_interactions(self, request):

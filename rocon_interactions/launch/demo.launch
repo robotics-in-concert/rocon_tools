@@ -1,5 +1,7 @@
 <!-- 
-   A simple launch for a regular ros master environment.
+   A simple demo for a regular ros master environment.
+
+   Launch and then call 'rocon_interactions' to view the loaded interactions.
 -->
 <launch>
   <!-- Publish master info for the remocon -->

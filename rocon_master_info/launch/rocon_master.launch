@@ -4,7 +4,7 @@
 <launch>
 
   <arg name="name" default="Pirate Master"/>
-  <arg name="icon" default="rocon_master_info/cybernetic_pirate.png"/>
+  <arg name="icon" default="rocon_icons/cybernetic_pirate.png"/>
   <arg name="description" default="Pirates in concert."/>
 
   <group ns="rocon">

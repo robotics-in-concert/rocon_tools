@@ -80,7 +80,7 @@
   display_name: Google
   description: Our beloved Google browser
   icon:
-    resource_name: rocon_interactions/google.png
+    resource_name: rocon_bubble_icons/chrome.png
 
 ##############################################################################
 # Pirate
@@ -92,7 +92,7 @@
   display_name: Cafe Dorothy
   description: Cafe Dorothy web menu
   icon:
-    resource_name: rocon_interactions/coffee_icon.png
+    resource_name: rocon_bubble_icons/coffee.png
   parameters: "{'rosbridge_ip':'%rosbridge_ip%','rosbridge_port':%rosbridge_port%,'tableid':3}"
   remappings:
     - remap_from: /fosters

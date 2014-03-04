@@ -8,7 +8,7 @@
   display_name: Cafe Dorothy
   description: Cafe Dorothy web menu
   icon:
-    resource_name: rocon_interactions/coffee_icon.png
+    resource_name: rocon_bubble_icons/coffee.png
   parameters: "{'rosbridge_address':'%ROSBRIDGE_ADDRESS%','rosbridge_port':'%ROSBRIDGE_PORT%','tableid':3}"
   remappings:
     - remap_from: /fosters

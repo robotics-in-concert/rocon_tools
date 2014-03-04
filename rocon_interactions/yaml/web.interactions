@@ -1,11 +1,19 @@
 ##############################################################################
-# Pirate
+# Web URLS
 ###############################################################################
 
-- name: http://www.google.com
-  role: 'Pirate'
+- name: http://http://chimek.yujinrobot.com/
+  role: 'Web URLs'
   compatibility: rocon:/
-  display_name: Google
-  description: Our beloved Google browser
+  display_name: Chimek
+  description: Everything you need to know about chimek to get through life.
   icon:
-    resource_name: rocon_bubble_icons/chrome.png
+    resource_name: rocon_bubble_icons/chimek.png
+
+- name: http://wiki.ros.org/rocon_interactions
+  role: 'Web URLs'
+  compatibility: rocon:/pc
+  display_name: Ros Wiki - Interactions
+  description: Documentation for rocon_interactions on the ros wiki
+  icon:
+    resource_name: rocon_bubble_icons/ros.png

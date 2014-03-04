@@ -38,24 +38,23 @@ def load_interactions(resource_name):
 
 def test_qt_apps():
     print(console.bold + "\n****************************************************************************************" + console.reset)
-    print(console.bold + "* Qt and Rqt Apps" + console.reset)
+    print(console.bold + "* Direct, RosRun and Launchable Interactions" + console.reset)
     print(console.bold + "****************************************************************************************" + console.reset)
     print("")
 
     interactions_table = rocon_interactions.InteractionsTable()
     raised_exception = False
-    msg_interactions = load_interactions('rocon_interactions/qt')
-    assert msg_interactions is not None, 'malformed yaml [rocon_interactions/qt]'
-    msg_interactions = assign_namespace('/qt', msg_interactions)
+    msg_interactions = load_interactions('rocon_interactions/ros')
+    assert msg_interactions is not None, 'malformed yaml [rocon_interactions/ros]'
+    msg_interactions = assign_namespace('/ros', msg_interactions)
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
-    assert 'PyQt' in interactions_table.roles()
-    assert 'Rqt' in interactions_table.roles()
+    assert 'Executables' in interactions_table.roles()
 
  
 def test_android_apps():
     print(console.bold + "\n****************************************************************************************" + console.reset)
-    print(console.bold + "* Android Apps" + console.reset)
+    print(console.bold + "* Android Interactions" + console.reset)
     print(console.bold + "****************************************************************************************" + console.reset)
     print("")
  
@@ -66,7 +65,6 @@ def test_android_apps():
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
     assert 'Android' in interactions_table.roles()
-    assert 'Dev' in interactions_table.roles()
 
  
 def test_web_urls():
@@ -81,11 +79,11 @@ def test_web_urls():
     msg_interactions = assign_namespace('/web', msg_interactions)
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
-    assert 'Pirate' in interactions_table.roles()
+    assert 'Web URLs' in interactions_table.roles()
 
 def test_web_apps():
     print(console.bold + "\n****************************************************************************************" + console.reset)
-    print(console.bold + "* Web Apps" + console.reset)
+    print(console.bold + "* Web App Interactions" + console.reset)
     print(console.bold + "****************************************************************************************" + console.reset)
     print("")
 
@@ -94,7 +92,7 @@ def test_web_apps():
     assert msg_interactions is not None, 'malformed yaml [rocon_interactions/web_apps]'
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
-    assert 'Pirate' in interactions_table.roles()
+    assert 'Web Apps' in interactions_table.roles()
   
 def test_removal():
     print(console.bold + "\n****************************************************************************************" + console.reset)

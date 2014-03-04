@@ -32,8 +32,10 @@ install(
         scripts/interactions_manager.py
         scripts/load_interactions
         scripts/fake_remocon
+        scripts/tutorial_markers.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY rviz DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY yaml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

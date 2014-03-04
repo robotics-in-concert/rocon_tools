@@ -1,14 +1,16 @@
 <!-- 
-   A runnable tutorial for rocon interactions.
+   A simple mock example for a regular ros master environment.
 
-   Only hack right now, make sure you install rviz first - i.e. sudo apt-get install ros-<distro>-rviz 
+   Launch and then call 'rocon_interactions' to view the loaded interactions.
 -->
 <launch>
   <!-- Publish master info for the remocon -->
+  <param name="name" value="Rocon Interactions"/>
+  <param name="description" value="A tutorial environment for interactions and remocons."/>
   <node pkg="rocon_master_info" type="master.py" name="master"/>
 
   <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
-    <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/qt, rocon_interactions/web_apps]</rosparam>
+    <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/ros, rocon_interactions/web_apps]</rosparam>
   </node>
   
   <!-- instead of params, use the external loader and configure groups with default namespaces -->
@@ -16,8 +18,7 @@
     <remap from="load_interactions/set_interactions" to="interactions/set_interactions"/>
   </node>
 
-  <!-- A toy node so we may do something with rviz -->
-  <node pkg="rocon_interactions" type="tutorial_markers.py" name="shape_publisher"/>
-  
+  <!-- publish some markers for viewing in an rviz interaction -->
+  <node pkg="rocon_interactions" type="tutorial_markers.py" name="tutorial_markers"/>
 </launch>
 

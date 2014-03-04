@@ -32,7 +32,7 @@ if __name__ == '__main__':
     publisher = rospy.Publisher('shapes', visualization_msgs.Marker, latch=True)
     while not rospy.is_shutdown():
         marker = visualization_msgs.Marker()
-        marker.header.frame_id = "/my_frame"
+        marker.header.frame_id = "my_frame"
         marker.header.stamp = rospy.rostime.Time.now()
         marker.ns = "basic_shapes"
         marker.id = 0
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         publisher.publish(marker)
 
         # Cycle between different shapes
-        print("Transitions: %s" % transitions)
+        #print("Transitions: %s" % transitions)
         shape = transitions[shape]
-        print("Shape: %s" % shape)
+        #print("Shape: %s" % shape)
         rospy.rostime.wallsleep(1.0)

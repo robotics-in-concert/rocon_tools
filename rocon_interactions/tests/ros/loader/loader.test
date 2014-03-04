@@ -1,6 +1,6 @@
 <launch>
     <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions"/>
-    <node pkg="rocon_interactions" type="load_interactions" name="load_interactions" args="-n '/qt' rocon_interactions qt"/> -->
+    <node pkg="rocon_interactions" type="load_interactions" name="load_interactions" args="-n '/ros' rocon_interactions ros"/> -->
     
     <test test-name="loader" time-limit="15.0" pkg="rocon_interactions" type="test_loader.py" name="test_loader">
       <remap from="test_loader/get_interactions" to="interactions/get_interactions"/>

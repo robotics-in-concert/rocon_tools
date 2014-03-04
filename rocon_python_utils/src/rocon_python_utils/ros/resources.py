@@ -11,8 +11,11 @@
 import os
 
 # ros
+import rospy
 import rospkg
 import roslib.names
+
+from .catkin import package_index_from_package_path
 
 ##############################################################################
 # Resources
@@ -71,3 +74,36 @@ def find_resource(package, filename, rospack=None):
     except rospkg.ResourceNotFound:
         raise rospkg.ResourceNotFound("[%s] is not a package or launch file name" % package)
     return None
+
+
+def extract_tags_from_packages(export_tag): 
+    '''
+      Scans the package path looking for exports and grab the ones we are interested in.
+      
+      @param export : export tagname
+      @type str
+
+      @return the dictionary of resource and its absolute path
+      @type { resource_unique_name : os.path }
+    '''
+    
+    package_index = _get_package_index()
+    resources = {}
+    for package in package_index.values():
+        for export in package.exports:
+            if export.tagname == export_tag:
+                filename_relative_path = export.content
+                resource_name = package.name + '/' + os.path.splitext(os.path.basename(filename_relative_path))[0]
+                resource_filename = os.path.join(os.path.dirname(package.filename), filename_relative_path)
+                if not os.path.isfile(resource_filename):
+                    rospy.logwarn("couldn't find definition for exported resource [%s]" % resource_name) 
+
+
+
+
+
+def _get_package_path():
+    ros_package_path = os.getenv('ROS_PACKAGE_PATH', '')
+    ros_package_path = [x for x in ros_package_path.split(':') if x]
+    package_index = package_index_from_package_path(ros_package_path)
+    return package_index

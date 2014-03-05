@@ -76,19 +76,19 @@ def find_resource(package, filename, rospack=None):
     return None
 
 
-def extract_tags_from_packages(export_tag): 
+def resource_index_from_package_exports(export_tag, package_paths=None): 
     '''
       Scans the package path looking for exports and grab the ones we are interested in.
       
-      @param export : export tagname
+      @param export_tag : export tagname
       @type str
 
       @return the dictionary of resource and its absolute path
       @type { resource_unique_name : os.path }
     '''
-    
-    package_index = _get_package_path()
+    package_index = _get_package_index(package_paths)
     resources = {}
+    invalid_resources = {}
     for package in package_index.values():
         for export in package.exports:
             if export.tagname == export_tag:
@@ -96,13 +96,15 @@ def extract_tags_from_packages(export_tag):
                 resource_name = package.name + '/' + os.path.splitext(os.path.basename(filename_relative_path))[0]
                 resource_filename = os.path.join(os.path.dirname(package.filename), filename_relative_path)
                 if not os.path.isfile(resource_filename):
-                    rospy.logwarn("couldn't find definition for exported resource [%s]" % resource_name)
-                resources[resource_name] = resource_filename
-    return resources
+                    invalid_resources[resource_name] = resource_filename
+                else:
+                    resources[resource_name] = resource_filename
+    return (resources, invalid_resources)
 
 
-def _get_package_path():
-    ros_package_path = os.getenv('ROS_PACKAGE_PATH', '')
+def _get_package_index(package_paths):
+    ros_package_path = package_paths if package_paths else os.getenv('ROS_PACKAGE_PATH', '')
+    print(str(ros_package_path))
     ros_package_path = [x for x in ros_package_path.split(':') if x]
     package_index = package_index_from_package_path(ros_package_path)
     return package_index

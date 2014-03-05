@@ -8,4 +8,4 @@
   display_name: Google
   description: Our beloved Google browser
   icon:
-    resource_name: rocon_interactions/google_icon.png
+    resource_name: rocon_interactions/google.png

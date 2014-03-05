@@ -1,8 +1,9 @@
 - hardware_platform:
   - pc
   - robot:
-    - turtlebot2
+    - kobuki
     - pr2
+    - turtlebot2
     - waiterbot
     - robot_other
   - mobile_device:

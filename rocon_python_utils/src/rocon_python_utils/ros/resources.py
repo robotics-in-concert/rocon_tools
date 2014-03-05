@@ -87,7 +87,7 @@ def extract_tags_from_packages(export_tag):
       @type { resource_unique_name : os.path }
     '''
     
-    package_index = _get_package_index()
+    package_index = _get_package_path()
     resources = {}
     for package in package_index.values():
         for export in package.exports:
@@ -96,10 +96,9 @@ def extract_tags_from_packages(export_tag):
                 resource_name = package.name + '/' + os.path.splitext(os.path.basename(filename_relative_path))[0]
                 resource_filename = os.path.join(os.path.dirname(package.filename), filename_relative_path)
                 if not os.path.isfile(resource_filename):
-                    rospy.logwarn("couldn't find definition for exported resource [%s]" % resource_name) 
-
-
-
+                    rospy.logwarn("couldn't find definition for exported resource [%s]" % resource_name)
+                resources[resource_name] = resource_filename
+    return resources
 
 
 def _get_package_path():

@@ -50,6 +50,7 @@ def load_msgs_from_yaml_resource(resource_name):
     '''
     interactions = []
     try:
+        print(str(resource_name))
         yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))

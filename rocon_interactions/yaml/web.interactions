@@ -2,7 +2,7 @@
 # Web URLS
 ###############################################################################
 
-- name: http://http://chimek.yujinrobot.com/
+- name: http://chimek.yujinrobot.com/
   role: 'Web URLs'
   compatibility: rocon:/
   display_name: Chimek

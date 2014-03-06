@@ -1,14 +1,14 @@
 ##############################################################################
-# Pirate
+# Web Apps
 ###############################################################################
 
 - name: http://chimek.yujinrobot.com/dorothy/dorothy_web_menu.html
-  role: 'Pirate'
+  role: 'Web Apps'
   compatibility: rocon:/*/*/hydro
-  display_name: Cafe Dorothy
+  display_name: Cafe Dorothy (Stub URL)
   description: Cafe Dorothy web menu
   icon:
-    resource_name: rocon_interactions/coffee_icon.png
+    resource_name: rocon_bubble_icons/coffee.png
   parameters: "{'rosbridge_address':'%ROSBRIDGE_ADDRESS%','rosbridge_port':'%ROSBRIDGE_PORT%','tableid':3}"
   remappings:
     - remap_from: /fosters

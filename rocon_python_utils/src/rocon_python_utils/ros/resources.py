@@ -71,7 +71,7 @@ def find_resource(package, filename, rospack=None):
         elif len(resolved) > 1:
             raise rospkg.ResourceNotFound("multiple resources named [%s] in package [%s]:%s\nPlease specify full path instead" % (filename, package, ''.join(['\n- %s' % r for r in resolved])))
     except rospkg.ResourceNotFound:
-        raise rospkg.ResourceNotFound("[%s] is not a package or launch file name" % package)
+        raise rospkg.ResourceNotFound("[%s] is not a package or launch file name [%s]" % (package, package + '/' + filename))
     return None
 
 

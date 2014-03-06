@@ -16,6 +16,7 @@
 # enable some python3 compatibility options:
 from __future__ import absolute_import, print_function, unicode_literals
 
+import time
 import unittest
 import rostest
 import rosunit
@@ -43,17 +44,21 @@ class TestLoader(unittest.TestCase):
         get_interactions = rospy.ServiceProxy('~get_interactions', interaction_srvs.GetInteractions)
         request = interaction_srvs.GetInteractionsRequest(roles=[], uri=rocon_uri.default_uri_string)
         interactions_table = None
-        while not rospy.is_shutdown() and not interactions_table:
+        timeout_time = time.time() + 5.0
+        while not rospy.is_shutdown() and time.time() < timeout_time:
             response = get_interactions(request)
             if response.interactions:
                 interactions_table = rocon_interactions.InteractionsTable()
                 interactions_table.load(response.interactions)
+                #print("Length: %s" % len(interactions_table))
+                if len(interactions_table) == 3:
+                    break
             else:
                 rospy.rostime.wallsleep(0.1)
         print("%s" % interactions_table)
         roles = interactions_table.roles()
-        self.assertEqual(roles, ['Rqt', 'PyQt'], 'roles of the interaction table did not return as expected [%s][%s]' % (roles, ['Rqt', 'PyQt']))
-        self.assertEqual(len(interactions_table), 4, 'number of interactions incorrect [%s][%s]' % (len(interactions_table), 4))
+        self.assertEqual(roles, ['Executables'], 'roles of the interaction table did not return as expected [%s][%s]' % (roles, ['Rqt', 'PyQt']))
+        self.assertEqual(len(interactions_table), 3, 'number of interactions incorrect [%s][%s]' % (len(interactions_table), 3))
 
     def tearDown(self):
         pass

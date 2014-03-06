@@ -75,7 +75,7 @@ class Interaction(object):
       a few convenient management handles.
     '''
     __slots__ = [
-            'msg',           # concert_msgs.Interaction
+            'msg',           # rocon_interaction_msgs.Interaction
             # aliases
             'name',
             'compatibility',
@@ -93,7 +93,7 @@ class Interaction(object):
           name-role-namespace triple.
 
           @param msg
-          @type concert_msgs.Interaction
+          @type rocon_interaction_msgs.Interaction
 
           @raise exceptions.InvalidInteraction
         '''
@@ -105,7 +105,7 @@ class Interaction(object):
         if self.msg.role == '':
             raise InvalidInteraction("role not configured [%s]" % self.msg.display_name)
         if self.msg.icon.resource_name == "":
-            self.msg.icon.resource_name = 'concert_master/rocon_text.png'
+            self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
         if not self.msg.icon.data:
             self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
@@ -137,6 +137,7 @@ class Interaction(object):
         s += console.green + "%s" % self.msg.display_name + console.reset + '\n'
         s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'
         s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'
+        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'
         s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'
         s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'
         if self.msg.max == -1:

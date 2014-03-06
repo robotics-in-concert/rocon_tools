@@ -85,6 +85,10 @@ def logdebug(message):
     print(green + "[debug] " + message + reset)
 
 
+def loginfo(message):
+    print("[info] " + message)
+
+
 def logwarn(message):
     print(yellow + "[warning] " + message + reset)
 

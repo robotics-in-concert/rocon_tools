@@ -8,6 +8,7 @@
   display_name: Solution Manager
   description: Configuration manager for the concert
   max: -1
+
 - name: com.github.robotics_in_concert.rocon_android.SolutionMonitor
   role: 'Android'
   compatibility: rocon:/*/*/hydro/jellybean
@@ -15,18 +16,15 @@
   description: Monitors various aspects of the solution
   max: -1
 
-###############################################################################
-# Dev
-###############################################################################
-
 - name: com.github.robotics_in_concert.rocon_android.Pizza
-  role: 'Dev'
+  role: 'Android'
   compatibility: rocon:/*/*/hydro/jellybean|ice_cream_sandwich
   display_name: Pizza Delivery
   description: Tantalises and tickles the taste buds with a virtual pizza
   parameters: "{type: super_supreme}"
+
 - name: com.github.robotics_in_concert.rocon_android.Beer
-  role: 'Dev'
+  role: 'Android'
   compatibility: rocon:/*/*/hydro/jellybean|ice_cream_sandwich
   display_name: Beer
   description: The super sopper

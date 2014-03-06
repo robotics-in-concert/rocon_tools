@@ -49,7 +49,7 @@ class RoconMaster(object):
         '''
         param = {}
         param['name'] = rospy.get_param('name', 'Cybernetic Pirate')
-        param['icon'] = rospy.get_param('icon', 'rocon_master_info/cybernetic_pirate.png')
+        param['icon'] = rospy.get_param('icon', 'rocon_icons/cybernetic_pirate.png')
         param['description'] = rospy.get_param('description', 'A rocon system.')
         rospy.set_param('version', rocon_std_msgs.Strings.ROCON_VERSION)
         return param

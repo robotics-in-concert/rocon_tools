@@ -62,6 +62,7 @@ class InteractionsManager(object):
                     rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
                 for i in invalid_interactions:
                     rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.display_name, i.name, i.role, i.namespace))
+                self._publish_roles()
             except YamlResourceNotFoundException as e:
                 rospy.logerr("Interactions : failed to load resource %s [%s]" % (resource_name, str(e)))
             except MalformedInteractionsYaml as e:
@@ -183,27 +184,6 @@ class InteractionsManager(object):
             response.interactions.append(i.msg)
         return response
 
-    def _bind_dynamic_symbols(self, interactions):
-        '''
-          Provide some intelligence to the interactions specification by binding designated
-          symbols at runtime.
-
-          - interaction.compatibility - %ROSDISTRO% (depracated - use | instead)
-          - interaction.parameters - %ROSBRIDGE_ADDRESS%
-          - interaction.parameters - %ROSBRIDGE_ADDRESS%
-
-          @param interaction : parse this interaction scanning and replacing symbols.
-          @type request_interactions_msgs.Interaction[]
-
-          @return the updated interaction list
-          @rtype request_interactions_msgs.Interaction[]
-        '''
-        for interaction in interactions:
-            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_ADDRESS%', self.parameters['rosbridge_address'])
-            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_PORT%', str(self.parameters['rosbridge_port']))
-            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%', rocon_python_utils.ros.get_rosdistro())
-        return interactions
-
     def _ros_service_set_interactions(self, request):
         '''
           Add or remove interactions from the interactions table.
@@ -226,9 +206,7 @@ class InteractionsManager(object):
                 rospy.loginfo("Interactions : unloading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
         # could check explicitly if roles were added/removed, but this isn't called often, so it's not expensive
         # just to republish the list (so long as nothing is assuming there HAS to be state changes this is ok.
-        msg = interaction_msgs.Roles()
-        msg.list = self.interactions_table.roles()
-        self.publishers['roles'].publish(msg)
+        self._publish_roles()
         # send response
         response = interaction_srvs.SetInteractionsResponse()
         response.result = True
@@ -286,3 +264,36 @@ class InteractionsManager(object):
             response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE
         response.result = False
         return response
+
+    ##########################################################################
+    # Utiliity functions
+    ##########################################################################
+
+    def _publish_roles(self):
+        '''
+          Convenience function for publishing roles
+        '''
+        msg = interaction_msgs.Roles()
+        msg.list = self.interactions_table.roles()
+        self.publishers['roles'].publish(msg)
+
+    def _bind_dynamic_symbols(self, interactions):
+        '''
+          Provide some intelligence to the interactions specification by binding designated
+          symbols at runtime.
+
+          - interaction.compatibility - %ROSDISTRO% (depracated - use | instead)
+          - interaction.parameters - %ROSBRIDGE_ADDRESS%
+          - interaction.parameters - %ROSBRIDGE_ADDRESS%
+
+          @param interaction : parse this interaction scanning and replacing symbols.
+          @type request_interactions_msgs.Interaction[]
+
+          @return the updated interaction list
+          @rtype request_interactions_msgs.Interaction[]
+        '''
+        for interaction in interactions:
+            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_ADDRESS%', self.parameters['rosbridge_address'])
+            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_PORT%', str(self.parameters['rosbridge_port']))
+            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%', rocon_python_utils.ros.get_rosdistro())
+        return interactions

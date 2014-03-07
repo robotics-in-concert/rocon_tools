@@ -1,0 +1,24 @@
+<!-- 
+   An example that loads up pc interactions and lets you interact with both rqt
+   and rviz instances using the rocon remocon.
+
+   Usage:
+     - Launch
+     - Call 'rocon_interactions' to view the loaded interactions.
+     - Install visualization_msgs, rviz, rqt_graph and rocon_qt_guis
+     - Run 'rocon_remocon' to interact with the tutorial.
+-->
+<launch>
+  <param name="name" value="Rocon Interactions"/>
+  <param name="description" value="A tutorial environment for interactions and remocons."/>
+  <param name="icon" value="rocon_icons/cybernetic_pirate.png"/>
+  <node pkg="rocon_master_info" type="master.py" name="master"/>
+
+  <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
+    <rosparam param="interactions">[rocon_interactions/pc]</rosparam>
+  </node>
+
+  <!-- publish some markers for viewing in an rviz interaction -->
+  <node pkg="rocon_interactions" type="tutorial_markers.py" name="tutorial_markers"/>
+</launch>
+

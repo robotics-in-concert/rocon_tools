@@ -57,7 +57,7 @@ class TestLoader(unittest.TestCase):
                 rospy.rostime.wallsleep(0.1)
         print("%s" % interactions_table)
         roles = interactions_table.roles()
-        self.assertEqual(roles, ['Executables'], 'roles of the interaction table did not return as expected [%s][%s]' % (roles, ['Rqt', 'PyQt']))
+        self.assertEqual(roles, ['PC'], 'roles of the interaction table did not return as expected [%s][%s]' % (roles, ['Rqt', 'PyQt']))
         self.assertEqual(len(interactions_table), 3, 'number of interactions incorrect [%s][%s]' % (len(interactions_table), 3))
 
     def tearDown(self):

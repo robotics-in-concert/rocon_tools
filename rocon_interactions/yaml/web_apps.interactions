@@ -2,16 +2,12 @@
 # Web Apps
 ###############################################################################
 
-- name: http://chimek.yujinrobot.com/dorothy/dorothy_web_menu.html
+#- name: http://chimek.yujinrobot.com/dorothy/dorothy_web_menu.html
+- name: http://chimek.yujinrobot.com/rosjs/listener.html
   role: 'Web Apps'
   compatibility: rocon:/*/*/hydro
-  display_name: Cafe Dorothy (Stub URL)
-  description: Cafe Dorothy web menu
+  display_name: Listener
+  description: Simple listener using rosjs in a web app.
   icon:
-    resource_name: rocon_bubble_icons/coffee.png
-  parameters: "{'rosbridge_address':'%ROSBRIDGE_ADDRESS%','rosbridge_port':'%ROSBRIDGE_PORT%','tableid':3}"
-  remappings:
-    - remap_from: /fosters
-      remap_to: /beer/leffe
-    - remap_from: /kk
-      remap_to: /pedo
+    resource_name: rocon_bubble_icons/rocon.png
+  parameters: "{'rosbridge_address':'%ROSBRIDGE_ADDRESS%','rosbridge_port':'%ROSBRIDGE_PORT%'}"

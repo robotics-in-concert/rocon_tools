@@ -49,7 +49,7 @@ def test_qt_apps():
     msg_interactions = assign_namespace('/ros', msg_interactions)
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
-    assert 'Executables' in interactions_table.roles()
+    assert 'PC' in interactions_table.roles()
 
  
 def test_android_apps():

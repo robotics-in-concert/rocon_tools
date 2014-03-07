@@ -1,5 +1,7 @@
 <!-- 
    Launch rviz configured to especially view our markers launched by the tutorial. 
+   
+   This is not intended to be launched directly - the rocon remocon will use this.
 -->
 <launch>
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rocon_interactions)/rviz/markers.rviz"/>

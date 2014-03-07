@@ -1,0 +1,30 @@
+<!-- 
+   An example that loads up pc interactions and lets you interact with
+   talker instances using the rocon remocon and a web app.
+
+   Usage:
+     - Launch
+     - Call 'rocon_interactions' to view the loaded interactions.
+     - Install rocpp_tutorials, rosbridge_suite and rocon_qt_guis
+     - Run 'rocon_remocon' to interact with the tutorial.
+-->
+<launch>
+  <arg name="rosbridge_port" default="8080"/>
+
+  <param name="name" value="Rocon Web App Interactions"/>
+  <param name="description" value="A tutorial environment for web app interactions (using rosbridge)) and remocons."/>
+  <param name="icon" value="rocon_icons/cybernetic_pirate.png"/>
+  <node pkg="rocon_master_info" type="master.py" name="master"/>
+
+  <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
+    <rosparam param="interactions">[rocon_interactions/web_apps, rocon_interactions/web]</rosparam>
+    <param name="rosbridge_port" value="$(arg rosbridge_port)"/>
+  </node>
+
+  <node pkg="roscpp_tutorials" type="talker" name="talker"/>
+  
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
+     <arg name="port" value="$(arg rosbridge_port)"/>
+  </include>
+</launch>
+

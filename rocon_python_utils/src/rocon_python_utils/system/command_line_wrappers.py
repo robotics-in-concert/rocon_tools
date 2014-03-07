@@ -15,7 +15,12 @@ import os
 
 
 def which(program):
+    '''
+      Wrapper around the command line 'which' program.
 
+      @return path to the program or None if it doesnt exist.
+      @rtype str or None
+    '''
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 

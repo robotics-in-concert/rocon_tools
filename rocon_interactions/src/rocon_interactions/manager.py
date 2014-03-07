@@ -129,7 +129,7 @@ class InteractionsManager(object):
         param = {}
         param['rosbridge_address'] = rospy.get_param('~rosbridge_address', "")
         if param['rosbridge_address'] == "":
-            param['rosbridge_address'] = 'http://localhost'
+            param['rosbridge_address'] = 'localhost'
         param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
         param['interactions'] = rospy.get_param('~interactions', [])
         return param

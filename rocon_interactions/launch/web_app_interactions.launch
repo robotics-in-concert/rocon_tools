@@ -3,9 +3,10 @@
    talker instances using the rocon remocon and a web app.
 
    Usage:
-     - Launch
+     - Install roscpp_tutorials(talker) and rosbridge_suite (rosbridge server)
+     - Launch this launcher
      - Call 'rocon_interactions' to view the loaded interactions.
-     - Install rocpp_tutorials, rosbridge_suite and rocon_qt_guis
+     - Install rocon_qt_guis (rocon_remocon)
      - Run 'rocon_remocon' to interact with the tutorial.
 -->
 <launch>
@@ -21,7 +22,9 @@
     <param name="rosbridge_port" value="$(arg rosbridge_port)"/>
   </node>
 
-  <node pkg="roscpp_tutorials" type="talker" name="talker"/>
+  <node pkg="roscpp_tutorials" type="talker" name="talker">
+    <remap from="chatter" to="babbler"/>
+  </node>
   
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
      <arg name="port" value="$(arg rosbridge_port)"/>

@@ -14,6 +14,5 @@
     rosbridge_address: __ROSBRIDGE_ADDRESS__
     rosbridge_port: __ROSBRIDGE_PORT__
   remappings:
-    - remap_from: chatter
-      remap_to: babbler
-      
+    - remap_from: /chatter
+      remap_to: /babbler

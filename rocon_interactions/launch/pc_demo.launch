@@ -3,9 +3,10 @@
    and rviz instances using the rocon remocon.
 
    Usage:
+     - Install visualization_msgs (visualization_msgs.Markers)
      - Launch
      - Call 'rocon_interactions' to view the loaded interactions.
-     - Install visualization_msgs, rviz, rqt_graph and rocon_qt_guis
+     - Install rviz (rviz), rqt_graph (rqt_graph), rocon_qt_gui (rocon_remocon)
      - Run 'rocon_remocon' to interact with the tutorial.
 -->
 <launch>

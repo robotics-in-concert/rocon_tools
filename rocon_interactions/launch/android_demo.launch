@@ -1,0 +1,27 @@
+<!-- 
+   An example that loads up android interactions and lets you interact with
+   talker instances using the rocon remocon and an android app.
+
+   Usage:
+     - Install roscpp_tutorials(talker)
+     - Launch this launcher
+     - Call 'rocon_interactions' to view the loaded interactions.
+     - Install rocon remocon on your android
+     - Run 'rocon_remocon' to interact with the tutorial.
+-->
+<launch>
+  <param name="name" value="Rocon Web App Interactions"/>
+  <param name="description" value="A tutorial environment for android interactions and remocons."/>
+  <param name="icon" value="rocon_icons/cybernetic_pirate.png"/>
+  <node pkg="rocon_master_info" type="master.py" name="master"/>
+
+  <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
+    <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/web]</rosparam>
+    <param name="rosbridge_port" value="$(arg rosbridge_port)"/>
+  </node>
+
+  <node pkg="roscpp_tutorials" type="talker" name="talker">
+    <remap from="chatter" to="babbler"/>
+  </node>
+</launch>
+

@@ -5,7 +5,7 @@
 #- name: http://chimek.yujinrobot.com/dorothy/dorothy_web_menu.html
 - name: http://chimek.yujinrobot.com/rosjs/listener.html
   role: 'Web Apps'
-  compatibility: rocon:/*/*/hydro
+  compatibility: rocon:/*/*/hydro|indigo
   display_name: Listener
   description: Simple listener using rosjs in a web app.
   icon:

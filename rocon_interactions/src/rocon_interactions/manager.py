@@ -282,9 +282,9 @@ class InteractionsManager(object):
           Provide some intelligence to the interactions specification by binding designated
           symbols at runtime.
 
-          - interaction.compatibility - %ROSDISTRO% (depracated - use | instead)
-          - interaction.parameters - %ROSBRIDGE_ADDRESS%
-          - interaction.parameters - %ROSBRIDGE_ADDRESS%
+          - interaction.compatibility - __ROSDISTRO__ (depracated - use | in the compatibility variable itself)
+          - interaction.parameters - __ROSBRIDGE_ADDRESS__
+          - interaction.parameters - __ROSBRIDGE_PORT__
 
           @param interaction : parse this interaction scanning and replacing symbols.
           @type request_interactions_msgs.Interaction[]
@@ -293,7 +293,7 @@ class InteractionsManager(object):
           @rtype request_interactions_msgs.Interaction[]
         '''
         for interaction in interactions:
-            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_ADDRESS%', self.parameters['rosbridge_address'])
-            interaction.parameters = interaction.parameters.replace('%ROSBRIDGE_PORT%', str(self.parameters['rosbridge_port']))
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__', self.parameters['rosbridge_address'])
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__', str(self.parameters['rosbridge_port']))
             #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%', rocon_python_utils.ros.get_rosdistro())
         return interactions

@@ -21,7 +21,8 @@
   compatibility: rocon:/*/*/hydro/jellybean|ice_cream_sandwich
   display_name: Pizza Delivery
   description: Tantalises and tickles the taste buds with a virtual pizza
-  parameters: "{type: super_supreme}"
+  parameters: 
+    type: super_supreme
 
 - name: com.github.robotics_in_concert.rocon_android.Beer
   role: 'Android'

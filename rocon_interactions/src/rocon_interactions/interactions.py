@@ -54,11 +54,17 @@ def load_msgs_from_yaml_resource(resource_name):
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))
     with open(yaml_filename) as f:
-        interactions_yaml = yaml.load(f)
-        for interaction_yaml in interactions_yaml:
+        # load the interactions from yaml into a python object
+        interaction_yaml_objects = yaml.load(f)
+        # now drop it into message format
+        for interaction_yaml_object in interaction_yaml_objects:
+            # convert the parameters from a freeform yaml variable to a yaml string suitable for
+            # shipping off in ros msgs (where parameters is a string variable)
+            if 'parameters' in interaction_yaml_object:  # it's an optional key
+                interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()  # chomp trailing newlines
             interaction = interaction_msgs.Interaction()
             try:
-                genpy.message.fill_message_args(interaction, interaction_yaml)
+                genpy.message.fill_message_args(interaction, interaction_yaml_object)
             except genpy.MessageException as e:
                 raise MalformedInteractionsYaml("malformed yaml preventing converting of yaml to interaction msg type [%s]" % str(e))
             interactions.append(interaction)
@@ -144,8 +150,13 @@ class Interaction(object):
             s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'
         else:
             s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'
+        already_prefixed = False
         for remapping in self.msg.remappings:
-            s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'
+            if not already_prefixed:
+                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'
+                already_prefixed = True
+            else:
+                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'

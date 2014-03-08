@@ -10,7 +10,10 @@
   description: Simple listener using rosjs in a web app.
   icon:
     resource_name: rocon_bubble_icons/chimek.png
-  parameters: "{rosbridge_address: '%ROSBRIDGE_ADDRESS%', rosbridge_port: %ROSBRIDGE_PORT%}"
+  parameters: 
+    rosbridge_address: __ROSBRIDGE_ADDRESS__
+    rosbridge_port: __ROSBRIDGE_PORT__
   remappings:
     - remap_from: chatter
       remap_to: babbler
+      

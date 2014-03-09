@@ -9,7 +9,7 @@
   display_name: Listener
   description: Simple listener using rosjs in a web app.
   icon:
-    resource_name: rocon_bubble_icons/chimek.png
+    resource_name: rocon_bubble_icons/rocon.png
   parameters: 
     rosbridge_address: __ROSBRIDGE_ADDRESS__
     rosbridge_port: __ROSBRIDGE_PORT__

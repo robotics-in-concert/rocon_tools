@@ -2,14 +2,17 @@
 #       http://ros.org/wiki/rocon_tools/Tutorials/indigo/Installation
 #
 [
+# Stacks necessary for rocon tools
 {'git': {'local-name': 'rocon_msgs', 'version': 'indigo', 'uri': 'https://github.com/robotics-in-concert/rocon_msgs.git'}},
-{'git': {'local-name': 'rocon_tools', 'version': 'indigo', 'uri':'https://github.com/robotics-in-concert/rocon_tools.git'}},
-{'git': {'local-name': 'rocon_qt_gui', 'version': 'indigo', 'uri': 'https://github.com/robotics-in-concert/rocon_qt_gui.git'}},
-
 {'git': {'local-name': 'unique_identifier', 'version': 'master', 'uri': 'https://github.com/ros-geographic-info/unique_identifier.git'}},
 {'git': {'local-name': 'roslint', 'version': 'master', 'uri': 'https://github.com/ros/roslint.git'}},
+{'git': {'local-name': 'rocon_tools', 'version': 'indigo', 'uri':'https://github.com/robotics-in-concert/rocon_tools.git'}},
 
+# Stacks necessary for web apps
 {'git': {'local-name': 'rosbridge_suite', 'version': 'hydro-devel', 'uri': 'https://github.com/RobotWebTools/rosbridge_suite.git'}},
 {'git': {'local-name': 'rosauth', 'version': 'hydro-devel', 'uri': 'https://github.com/WPI-RAIL/rosauth.git'}},
 
+# Stacks necessary for the rocon remocon (actually just need messages, but other qt apps in rocon_qt_guis have dependencies)
+{'git': {'local-name': 'rocon_multimaster', 'version': 'indigo', 'uri': 'https://github.com/robotics-in-concert/rocon_multimaster.git'}},
+{'git': {'local-name': 'rocon_qt_gui', 'version': 'indigo', 'uri': 'https://github.com/robotics-in-concert/rocon_qt_gui.git'}},
 ]

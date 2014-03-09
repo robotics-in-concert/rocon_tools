@@ -18,7 +18,7 @@
   icon:
     resource_name: rocon_bubble_icons/rqt.png
 
-- name: rocon_interactions/rviz.xml
+- name: rocon_interactions/rviz.launch
   role: 'PC'
   compatibility: rocon:/pc/*/hydro|indigo/*
   display_name: Rviz Markers (Launcher)

@@ -23,3 +23,10 @@ Services
 .. _`rocon_master_info`: http://wiki.ros.org/rocon_master_info
 .. _`rocon_std_msgs`: http://wiki.ros.org/rocon_std_msgs
 .. _`rocon_uri`: http://wiki.ros.org/rocon_uri
+
+Parameters
+----------
+
+ * ``~rosbridge_address`` : if serving web apps, pop the rosbridge address here (default: localhost).
+ * ``~rosbridge_address`` : if serving web apps, pop the rosbridge port here (default: 9090).
+  

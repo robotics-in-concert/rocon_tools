@@ -1,6 +1,8 @@
 
-doc: sphinx
+doc: clean sphinx
 
 sphinx:
-	rm -rf doc/html
 	rosdoc_lite .
+
+clean:
+	rm -rf doc/html

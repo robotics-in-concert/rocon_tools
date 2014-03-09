@@ -24,30 +24,36 @@ from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResou
 
 def generate_hash(name, role, namespace):
     '''
-      Compute a unique hash for this remocon app corresponding to the
-      name-role-namespace triple..
-
-      We use zlib's crc32 here instead of unique_id because of it's brevity which is important
+      Compute a unique hash for this interaction corresponding to the
+      name-role-namespace triple. We use zlib's crc32 here instead of unique_id because of it's brevity which is important
       when trying to id a remocon app by its hash from an nfc tag.
 
       Might be worth checking here http://docs.python.org/2.7/library/zlib.html#zlib.crc32 if
       his doesn't produce the same hash on all platforms.
+
+      :param name: the executable name of the interaction
+      :type name: str
+      :param role: the role the interaction is embedded in
+      :type role: str
+      :param namespace: the namespace in which to embed this interaction
+      :type namespace: str
     '''
     return zlib.crc32(name + "-" + role + "-" + namespace)
 
 
 def load_msgs_from_yaml_resource(resource_name):
-    '''
+    """
       Load interactions from a yaml resource.
 
-      @param resource_name : pkg/filename of a yaml formatted interactions file (ext=.interactions).
-      @return str
+      :param resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
+      :type resource_name: str
 
-      @return a list of ros msg interaction specifications
-      @rtype concert_msgs.Interaction[]
+      :returns: a list of ros msg interaction specifications
+      :rtype: concert_msgs.Interaction[]
 
-      @raise rocon_interactions.MalformedInteractionsYaml, rocon_interactions.YamlResourceNotFoundException
-    '''
+      :raises: :exc:`rocon_interactions.YamlResourceNotFoundException,` if yaml is not found.
+      :raises: :exc:`rocon_interactions.MalformedInteractionsYaml,` if yaml is malformed.
+    """
     interactions = []
     try:
         yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')

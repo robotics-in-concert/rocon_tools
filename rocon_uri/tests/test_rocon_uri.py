@@ -187,3 +187,10 @@ def test_compatibility():
     modified_rocon_uri_string = 'rocon:/turtlebot2/dudette/hydro/precise'
     print(console.cyan + " - %s !~ %s" % (rocon_uri_string, modified_rocon_uri_string) + console.reset)
     assert(rocon_uri.is_compatible(rocon_uri_string, modified_rocon_uri_string) == False)
+
+    invalid_rocon_uri = 'rocon:/lala|turtlebot2'
+    try:
+        rocon_uri.is_compatible(rocon_uri_string, invalid_rocon_uri)
+    except rocon_uri.RoconURIValueError as e:
+        print(console.cyan + " - %s FAILS %s [%s]" % (rocon_uri_string, invalid_rocon_uri, str(e)) + console.reset)
+    assert_raises(rocon_uri.RoconURIValueError, rocon_uri.is_compatible, rocon_uri_string, invalid_rocon_uri)

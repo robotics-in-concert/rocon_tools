@@ -55,6 +55,8 @@ def is_compatible(rocon_uri_a, rocon_uri_b):
       @return true if compatible, i.e. wildcards or intersections of fields are nonempty
       @type bool
 
+      :raises: :exc:`rocon_uri.RoconURIValueError,` if either rocon_uri string is not valid
+
       @todo return the compatible rocon uri?
       @todo tighten up the name pattern matching.
     '''

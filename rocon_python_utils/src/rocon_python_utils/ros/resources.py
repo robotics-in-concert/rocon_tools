@@ -75,15 +75,15 @@ def find_resource(package, filename, rospack=None):
     return None
 
 
-def resource_index_from_package_exports(export_tag, package_paths=None): 
+def resource_index_from_package_exports(export_tag, package_paths=None):
     '''
       Scans the package path looking for exports and grab the ones we are interested in.
-      
+
       @param export_tag : export tagname
       @type str
 
       @return the dictionary of resource and its absolute path
-      @type { resource_unique_name : os.path }
+      @type { resource_name : os.path }
     '''
     package_index = _get_package_index(package_paths)
     resources = {}

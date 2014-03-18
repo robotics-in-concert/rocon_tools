@@ -25,8 +25,9 @@ from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResou
 def generate_hash(name, role, namespace):
     '''
       Compute a unique hash for this interaction corresponding to the
-      name-role-namespace triple. We use zlib's crc32 here instead of unique_id because of it's brevity which is important
-      when trying to id a remocon app by its hash from an nfc tag.
+      name-role-namespace triple. We use zlib's crc32 here instead of unique_id because
+      of it's brevity which is important when trying to id a remocon app by its hash
+      from an nfc tag.
 
       Might be worth checking here http://docs.python.org/2.7/library/zlib.html#zlib.crc32 if
       his doesn't produce the same hash on all platforms.
@@ -67,12 +68,14 @@ def load_msgs_from_yaml_resource(resource_name):
             # convert the parameters from a freeform yaml variable to a yaml string suitable for
             # shipping off in ros msgs (where parameters is a string variable)
             if 'parameters' in interaction_yaml_object:  # it's an optional key
-                interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()  # chomp trailing newlines
+                # chomp trailing newlines
+                interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()
             interaction = interaction_msgs.Interaction()
             try:
                 genpy.message.fill_message_args(interaction, interaction_yaml_object)
             except genpy.MessageException as e:
-                raise MalformedInteractionsYaml("malformed yaml preventing converting of yaml to interaction msg type [%s]" % str(e))
+                raise MalformedInteractionsYaml(
+                    "malformed yaml preventing converting of yaml to interaction msg type [%s]" % str(e))
             interactions.append(interaction)
     return interactions
 
@@ -87,16 +90,16 @@ class Interaction(object):
       a few convenient management handles.
     '''
     __slots__ = [
-            'msg',           # rocon_interaction_msgs.Interaction
-            # aliases
-            'name',
-            'compatibility',
-            'namespace',
-            'display_name',
-            'role',
-            'hash',
-            'max',
-        ]
+        'msg',           # rocon_interaction_msgs.Interaction
+        # aliases
+        'name',
+        'compatibility',
+        'namespace',
+        'display_name',
+        'role',
+        'hash',
+        'max',
+    ]
 
     def __init__(self, msg):
         '''
@@ -147,23 +150,23 @@ class Interaction(object):
         '''
         s = ''
         s += console.green + "%s" % self.msg.display_name + console.reset + '\n'
-        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'
-        s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'
-        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'
-        s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'
-        s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'
+        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'  # noqa @IgnorePep8
         if self.msg.max == -1:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'
+            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'  # noqa @IgnorePep8
         else:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'
+            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'  # noqa @IgnorePep8
         already_prefixed = False
         for remapping in self.msg.remappings:
             if not already_prefixed:
-                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'
+                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa @IgnorePep8
                 already_prefixed = True
             else:
-                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'
+                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa @IgnorePep8
         if self.msg.parameters != '':
-            s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'
-        s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'
+            s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa @IgnorePep8
         return s

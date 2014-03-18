@@ -21,12 +21,12 @@ import rocon_interactions
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Load a list of interactions from yaml')
     parser.add_argument('-s', '--service-name', action='store',
-                   default='/concert/interactions/set_interactions',
-                   type=str,
-                   help="service name used to load interactions")
+                        default='/concert/interactions/set_interactions',
+                        type=str,
+                        help="service name used to load interactions")
     parser.add_argument('-n', '--namespace', action='store',
-                   default='/interactions',
-                   help='namespace to push connections down into [/interactions]')
+                        default='/interactions',
+                        help='namespace to push connections down into [/interactions]')
     parser.add_argument('package', type=str, help="package containing the yaml file")
     parser.add_argument('yaml', type=str, help="interactions configuration yaml (.interactions)")
     myargs = rospy.myargv(argv=sys.argv)

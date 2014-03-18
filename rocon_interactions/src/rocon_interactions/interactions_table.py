@@ -23,8 +23,8 @@ class InteractionsTable(object):
       manipulate it.
     '''
     __slots__ = [
-            'interactions',  # rocon_interactions.interactions.Interaction[]
-        ]
+        'interactions',  # rocon_interactions.interactions.Interaction[]
+    ]
 
     def __init__(self):
         self.interactions = []
@@ -86,7 +86,8 @@ class InteractionsTable(object):
             role_filtered_interactions = [i for i in self.interactions if i.role in roles]
         else:
             role_filtered_interactions = list(self.interactions)
-        filtered_interactions = [i for i in role_filtered_interactions if rocon_uri.is_compatible(i.compatibility, compatibility_uri)]
+        filtered_interactions = [i for i in role_filtered_interactions
+                                 if rocon_uri.is_compatible(i.compatibility, compatibility_uri)]
         return filtered_interactions
 
     def load(self, msgs):
@@ -142,5 +143,6 @@ class InteractionsTable(object):
           @return interaction if found, None otherwise.
           @rtype rocon_interactions.Interaction
         '''
-        interaction = next((interaction for interaction in self.interactions if interaction.hash == interaction_hash), None)
+        interaction = next((interaction for interaction in self.interactions
+                            if interaction.hash == interaction_hash), None)
         return interaction

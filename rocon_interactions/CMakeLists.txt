@@ -9,10 +9,14 @@ project(rocon_interactions)
 # Catkin
 ##############################################################################
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED roslint)
 catkin_package()
 
 catkin_python_setup()
+
+file(GLOB_RECURSE ${PROJECT_NAME}_MODULE_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} src/*.py)
+file(GLOB_RECURSE ${PROJECT_NAME}_SCRIPT_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} scripts/*)
+roslint_python(${${PROJECT_NAME}_MODULE_SOURCES} ${${PROJECT_NAME}_SCRIPT_SOURCES})
 
 ##############################################################################
 # Unit Tests

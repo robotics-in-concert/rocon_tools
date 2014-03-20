@@ -20,11 +20,11 @@ class RemoconMonitor(object):
       status of the remocon.
     '''
     __slots__ = [
-            'name',
-            'status',  # concert_msgs.RemoconStatus
-            '_subscriber',
-            '_publish_interactive_clients_callback'  # publishes the list of interactive clients
-        ]
+        'name',
+        'status',  # concert_msgs.RemoconStatus
+        '_subscriber',
+        '_publish_interactive_clients_callback'  # publishes the list of interactive clients
+    ]
 
     ##########################################################################
     # Initialisation

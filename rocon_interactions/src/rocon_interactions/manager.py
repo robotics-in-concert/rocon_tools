@@ -30,15 +30,15 @@ class InteractionsManager(object):
       for human interactive (aka remocon) connections.
     '''
     __slots__ = [
-            'interactions_table',  # Dictionary of string : interaction_msgs.RemoconApp[]
-            'publishers',
-            'parameters',
-            'services',
-            'spin',
-            'platform_info',
-            '_watch_loop_period',
-            '_remocon_monitors'  # list of currently connected remocons.
-        ]
+        'interactions_table',  # Dictionary of string : interaction_msgs.RemoconApp[]
+        'publishers',
+        'parameters',
+        'services',
+        'spin',
+        'platform_info',
+        '_watch_loop_period',
+        '_remocon_monitors'  # list of currently connected remocons.
+    ]
 
     ##########################################################################
     # Initialisation
@@ -59,14 +59,18 @@ class InteractionsManager(object):
                 msg_interactions = self._bind_dynamic_symbols(msg_interactions)
                 (new_interactions, invalid_interactions) = self.interactions_table.load(msg_interactions)
                 for i in new_interactions:
-                    rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
+                    rospy.loginfo("Interactions : loading %s [%s-%s-%s]" %
+                                  (i.display_name, i.name, i.role, i.namespace))
                 for i in invalid_interactions:
-                    rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.display_name, i.name, i.role, i.namespace))
+                    rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" %
+                                  (i.display_name, i.name, i.role, i.namespace))
                 self._publish_roles()
             except YamlResourceNotFoundException as e:
-                rospy.logerr("Interactions : failed to load resource %s [%s]" % (resource_name, str(e)))
+                rospy.logerr("Interactions : failed to load resource %s [%s]" %
+                             (resource_name, str(e)))
             except MalformedInteractionsYaml as e:
-                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" % (resource_name, str(e)))
+                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" %
+                             (resource_name, str(e)))
 
     def spin(self):
         '''
@@ -81,14 +85,19 @@ class InteractionsManager(object):
                 new_remocon_topics = diff(remocon_topics, self._remocon_monitors.keys())
                 lost_remocon_topics = diff(self._remocon_monitors.keys(), remocon_topics)
                 for remocon_topic in new_remocon_topics:
-                    self._remocon_monitors[remocon_topic] = RemoconMonitor(remocon_topic, self._ros_publish_interactive_clients)
+                    self._remocon_monitors[remocon_topic] = RemoconMonitor(remocon_topic,
+                                                                           self._ros_publish_interactive_clients)
                     self._ros_publish_interactive_clients()
-                    rospy.loginfo("Interactions : new remocon connected [%s]" % remocon_topic[len(interaction_msgs.Strings.REMOCONS_NAMESPACE) + 1:])  # strips the /remocons/ part
+                    rospy.loginfo("Interactions : new remocon connected [%s]" %  # strips the /remocons/ part
+                                  remocon_topic[len(interaction_msgs.Strings.REMOCONS_NAMESPACE) + 1:])
                 for remocon_topic in lost_remocon_topics:
                     self._remocon_monitors[remocon_topic].unregister()
-                    del self._remocon_monitors[remocon_topic]  # careful, this mutates the dictionary http://stackoverflow.com/questions/5844672/delete-an-element-from-a-dictionary
+                    # careful, this mutates the dictionary
+                    # http://stackoverflow.com/questions/5844672/delete-an-element-from-a-dictionary
+                    del self._remocon_monitors[remocon_topic]
                     self._ros_publish_interactive_clients()
-                    rospy.loginfo("Interactions : remocon left [%s]" % remocon_topic[len(interaction_msgs.Strings.REMOCONS_NAMESPACE) + 1:])  # strips the /remocons/ part
+                    rospy.loginfo("Interactions : remocon left [%s]" %  # strips the /remocons/ part
+                                  remocon_topic[len(interaction_msgs.Strings.REMOCONS_NAMESPACE) + 1:])
             except rosgraph.masterapi.Error:
                 rospy.logerr("Interactions : error trying to retrieve information from the local master.")
             except rosgraph.masterapi.Failure:
@@ -102,7 +111,9 @@ class InteractionsManager(object):
         '''
         publishers = {}
         publishers['roles'] = rospy.Publisher('~roles', interaction_msgs.Roles, latch=True)
-        publishers['interactive_clients'] = rospy.Publisher('~interactive_clients', interaction_msgs.InteractiveClients, latch=True)
+        publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
+                                                            interaction_msgs.InteractiveClients,
+                                                            latch=True)
         return publishers
 
     def _setup_services(self):
@@ -112,17 +123,17 @@ class InteractionsManager(object):
         '''
         services = {}
         services['get_interactions'] = rospy.Service('~get_interactions',
-                                                       interaction_srvs.GetInteractions,
-                                                       self._ros_service_get_interactions)
+                                                     interaction_srvs.GetInteractions,
+                                                     self._ros_service_get_interactions)
         services['get_interaction'] = rospy.Service('~get_interaction',
-                                                       interaction_srvs.GetInteraction,
-                                                       self._ros_service_get_interaction)
+                                                    interaction_srvs.GetInteraction,
+                                                    self._ros_service_get_interaction)
         services['set_interactions'] = rospy.Service('~set_interactions',
-                                                       interaction_srvs.SetInteractions,
-                                                       self._ros_service_set_interactions)
+                                                     interaction_srvs.SetInteractions,
+                                                     self._ros_service_set_interactions)
         services['request_interaction'] = rospy.Service('~request_interaction',
-                                                       interaction_srvs.RequestInteraction,
-                                                       self._ros_service_request_interaction)
+                                                        interaction_srvs.RequestInteraction,
+                                                        self._ros_service_request_interaction)
         return services
 
     def _setup_parameters(self):
@@ -199,7 +210,10 @@ class InteractionsManager(object):
             for i in new_interactions:
                 rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:
-                rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.display_name, i.name, i.role, i.namespace))
+                rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.display_name,
+                                                                             i.name,
+                                                                             i.role,
+                                                                             i.namespace))
         else:
             removed_interactions = self.interactions_table.unload(request.interactions)
             for i in removed_interactions:
@@ -293,7 +307,10 @@ class InteractionsManager(object):
           @rtype request_interactions_msgs.Interaction[]
         '''
         for interaction in interactions:
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__', self.parameters['rosbridge_address'])
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__', str(self.parameters['rosbridge_port']))
-            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%', rocon_python_utils.ros.get_rosdistro())
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
+                                                                    self.parameters['rosbridge_address'])
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__',
+                                                                    str(self.parameters['rosbridge_port']))
+            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%',
+            #                                                              rocon_python_utils.ros.get_rosdistro())
         return interactions

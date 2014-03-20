@@ -23,20 +23,25 @@ class InteractionsLoader(object):
       and app specifications provided in the service definitions.
     '''
     __slots__ = [
-            '_set_interactions_proxy',
-        ]
+        '_set_interactions_proxy',
+    ]
 
     def __init__(self):
         '''
         Don't do any loading here, just set up infrastructure and overrides from
         the solution.
 
-        @raise rocon_python_comms.NotFoundException, rospy.exceptions.ROSException, rospy.exceptions.ROSInterruptException
+        @raise rocon_python_comms.NotFoundException, rospy.exceptions.ROSException,
+               rospy.exceptions.ROSInterruptException
         '''
         try:
-            service_name = rocon_python_comms.find_service('rocon_interaction_msgs/SetInteractions', timeout=rospy.rostime.Duration(15.0), unique=True)
+            service_name = rocon_python_comms.find_service('rocon_interaction_msgs/SetInteractions',
+                                                           timeout=rospy.rostime.Duration(15.0),
+                                                           unique=True)
         except rocon_python_comms.NotFoundException as e:
-            raise rocon_python_comms.NotFoundException("failed to find unique service of type 'rocon_interaction_msgs/SetInteractions' [%s]" % str(e))
+            raise rocon_python_comms.NotFoundException(
+                "failed to find unique service of type 'rocon_interaction_msgs/SetInteractions' [%s]"
+                % str(e))
         self._set_interactions_proxy = rospy.ServiceProxy(service_name, interaction_srvs.SetInteractions)
 
     def load(self, interactions_yaml_resource, namespace='/', load=True):

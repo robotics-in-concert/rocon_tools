@@ -40,11 +40,12 @@ def parse_arguments():
 
 
 def remocon_platform_info():
-    platform_info = rocon_std_msgs.PlatformInfo(
-                        uri="rocon:/*/" + remocon_name + "/" + rocon_python_utils.ros.get_rosdistro() + "/" + rocon_std_msgs.Strings.OS_JELLYBEAN,
-                        icon=rocon_std_msgs.Icon(),
-                        version=rocon_std_msgs.Strings.ROCON_VERSION
-                    )
+    platform_info = rocon_std_msgs.PlatformInfo(uri="rocon:/*/" + remocon_name + "/" +
+                                                    rocon_python_utils.ros.get_rosdistro() +
+                                                    "/" + rocon_std_msgs.Strings.OS_JELLYBEAN,
+                                                icon=rocon_std_msgs.Icon(),
+                                                version=rocon_std_msgs.Strings.ROCON_VERSION
+                                                )
     return platform_info
 
 

@@ -75,7 +75,7 @@ def find_resource(package, filename, rospack=None):
     return None
 
 
-def resource_index_from_package_exports(export_tag, package_paths=None):
+def resource_index_from_package_exports(export_tag, package_paths=None, package_whitelist=None, package_blacklist=[]):
     '''
       Scans the package path looking for exports and grab the ones we are interested in.
 
@@ -89,6 +89,12 @@ def resource_index_from_package_exports(export_tag, package_paths=None):
     resources = {}
     invalid_resources = {}
     for package in package_index.values():
+
+        if package_whitelist:
+            if package.name not in package_whitelist:
+                continue
+        elif package.name in package_blacklist:
+            continue
         for export in package.exports:
             if export.tagname == export_tag:
                 filename_relative_path = export.content

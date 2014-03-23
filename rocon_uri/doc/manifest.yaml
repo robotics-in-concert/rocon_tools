@@ -1,0 +1,15 @@
+authors: Daniel Stonier <d.stonier@gmail.com>
+brief: ''
+bugtracker: https://github.com/robotics-in-concert/rocon_tools/issues
+depends:
+- rospy
+- catkin
+- rosunit
+description: Module for working with rocon uri strings.
+license: BSD
+maintainers: Daniel Stonier <d.stonier@gmail.com>
+msgs: []
+package_type: package
+repo_url: https://github.com/robotics-in-concert/rocon_tools
+srvs: []
+url: http://ros.org/wiki/rocon_uri

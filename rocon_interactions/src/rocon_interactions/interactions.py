@@ -150,23 +150,23 @@ class Interaction(object):
         '''
         s = ''
         s += console.green + "%s" % self.msg.display_name + console.reset + '\n'
-        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'  # noqa @IgnorePep8
-        s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa @IgnorePep8
-        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa @IgnorePep8
-        s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa @IgnorePep8
-        s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'  # noqa @IgnorePep8
+        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'  # noqa
+        s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa
+        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa
+        s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'  # noqa
         if self.msg.max == -1:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'  # noqa @IgnorePep8
+            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'  # noqa
         else:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'  # noqa @IgnorePep8
+            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'  # noqa
         already_prefixed = False
         for remapping in self.msg.remappings:
             if not already_prefixed:
-                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa @IgnorePep8
+                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
                 already_prefixed = True
             else:
-                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa @IgnorePep8
+                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
         if self.msg.parameters != '':
-            s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa @IgnorePep8
-        s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa @IgnorePep8
+            s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
+        s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
         return s

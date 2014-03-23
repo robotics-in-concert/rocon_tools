@@ -108,6 +108,8 @@ def resource_index_from_package_exports(export_tag, package_paths=None, package_
 
 
 def _get_package_index(package_paths):
+    # should make use of rospkg.get_ros_paths here.
+    # http://docs.ros.org/independent/api/rospkg/html/rospkg_environment.html
     ros_package_path = package_paths if package_paths else os.getenv('ROS_PACKAGE_PATH', '')
     ros_package_path = [x for x in ros_package_path.split(':') if x]
     package_index = package_index_from_package_path(ros_package_path)

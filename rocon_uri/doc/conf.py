@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# rocon_interactions documentation build configuration file, created by
-# sphinx-quickstart on Sun Mar  9 22:53:18 2014.
+# rocon_uri documentation build configuration file, created by
+# sphinx-quickstart on Sun Mar 23 23:19:28 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -29,7 +29,7 @@ catkin_package = find_packages(catkin_dir).values()[0]
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.mathjax', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -44,7 +44,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'rocon_interactions'
+project = u'rocon_uri'
 copyright = u'2014, Daniel Stonier'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -95,7 +95,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'nature'
+html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -168,7 +168,7 @@ html_static_path = ['.static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'rocon_interactionsdoc'
+htmlhelp_basename = 'rocon_uridoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -187,7 +187,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'rocon_interactions.tex', u'rocon\\_interactions Documentation',
+  ('index', 'rocon_uri.tex', u'rocon\\_uri Documentation',
    u'Daniel Stonier', 'manual'),
 ]
 
@@ -217,7 +217,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'rocon_interactions', u'rocon_interactions Documentation',
+    ('index', 'rocon_uri', u'rocon_uri Documentation',
      [u'Daniel Stonier'], 1)
 ]
 
@@ -231,8 +231,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'rocon_interactions', u'rocon_interactions Documentation',
-   u'Daniel Stonier', 'rocon_interactions', 'One line description of project.',
+  ('index', 'rocon_uri', u'rocon_uri Documentation',
+   u'Daniel Stonier', 'rocon_uri', 'One line description of project.',
    'Miscellaneous'),
 ]
 

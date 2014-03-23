@@ -7,7 +7,7 @@
 ##############################################################################
 
 from .exceptions import *
-from .find_node import find_node
+from .nodes import find_node
 from .service_pair_client import ServicePairClient
 from .service_pair_server import ServicePairServer
 from .services import find_service

@@ -7,16 +7,18 @@ Rocon Uri
 =========
 
 Various entities in the `Robotics in Concert`_ framework require a specification for
-describing the kind of entity it is, or the kind of entity it is compatible with. In
-essence, it is about identifying what kind of resource (e.g. robot) something is, what
-kind of resource is needed (e.g. the robot required by a service), or what kind of
-resource it is compatible with (e.g. a rocon app that can run on certain robots). We
-defer to the standard specifications for `universal resource identifiers`_ to
-format strings representing our resources and `ebnf`_ as a notation to express
-the exact format required for these strings.
+describing the kind of resource it is, or the kind of resource it is compatible with.
+In particular, such a specification must describe entities like robots, define
+compatibility strings for apps (i.e. what robots/platforms can run this app) and
+shape robot requests (give me a robot with this specification and able to run this robot app).
+It is the glue which will ultimately enable us to run a diverse mix of robots and
+applications together to provide useful robotic solutions.
 
-The `rocon_uri`_ package enables this for the by providing a specification, rules and
-an api for constructing and manipulating resource identifiers in the rocon framework.
+We defer to the standard specifications for `universal resource identifiers`_ to
+format strings representing our resources and `ebnf`_ as a notation to express
+the exact format required for these strings. This is all done in the `rocon_uri`_ package 
+which provides a specification, some ebnf rules and an api for constructing and manipulating
+resource identifiers used in the rocon framework.
 
 .. _`universal resource identifiers`: http://en.wikipedia.org/wiki/Uniform_resource_identifier
 .. _`ebnf`: http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form

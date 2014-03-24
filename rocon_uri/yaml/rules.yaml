@@ -3,9 +3,11 @@
   - robot:
     - kobuki
     - pr2
+    - robosem
+    - robot_other
+    - turtlebot
     - turtlebot2
     - waiterbot
-    - robot_other
   - mobile_device:
     - phone:
       - galaxy

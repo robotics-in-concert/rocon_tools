@@ -18,7 +18,6 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   overview
    rosapi
    specification
    modules

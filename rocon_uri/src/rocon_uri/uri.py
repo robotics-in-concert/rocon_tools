@@ -3,6 +3,17 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: uri
+
+This module contains the public api and classes used to parse and
+compare rocon uri strings.
+"""
+
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -30,35 +41,34 @@ import rules
 
 def parse(rocon_uri_string):
     """
-      Alternative method for creating RoconURI objects
-      (convenience purposes only).
+    Convenience method for creating RoconURI objects.
 
-      @param rocon_uri_string : a rocon uri in string format.
-      @type str
-      @return a validated rocon uri object
-      @rtype RoconURI
-      @raise RoconURIValueError
+    :param str rocon_uri_string: a rocon uri in string format.
+
+    :returns: a validated rocon uri object
+    :rtype: :class:`.RoconURI`.
+
+    :raises: :exc:`rocon_uri.exceptions.RoconURIValueError`
     """
     return RoconURI(rocon_uri_string)
 
 
 def is_compatible(rocon_uri_a, rocon_uri_b):
     '''
-      Checks if two rocon uri's are compatible.
+    Checks if two rocon uri's are compatible.
 
-      @param rocon_uri_a : a rocon uri in either string or RoconURI object format
-      @type str || RoconURI
+    :param rocon_uri_a: a rocon uri in either string or RoconURI object format.
+    :type rocon_uri_a: str or :class:`.RoconURI`
 
-      @param rocon_uri_b : a rocon uri in either string or RoconURI object format
-      @type str || RoconURI
+    :param rocon_uri_b: a rocon uri in either string or RoconURI object format.
+    :type rocon_uri_b: str or :class:`.RoconURI`
 
-      @return true if compatible, i.e. wildcards or intersections of fields are nonempty
-      @type bool
+    :returns: true if compatible, i.e. wildcards or intersections of fields are nonempty
+    :rtype: bool
 
-      :raises: :exc:`rocon_uri.RoconURIValueError,` if either rocon_uri string is not valid
+    :raises: :exc:`rocon_uri.exceptions.RoconURIValueError` if either rocon_uri string is not valid
 
-      @todo return the compatible rocon uri?
-      @todo tighten up the name pattern matching.
+    .. todo:: tighten up the name pattern matching
     '''
     try:  # python 2.7 (use basestring to get unicode objects)
         requires_conversion_a = isinstance(rocon_uri_a, basestring)
@@ -110,7 +120,7 @@ from weakref import WeakKeyDictionary
 
 
 class RoconURIField(object):
-    """A descriptor that does rule parsing on rocon uri field strings"""
+    # A python descriptor that does rule parsing on rocon uri field strings
 
     Value = namedtuple('RoconURIField', 'string list')
 
@@ -134,26 +144,48 @@ class RoconURIField(object):
 
 
 class RoconURI(object):
-    '''
-      A rocon uri container.
-    '''
+    """
+    Initialises from a rocon uri string parsing the relevant information into fields internally.
+    This class uses python decorators to establish the parsed fields into the following variables:
+
+    * hardware_platform
+    * name
+    * application_framework
+    * operating_system
+
+    Since each field can contain one or more values, each of these variables can return either a
+    string representation of the original field, or a list of the parsed field. e.g.
+
+    .. code-block:: python
+
+       >>> rocon_uri_object = rocon_uri.parse('rocon:/turtlebot2|pr2/dude/hydro/precise#rocon_apps/chirp')
+       >>> print rocon_uri_object.hardware_platform.list
+       ['turtlebot2', 'pr2']
+       >>> print rocon_uri_object.hardware_platform.string
+       turtlebot2|pr2
+    """
     # Can't use slots here if we wish to have weak references to this object (see the descriptor).
 
+    ####################
+    # Class Fields
+    ####################
     ebnf_rules = rules.load_ebnf_rules()
-    # These are descriptors - required to be defined in the class area and instantiated separately in __init__
-    hardware_platform     = RoconURIField("hardware_platform", ebnf_rules["hardware_platform"])  #@IgnorePep8
-    name                  = RoconURIField("name", ebnf_rules["name"])  #@IgnorePep8
-    application_framework = RoconURIField("application_framework", ebnf_rules["application_framework"])  #@IgnorePep8
-    operating_system      = RoconURIField("operating_system", ebnf_rules["operating_system"])  #@IgnorePep8
 
-    ##########################################################################
+    # These are descriptors - required to be defined in the class area and instantiated separately in __init__
+    hardware_platform     = RoconURIField("hardware_platform", ebnf_rules["hardware_platform"])          # noqa @IgnorePep8
+    name                  = RoconURIField("name", ebnf_rules["name"])                                    # noqa @IgnorePep8
+    application_framework = RoconURIField("application_framework", ebnf_rules["application_framework"])  # noqa @IgnorePep8
+    operating_system      = RoconURIField("operating_system", ebnf_rules["operating_system"])            # noqa @IgnorePep8
+
+    ####################
     # Initialisation
-    ##########################################################################
-    def __init__(self, rocon_uri_string="rocon://"):
+    ####################
+    def __init__(self, rocon_uri_string="rocon:/"):
         """
-          @param rocon_uri_string : a rocon uri in string format.
-          @type str
-          @raise RoconURIValueError
+        Initialise the rocon uri object from a rocon uri string.
+
+        :param str rocon_uri_string: a rocon uri in string format.
+        :raises: :exc:`rocon_uri.exceptions.RoconURIValueError` if either rocon_uri string is not valid
         """
         parsed_url = urlparse.urlparse(rocon_uri_string)
         if parsed_url.scheme != 'rocon':

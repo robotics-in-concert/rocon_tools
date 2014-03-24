@@ -12,10 +12,12 @@
 # serve to show the default.
 
 import sys, os
-from catkin_pkg.packages import find_packages
+import catkin_pkg.package
 
+# a more general solution for getting the path:
+#     roslib.packages.get_pkg_dir('rocon_uri')
 catkin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-catkin_package = find_packages(catkin_dir).values()[0]
+catkin_package = catkin_pkg.package.parse_package(os.path.join(catkin_dir, catkin_pkg.package.PACKAGE_MANIFEST_FILENAME))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -95,7 +97,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'nature'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -248,3 +250,8 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+
+# -- Extensions ------------------------------------------------
+
+[extensions]
+todo_include_todos=True

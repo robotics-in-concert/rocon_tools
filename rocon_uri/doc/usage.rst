@@ -1,12 +1,10 @@
 Usage
 =====
 
-.. note:: In general, store, pass around and manipulate rocon uri's as strings. Create
-          :class:`rocon_uri.uri.RoconURI` objects only as needed when you need to identify
-          individual elements of the uri or or you need to do comparisons.
-          
-This is a convention generally followed by urllib as well and is easiest in practice. Using the
-rocon uri api is quite straight forward.
+In general, store, pass around and manipulate rocon uri's as strings. Create
+:class:`rocon_uri.uri.RoconURI` objects only as needed when you need to identify
+individual elements of the uri or or you need to do comparisons.
+This is a convention generally followed by urllib as well and is easiest in practice.
 
 Parsing
 -------

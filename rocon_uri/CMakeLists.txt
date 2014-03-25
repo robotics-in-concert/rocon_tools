@@ -18,6 +18,8 @@ catkin_python_setup()
 # Installs
 ##############################################################################
 
+install(DIRECTORY yaml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
 #install(
 #    PROGRAMS 
 #        scripts/rospair

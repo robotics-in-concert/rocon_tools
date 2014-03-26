@@ -383,7 +383,7 @@ class _RpTerminal:
         ##############################
         # Previously had this in a 'if term.isalnum():' scope, but that
         # eliminates underscores
-        m=re.match(r'([A-Z0-9_]*)([a-z0-9_]*)',term)
+        m=re.match(r'([A-Za-z0-9_]*)',term)
         if m!=None:
             term=term.upper()
             min=len(m.group(1))

@@ -44,9 +44,9 @@ def test_qt_apps():
 
     interactions_table = rocon_interactions.InteractionsTable()
     raised_exception = False
-    msg_interactions = load_interactions('rocon_interactions/ros')
-    assert msg_interactions is not None, 'malformed yaml [rocon_interactions/ros]'
-    msg_interactions = assign_namespace('/ros', msg_interactions)
+    msg_interactions = load_interactions('rocon_interactions/pc')
+    assert msg_interactions is not None, 'malformed yaml [rocon_interactions/pc]'
+    msg_interactions = assign_namespace('/pc', msg_interactions)
     interactions_table.load(msg_interactions)
     print("%s" % interactions_table)
     assert 'PC' in interactions_table.roles()

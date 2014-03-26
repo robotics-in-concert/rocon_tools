@@ -137,9 +137,11 @@ class RoconURIField(object):
     def __set__(self, instance, new_field):
         try:
             match_result = rule_parser.match(self.rules, new_field)
+            #for rule in self.rules:
+            #    print("  %s" % rule)
             self.field[instance] = new_field
             self.field_list[instance] = getattr(match_result, self.field_name + "_list")
-        except AttributeError:  # result of match is None
+        except AttributeError:  # result of getattr when it fails, in this case, typically when the match is None
             raise RoconURIValueError("%s specification is invalid [%s]" % (self.field_name, new_field))
 
 

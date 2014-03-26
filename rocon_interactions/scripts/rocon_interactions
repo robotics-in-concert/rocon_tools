@@ -40,7 +40,7 @@ if __name__ == '__main__':
     except rocon_python_comms.NotFoundException as e:
         print(console.red +
               "failed to find unique service of type 'rocon_interaction_msgs/GetInteractions' [%s]" %
-              str(e))
+              str(e) + console.reset)
         sys.exit(1)
     get_interactions = rospy.ServiceProxy(service_name, interaction_srvs.GetInteractions)
     request = interaction_srvs.GetInteractionsRequest(roles=[], uri=rocon_uri.default_uri_string)

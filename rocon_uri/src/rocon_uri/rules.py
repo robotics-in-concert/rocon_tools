@@ -73,6 +73,10 @@ def walk_yaml_rules(name, root=None):
             groups.update(element)
         else:
             elements.append(element)
+    # Make sure the elements are in reverse order so when ebnf rule matching happens
+    # turtlebot2 tries to match before turtlebot
+    #   https://github.com/robotics-in-concert/rocon_tools/issues/17
+    elements.sort(reverse=True)
     #print("  Groups: %s" % groups.keys())
     #print("  Elements: %s" % elements)
     yield (name, groups.keys(), elements)

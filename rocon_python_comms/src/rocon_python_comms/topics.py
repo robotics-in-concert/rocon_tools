@@ -41,7 +41,9 @@ def find_topic(topic_type, timeout=rospy.rostime.Duration(5.0), unique=False):
     topic_name = None
     topic_names = []
     timeout_time = time.time() + timeout.to_sec()
+    print("Timeout time: %s" % timeout_time)
     while not rospy.is_shutdown() and time.time() < timeout_time and not topic_names:
+        print("Time: %s" % time.time())
         try:
             topic_names = rostopic.find_by_type(topic_type)
         except rostopic.ROSTopicException:
@@ -51,8 +53,9 @@ def find_topic(topic_type, timeout=rospy.rostime.Duration(5.0), unique=False):
                 raise NotFoundException("multiple topics found %s." % topic_names)
             elif len(topic_names) == 1:
                 topic_name = topic_names[0]
+        print("  Topic Names: %s" % topic_names)
         if not topic_names:
             rospy.rostime.wallsleep(0.1)
-    if topic_name is None:
+    if not topic_names:
         raise NotFoundException("timed out")
     return topic_name

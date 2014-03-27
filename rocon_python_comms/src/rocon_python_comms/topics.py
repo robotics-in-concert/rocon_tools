@@ -36,7 +36,7 @@ def find_topic(topic_type, timeout=rospy.rostime.Duration(5.0), unique=False):
       @return the fully resolved name of the topic (unique) or list of names (non-unique)
       @type str
 
-      @raise rocon_python_comms.NotFoundException
+      @raise rocon_python_comms.NotFoundException if no topic is found within the timeout
     '''
     topic_name = None
     topic_names = []
@@ -53,6 +53,6 @@ def find_topic(topic_type, timeout=rospy.rostime.Duration(5.0), unique=False):
                 topic_name = topic_names[0]
         if not topic_names:
             rospy.rostime.wallsleep(0.1)
-    if topic_name is None:
+    if not topic_names:
         raise NotFoundException("timed out")
-    return topic_name
+    return topic_name if topic_name else topic_names

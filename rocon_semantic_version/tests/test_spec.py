@@ -7,7 +7,7 @@
 
 from .compat import unittest, is_python2
 
-import semantic_version
+import rocon_semantic_version as semantic_version
 
 # shortcut
 Version = semantic_version.Version

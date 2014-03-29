@@ -1,0 +1,13 @@
+<!--
+    Single-master demo. 
+ -->
+ <concert>
+  <arg name="topic_name" default="chatter"/>
+
+  <launch package="rocon_launch" name="talker.xml" port="11311">
+    <arg name="topic_name" value="$(arg topic_name)"/>
+  </launch>
+  <launch package="rocon_launch" name="listener.xml" port="11311">
+    <arg name="topic_name" value="$(arg topic_name)"/>
+  </launch>
+</concert>

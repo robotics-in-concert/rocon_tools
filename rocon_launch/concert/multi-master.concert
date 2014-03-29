@@ -1,0 +1,11 @@
+<!--
+    Multi-master demo. 
+ -->
+ <concert>
+  <launch package="rocon_launch" name="talker.xml" port="11311">
+    <arg name="topic_name" value="babbler"/>
+  </launch>
+  <launch package="rocon_launch" name="talker.xml" port="11312">
+    <arg name="topic_name" value="chatter"/>
+  </launch>
+</concert>

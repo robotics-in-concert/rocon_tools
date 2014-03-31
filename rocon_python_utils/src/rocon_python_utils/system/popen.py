@@ -25,14 +25,16 @@ class Popen(object):
       terminating whole process groups (something we do quite often in ros).
     '''
     __slots__ = [
+            'pid',
             '_proc',
             '_thread',
             '_external_preexec_fn',
             '_shell',
+            '_env',
             'terminate'
         ]
 
-    def __init__(self, popen_args, shell=False, preexec_fn=None, postexec_fn=None):
+    def __init__(self, popen_args, shell=False, preexec_fn=None, postexec_fn=None, env=None):
         '''
           @param popen_args : list/tuple of usual popen args
           @type list/tuple
@@ -45,9 +47,13 @@ class Popen(object):
 
           @param postexec_fn : the callback which we support for postexec.
           @type method with no args
+
+          :param env dict: a customised environment to run the process in.
         '''
+        self.pid = None
         self._proc = None
         self._shell = shell
+        self._env = env
         self._external_preexec_fn = preexec_fn
         self._thread = threading.Thread(target=self._run_in_thread, args=(popen_args, self._preexec_fn, postexec_fn))
         self._thread.start()
@@ -77,12 +83,13 @@ class Popen(object):
         if preexec_fn is not None:
             if self._shell == True:
                 #print("rocon_python_utils.os.Popen: %s" % " ".join(popen_args))
-                self._proc = subprocess.Popen(" ".join(popen_args), shell=True, preexec_fn=preexec_fn)
+                self._proc = subprocess.Popen(" ".join(popen_args), shell=True, preexec_fn=preexec_fn, env=self._env)
             else:
                 #print("rocon_python_utils.os..Popen: %s" % popen_args)
-                self._proc = subprocess.Popen(popen_args, shell=self._shell, preexec_fn=preexec_fn)
+                self._proc = subprocess.Popen(popen_args, shell=self._shell, preexec_fn=preexec_fn, env=self._env)
         else:
-            self._proc = subprocess.Popen(popen_args, shell=self._shell)
+            self._proc = subprocess.Popen(popen_args, shell=self._shell, env=self._env)
+        self.pid = self._proc.pid
         self._proc.wait()
         if postexec_fn is not None:
             postexec_fn()

@@ -6,4 +6,4 @@
 # Imports
 ##############################################################################
 
-from launch import main as launch, parse_rocon_launcher
+from .launch import main as launch, parse_rocon_launcher, get_roslaunch_pids

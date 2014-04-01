@@ -90,8 +90,8 @@ def signal_handler(sig, frame):
             pass  # this happens when you ctrl-c again instead of enter
     # now kill konsoles
     for p in processes:
-        #os.killpg(p.pid, signal.SIGTERM)
-        p.terminate()
+        os.killpg(p.pid, signal.SIGTERM)
+        #p.terminate()
 
 
 def _process_arg_tag(tag, args_dict=None):

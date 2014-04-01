@@ -15,6 +15,9 @@
 
   <build_depend>python-catkin-pkg</build_depend>
   <build_depend>roslint</build_depend>
+  <build_depend>rostest</build_depend> <!-- testing only -->
+
+  <test_depend>rosunit</test_depend>
 
   <run_depend>genpy</run_depend>
   <run_depend>python-rospkg</run_depend>

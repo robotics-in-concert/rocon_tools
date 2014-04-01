@@ -6,8 +6,8 @@ In general, store, pass around and manipulate rocon uri's as strings. Create
 individual elements of the uri or or you need to do comparisons.
 This is a convention generally followed by urllib as well and is easiest in practice.
 
-Parsing
--------
+Parsing w/ Python Module
+------------------------
 
 To create/validate a rocon uri object, simply pass in the rocon uri string(s) to the parser and
 access via the specialised descriptors:
@@ -35,8 +35,8 @@ any of the primary fields stored by a :class:`RoconURI <rocon_uri.uri.RoconURI>`
 
 The fragment part (rapp) does not follow the same rule and can be more simply accessed directly as shown.
 
-Compatibility
--------------
+Compatibility Testing w/ Python Module
+--------------------------------------
 
 Compatibility between two rocon uri strings is often used to determine if an application is runnable on
 a particular platform, or to compare whether a particular resource (e.g. robot) is able to satisfy
@@ -51,8 +51,22 @@ a resource request from a rocon service:
    except rocon_uri.RoconURIValueError as e:
        print("Invalid rocon uri string(s) passed [%s]" % str(e))
 
-Test Examples
--------------
+Command Line Tools
+------------------
+
+There is a *rocon_uri* command line tool which can help introspect rocon uri strings while offline.::
+
+    > rocon_uri help
+    
+    Utility for introspecting on rocon uri strings.
+    
+    Commands:
+            rocon_uri parse URI     parse and attempt to validate a rocon URI.
+            rocon_uri fields        print a full list of permitted fields in a rocon uri string.
+            rocon_uri rules         print a full list of the ebnf rules for a rocon uri string.
+
+Unit Test Examples
+------------------
 
 A more complete list of examples which may be useful to refer to can be found in the exhaustive list of
 unit test cases:

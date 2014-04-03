@@ -41,7 +41,7 @@ class RoconMaster(object):
 
     def _setup_ros_parameters(self):
         '''
-          Parameters that are configurable (over-ridable) are currently set via args in the
+          Parameters that are configurable (overridable) are currently set via args in the
           concert master launcher where they are published as parameters. We grab those here.
 
           Parameters that are fixed (not configurable), we set here so we can access the message
@@ -51,5 +51,8 @@ class RoconMaster(object):
         param['name'] = rospy.get_param('name', 'Cybernetic Pirate')
         param['icon'] = rospy.get_param('icon', 'rocon_icons/cybernetic_pirate.png')
         param['description'] = rospy.get_param('description', 'A rocon system.')
+        # a local version
         rospy.set_param('version', rocon_std_msgs.Strings.ROCON_VERSION)
+        # and a global version (useful as a ping to check for a rocon master (e.g. by androids)
+        rospy.set_param('/rocon/version', rocon_std_msgs.Strings.ROCON_VERSION)
         return param

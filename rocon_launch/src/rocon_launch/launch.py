@@ -121,7 +121,7 @@ def _process_arg_tag(tag, args_dict=None):
     return (name, value)
 
 
-def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mappings):
+def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mappings={}):
     '''
       Parses an rocon multi-launcher (xml file).
 

@@ -202,9 +202,9 @@ class InteractionsManager(object):
         return response
 
     def _ros_service_get_roles(self, request):
-        rocon_uri = request.uri if request.uri != '' else 'rocon:/'
+        uri = request.uri if request.uri != '' else 'rocon:/'
         try:
-            filtered_interactions = self.interactions_table.filter([], request.uri)
+            filtered_interactions = self.interactions_table.filter([], uri)
         except rocon_uri.RoconURIValueError as e:
             rospy.logerr("Interactions : received request for roles to be filtered by an invalid rocon uri [%s][%s]" % (rocon_uri, str(e)))
             filtered_interactions = []

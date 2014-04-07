@@ -43,6 +43,7 @@
       - quantal
       - raring
       - saucy
+      - trusty
   - osx
   - freebsd
   - android:

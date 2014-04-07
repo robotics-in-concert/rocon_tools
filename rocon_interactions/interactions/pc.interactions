@@ -4,14 +4,14 @@
 
 - name: rocon_master_info
   role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/*
+  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Rocon Master Info (Direct Executable)
   description: Generic information about this master.
   max: -1
 
 - name: rqt_graph/rqt_graph
   role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/*
+  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Rqt Graph (Ros Runnable)
   description: Graph of all topics and services in the concert workspace.
   max: -1
@@ -20,7 +20,7 @@
 
 - name: rocon_interactions/rviz.launch
   role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/*
+  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Rviz Markers (Launcher)
   description: Rviz with a view exactly configured for the rocon_interactions tutorial.
   max: -1

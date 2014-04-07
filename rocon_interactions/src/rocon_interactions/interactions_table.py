@@ -81,6 +81,8 @@ class InteractionsTable(object):
 
           @return interactions : subset of all interactions that survived the filter
           @rtype interactions.Interactions[]
+
+          @raise RoconURIValueError
         '''
         if roles:   # works for classifying non-empty list vs either of None or empty list
             role_filtered_interactions = [i for i in self.interactions if i.role in roles]

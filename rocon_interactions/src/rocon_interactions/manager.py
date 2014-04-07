@@ -13,6 +13,7 @@ import rosgraph
 import unique_id
 import rocon_interaction_msgs.msg as interaction_msgs
 import rocon_interaction_msgs.srv as interaction_srvs
+import rocon_uri
 
 from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
@@ -188,9 +189,13 @@ class InteractionsManager(object):
         if request.roles:  # works for None or empty list
             unavailable_roles = [x for x in request.roles if x not in self.interactions_table.roles()]
             for role in unavailable_roles:
-                rospy.logwarn("Interactions : received request for interactions of an unregistered role [%s]" % role)
+                rospy.logerr("Interactions : received request for interactions of an unregistered role [%s]" % role)
 
-        filtered_interactions = self.interactions_table.filter(request.roles, request.uri)
+        try:
+            filtered_interactions = self.interactions_table.filter(request.roles, request.uri)
+        except rocon_uri.RoconURIValueError as e:
+            rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri [%s][%s]" % (request.uri, str(e)))
+            filtered_interactions = []
         for i in filtered_interactions:
             response.interactions.append(i.msg)
         return response

@@ -230,49 +230,26 @@ class InteractionsManager(object):
         response = interaction_srvs.RequestInteractionResponse()
         response.result = True
         response.error_code = interaction_msgs.ErrorCodes.SUCCESS
-        maximum_quota = None
         interaction = self.interactions_table.find(request.hash)
+        # for interaction in self.interactions_table.interactions:
+        #     rospy.logwarn("Interactions:   [%s][%s][%s]" % (interaction.name, interaction.hash, interaction.max))
         if interaction is not None:
-            if interaction.max == 0:
+            if interaction.max == interaction_msgs.Interaction.UNLIMITED_INTERACTIONS:
                 return response
             else:
-                maximum_quota = interaction.max
                 count = 0
                 for remocon_monitor in self._remocon_monitors.values():
                     if remocon_monitor.status is not None and remocon_monitor.status.running_app:
                         # Todo this is a weak check as it is not necessarily uniquely identifying the app
-                        # Todo - reintegrate this
+                        # Todo - reintegrate this using full interaction variable instead
                         pass
                         #if remocon_monitor.status.app_name == request.application:
                         #    count += 1
-                if count < max:
+                if count < interaction.max:
                     return response
                 else:
                     response.error_code = interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED
                     response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED
-        else:
-            response.error_code = interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE
-            response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE
-        if request.role in self.role_and_app_table.keys():
-            for app in self.role_and_app_table[request.role]:  # app is interaction_msgs.RemoconApp
-                if app.name == request.application and app.namespace == request.namespace:
-                    if app.max == 0:
-                        return response
-                    else:
-                        maximum_quota = app.max
-                        break
-        if maximum_quota is not None:
-            count = 0
-            for remocon_monitor in self._remocon_monitors.values():
-                if remocon_monitor.status is not None and remocon_monitor.status.running_app:
-                    # Todo this is a weak check as it is not necessarily uniquely identifying the app
-                    if remocon_monitor.status.app_name == request.application:
-                        count += 1
-            if count < max:
-                return response
-            else:
-                response.error_code = interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED
-                response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED
         else:
             response.error_code = interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE
             response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE

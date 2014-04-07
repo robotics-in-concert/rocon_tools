@@ -65,7 +65,6 @@ class InteractionsManager(object):
                 for i in invalid_interactions:
                     rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" %
                                   (i.display_name, i.name, i.role, i.namespace))
-                self._publish_roles()
             except YamlResourceNotFoundException as e:
                 rospy.logerr("Interactions : failed to load resource %s [%s]" %
                              (resource_name, str(e)))
@@ -111,7 +110,6 @@ class InteractionsManager(object):
           namespace.
         '''
         publishers = {}
-        publishers['roles'] = rospy.Publisher('~roles', interaction_msgs.Roles, latch=True)
         publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
                                                             interaction_msgs.InteractiveClients,
                                                             latch=True)
@@ -123,6 +121,9 @@ class InteractionsManager(object):
           namespace.
         '''
         services = {}
+        services['get_roles'] = rospy.Service('~get_roles',
+                                                     interaction_srvs.GetRoles,
+                                                     self._ros_service_get_roles)
         services['get_interactions'] = rospy.Service('~get_interactions',
                                                      interaction_srvs.GetInteractions,
                                                      self._ros_service_get_interactions)
@@ -200,6 +201,19 @@ class InteractionsManager(object):
             response.interactions.append(i.msg)
         return response
 
+    def _ros_service_get_roles(self, request):
+        rocon_uri = request.uri if request.uri != '' else 'rocon:/'
+        try:
+            filtered_interactions = self.interactions_table.filter([], request.uri)
+        except rocon_uri.RoconURIValueError as e:
+            rospy.logerr("Interactions : received request for roles to be filtered by an invalid rocon uri [%s][%s]" % (rocon_uri, str(e)))
+            filtered_interactions = []
+        role_list = list(set([i.role for i in filtered_interactions]))
+        role_list.sort()
+        response = interaction_srvs.GetRolesResponse()
+        response.roles = role_list
+        return response
+
     def _ros_service_set_interactions(self, request):
         '''
           Add or remove interactions from the interactions table.
@@ -223,9 +237,6 @@ class InteractionsManager(object):
             removed_interactions = self.interactions_table.unload(request.interactions)
             for i in removed_interactions:
                 rospy.loginfo("Interactions : unloading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
-        # could check explicitly if roles were added/removed, but this isn't called often, so it's not expensive
-        # just to republish the list (so long as nothing is assuming there HAS to be state changes this is ok.
-        self._publish_roles()
         # send response
         response = interaction_srvs.SetInteractionsResponse()
         response.result = True
@@ -262,16 +273,8 @@ class InteractionsManager(object):
         return response
 
     ##########################################################################
-    # Utiliity functions
+    # Utility functions
     ##########################################################################
-
-    def _publish_roles(self):
-        '''
-          Convenience function for publishing roles
-        '''
-        msg = interaction_msgs.Roles()
-        msg.list = self.interactions_table.roles()
-        self.publishers['roles'].publish(msg)
 
     def _bind_dynamic_symbols(self, interactions):
         '''

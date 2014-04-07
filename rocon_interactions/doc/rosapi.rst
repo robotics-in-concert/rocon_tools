@@ -10,7 +10,6 @@ Published Topics
 
  * ``info`` (`rocon_std_msgs`_/MasterInfo) : indirectly used via `rocon_master_info`_ to publish the interaction master's details to remocons, latched.
  * ``~interactive_clients`` (`rocon_interaction_msgs`_/InteractiveClients) : introspect the list of connected remocons, latched.
- * ``~roles`` (`rocon_interaction_msgs`_/Roles) : introspect the currently loaded roles.
 
 Services
 --------
@@ -18,6 +17,7 @@ Services
  * ``~get_interaction`` (`rocon_interaction_msgs`_/GetInteraction) : used by the android headless launcher to get a single interactions details by hash.
  * ``~get_interactions`` (`rocon_interaction_msgs`_/GetInteractions) : used by all remocons to get a filtered set of compatible interactions by role and `rocon_uri`_.
  * ``~set_interactions`` (`rocon_interaction_msgs`_/SetInteractions) : used to load and unload interactions on the interaction manager node.
+ * ``~get_roles`` (`rocon_interaction_msgs`_/GetRoles) : introspect the currently loaded roles filtered by a rocon uri ('' or 'rocon:/' to get all).
 
 .. _`rocon_interaction_msgs`: http://wiki.ros.org/rocon_interaction_msgs
 .. _`rocon_master_info`: http://wiki.ros.org/rocon_master_info

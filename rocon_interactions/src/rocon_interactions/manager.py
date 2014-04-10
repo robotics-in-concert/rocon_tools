@@ -172,7 +172,7 @@ class InteractionsManager(object):
           Handle incoming requests for a single app.
         '''
         response = interaction_srvs.GetInteractionResponse()
-        response.interaction = self.interactions_table.find(request.hash)
+        response.interaction = self.interactions_table.find(request.hash).msg
         response.result = False if response.interaction is None else True
         return response
 

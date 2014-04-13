@@ -21,7 +21,7 @@ Contents:
    rosapi
    specification
    modules
-   CHANGELOG
+   ../CHANGELOG
 
 
 

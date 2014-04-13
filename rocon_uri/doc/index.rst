@@ -34,7 +34,7 @@ Contents:
    rules
    usage
    modules
-   CHANGELOG
+   ../CHANGELOG
 
 Indices and tables
 ==================

@@ -47,9 +47,9 @@ the same value as for empty or wildcarded fields.
 
 * **Or Operator '|'**
 
-The *harware_platform*, *name*, *application_framework* and *operating_system* fields all support the
+The *harware_platform*, *application_framework* and *operating_system* fields all support the
 use of the or operator in which several values can be specified together. This can be used for instance,
-to define several platforms that a rocon app is permitted to run on. 
+to define several platforms that a rocon app is permitted to run on. The Or operator is not valid for the *name* field.
 
 * **Regex Patterns**
 

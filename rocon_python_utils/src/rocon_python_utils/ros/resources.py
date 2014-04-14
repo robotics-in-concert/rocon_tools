@@ -103,7 +103,7 @@ def resource_index_from_package_exports(export_tag, package_paths=None, package_
                 if not os.path.isfile(resource_filename):
                     invalid_resources[resource_name] = resource_filename
                 else:
-                    resources[resource_name] = resource_filename
+                    resources[resource_name] = (resource_filename, package)
     return (resources, invalid_resources)
 
 

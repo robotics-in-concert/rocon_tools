@@ -11,6 +11,8 @@ import argparse
 import sys
 import rospy
 import rocon_master_info
+import os
+import rocon_console.console as console
 
 ##############################################################################
 # Functions
@@ -18,7 +20,9 @@ import rocon_master_info
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='View master information details.')
+    parser = argparse.ArgumentParser(description='View master information details.\n\nThis command will defer \
+             to the rqt plugin if available, otherwise it will simply print details to the console.')
+    parser.add_argument('-c', '--console', action='store_true', help='force output to the console only')
     myargs = rospy.myargv(argv=sys.argv)
     return parser.parse_args(args=myargs[1:])
 
@@ -28,5 +32,21 @@ def parse_arguments():
 ##############################################################################
 
 if __name__ == '__main__':
-    parse_arguments()
-    rocon_master_info.main('master_info', 'Master Information')
+    args = parse_arguments()
+    display_available = True if 'DISPLAY' in os.environ.keys() else False
+    try:
+        import rocon_qt_master_info
+        from rqt_gui.main import Main
+        qt_available = True
+    except ImportError:
+        qt_available = False
+        if display_available and not args.console:
+            print(console.red + "WARNING: rqt plugin not found, console output only (hint: install rocon_qt_master_info)." + console.reset)
+
+    if args.console or not display_available or not qt_available:
+        rocon_master_info.main('master_info', 'Master Information')
+    else:
+        # Just use our simple pyqt widget instead of calling on rqt right now.
+        rocon_master_info.main('master_info', 'Master Information')
+        #main = Main()
+        #sys.exit(main.main(argv=sys.argv, standalone='rocon_qt_master_info'))

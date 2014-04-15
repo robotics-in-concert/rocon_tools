@@ -6,6 +6,7 @@
 # Imports
 ##############################################################################
 
+import os
 import sys
 import rospy
 import rocon_python_comms
@@ -18,10 +19,12 @@ import rocon_std_msgs.msg as rocon_std_msgs
 ##############################################################################
 
 
-def get_master_info():
+def get_master_info(timeout=1.0):
     '''
       Tries to gather the rocon master info but if not available, return
       with useful information explaining that it could not be found.
+
+      :param double timeout: how long to blather around looking for the master info topic.
 
       :return master_info: a rocon_std_msgs.MasterInfo() object
     '''
@@ -33,10 +36,10 @@ def get_master_info():
     master_info.icon = rocon_python_utils.ros.icon_resource_to_msg('rocon_icons/unknown.png')
 
     try:
-        topic_name = rocon_python_comms.find_topic('rocon_std_msgs/MasterInfo', timeout=rospy.rostime.Duration(2.0), unique=True)
+        topic_name = rocon_python_comms.find_topic('rocon_std_msgs/MasterInfo', timeout=rospy.rostime.Duration(timeout), unique=True)
     except rocon_python_comms.NotFoundException as e:
         print(console.red + "failed to find unique topic of type 'rocon_std_msgs/MasterInfo' [%s]" % str(e) + console.reset)
-        master_info.description = "Unknown - is it rocon enabled (http://wiki.ros.org/rocon_master_info)?"
+        master_info.description = "Is it rocon enabled? See http://wiki.ros.org/rocon_master_info"
         return master_info
 
     master_info_proxy = rocon_python_comms.SubscriberProxy(topic_name, rocon_std_msgs.MasterInfo)
@@ -60,12 +63,14 @@ qt_available = True
 
 try:
     import signal
-    from PyQt4 import QtGui, QtCore
+    from python_qt_binding.QtGui import QWidget, QPixmap, QLabel, QIcon, QCursor, QApplication
+    from python_qt_binding.QtCore import Qt
 
-    class Window(QtGui.QWidget):
+    class Window(QWidget):
 
-        def __init__(self, name, description, version, icon):
+        def __init__(self, title, name, description, version, icon):
             super(Window, self).__init__()
+            self._title = title
             self._description = description
             self._icon = icon
             self._name = name
@@ -73,25 +78,25 @@ try:
             self.initUI()
 
         def initUI(self):
-            pixmap = QtGui.QPixmap(self._icon)
-            self.pic = QtGui.QLabel(self)
+            pixmap = QPixmap(self._icon)
+            self.pic = QLabel(self)
             self.pic.setPixmap(pixmap)
             self.pic.resize(pixmap.width(), pixmap.height())
             #self.pic.setGeometry(10, 10, pixmap.width(), pixmap.height())
 
-            self.text = QtGui.QLabel(self)
+            self.text = QLabel(self)
             self.text.resize(200, pixmap.height())
             self.text.move(pixmap.width() + 10, 0)
             self.text.setText("<b>Name:</b> %s<br/><b>Rocon Version:</b> %s<br/><b>Description:</b> %s" % (self._name, self._version, self._description))
             self.text.setWordWrap(True)
-            self.text.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            self.text.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
-            self.setWindowTitle(self._name)
-            self.setWindowIcon(QtGui.QIcon(self._icon))
+            self.setWindowTitle(self._title)
+            self.setWindowIcon(QIcon(self._icon))
             self.putUnderMouse()
 
         def putUnderMouse(self):
-            mouse = QtGui.QCursor.pos()
+            mouse = QCursor.pos()
             self.move(mouse.x() - (210 + self.pic.geometry().width()) / 2,
                         mouse.y() - (self.pic.geometry().height()) / 2)
 
@@ -110,6 +115,7 @@ def main(node_name='master_info', title='Master Information'):
 
     rospy.init_node(node_name)
     master_info = get_master_info()
+    display_available = True if 'DISPLAY' in os.environ.keys() else False
 
     console.pretty_println(title, console.bold)
     print(console.cyan + "  Name       : " + console.yellow + master_info.name + console.reset)
@@ -117,10 +123,10 @@ def main(node_name='master_info', title='Master Information'):
     print(console.cyan + "  Icon       : " + console.yellow + master_info.icon.resource_name + console.reset)
     print(console.cyan + "  Version    : " + console.yellow + master_info.version + console.reset)
 
-    if qt_available:
+    if qt_available and display_available:
         icon = rocon_python_utils.ros.find_resource_from_string(master_info.icon.resource_name)
         signal.signal(signal.SIGINT, signal.SIG_DFL)  # make sure this comes after the rospy call, otherwise it will handle signals.
-        app = QtGui.QApplication(sys.argv)
-        window = Window(master_info.name, master_info.description, master_info.version, icon)
+        app = QApplication(sys.argv)
+        window = Window(title, master_info.name, master_info.description, master_info.version, icon)
         window.show()
         sys.exit(app.exec_())

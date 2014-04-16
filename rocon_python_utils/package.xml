@@ -1,6 +1,6 @@
 <package>
   <name>rocon_python_utils</name>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <description>
     Python system and ros utilities.
   </description>

@@ -1,6 +1,10 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rocon_interactions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog
+=========
+
+0.1.4 (2014-04-16)
+------------------
+* fix get interaction callback, return the msg, not the class, fixes `#24 <https://github.com/robotics-in-concert/rocon_tools/issues/24>`_
+* Contributors: Daniel Stonier
 
 0.1.3 (2014-04-09)
 ------------------

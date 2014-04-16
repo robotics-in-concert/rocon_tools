@@ -1,6 +1,13 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rocon_uri
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog
+=========
+
+0.1.4 (2014-04-16)
+------------------
+* rocon_uri parse provide all parsed information
+* rocon_uri parse provide all parsed information
+* description fix
+* don't need to link the changelogs.
+* Contributors: Daniel Stonier, Jihoon Lee
 
 0.1.3 (2014-04-09)
 ------------------

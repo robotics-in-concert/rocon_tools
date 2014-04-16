@@ -1,6 +1,6 @@
 <package>
   <name>rocon_python_redis</name>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <description>
     Locally patched version of the python redis client.  </description>
   <maintainer email="d.stonier@gmail.com">Daniel Stonier</maintainer>

@@ -1,6 +1,10 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rocon_python_utils
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog
+=========
+
+0.1.4 (2014-04-16)
+------------------
+* Store rapps catkin package information
+* Contributors: Esteve Fernandez
 
 0.1.1 (2014-04-01)
 ------------------

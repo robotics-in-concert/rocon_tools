@@ -1,6 +1,12 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rocon_master_info
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog
+=========
+
+0.1.4 (2014-04-16)
+------------------
+* move master info code to a common spot
+* better handling of qt, display, console output of master info scripts.
+* modularising the master info retrieval script.
+* Contributors: Daniel Stonier
 
 0.1.3 (2014-04-09)
 ------------------

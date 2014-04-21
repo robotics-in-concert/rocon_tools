@@ -38,7 +38,7 @@ def get_master_info(timeout=1.0):
     try:
         topic_name = rocon_python_comms.find_topic('rocon_std_msgs/MasterInfo', timeout=rospy.rostime.Duration(timeout), unique=True)
     except rocon_python_comms.NotFoundException as e:
-        print(console.red + "failed to find unique topic of type 'rocon_std_msgs/MasterInfo' [%s]" % str(e) + console.reset)
+        print(rocon_console.red + "failed to find unique topic of type 'rocon_std_msgs/MasterInfo' [%s]" % str(e) + rocon_console.reset)
         master_info.description = "Is it rocon enabled? See http://wiki.ros.org/rocon_master_info"
         return master_info
 

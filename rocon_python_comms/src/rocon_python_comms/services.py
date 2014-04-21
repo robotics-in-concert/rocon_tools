@@ -54,6 +54,6 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
                 service_name = service_names[0]
         if not service_names:
             rospy.rostime.wallsleep(0.1)
-    if service_name is None:
+    if not service_names:
         raise NotFoundException("timed out")
-    return service_name
+    return service_name if service_name else service_names

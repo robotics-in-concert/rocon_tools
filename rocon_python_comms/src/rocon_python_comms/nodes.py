@@ -14,13 +14,14 @@ def find_node(wanted_node_name, unique=False):
       This will raise exceptions, if the node couldn't be found
       or in case unique is set multiple nodes with the same name are found.
 
-      @param wanted_node_name : name of the node looked for
-      @type str
+      :param wanted_node_name str: unresolved name of the node looked for (e.g. 'gateway', not '/concert/gateway')
 
-      @return the fully resolved name of the node (unique) or list of fully resolved names (non-unique)
-      @type str
+      :returns: the fully resolved name of the node (unique) or list of fully resolved names (non-unique)
+      :rtype: str
 
-      @raise rocon_python_comms.NotFoundException
+      :raises: rocon_python_comms.NotFoundException
+
+      :todo: accept resolved names -> https://github.com/robotics-in-concert/rocon_tools/issues/30
     '''
     available_nodes = rosnode.get_node_names()
     found_nodes = []

@@ -36,7 +36,8 @@ def parse(interaction):
     web_app_without_quotes = (WebInteraction.WEB_APP, re.compile(r"web_app\((.+)\)"))
     web_url_with_quotes = (WebInteraction.WEB_URL, re.compile(r"web_url\(\"(.+)\"\)"))
     web_url_without_quotes = (WebInteraction.WEB_URL, re.compile(r"web_url\((.+)\)"))
-    for (web_interaction_type, compiled_regular_expression) in [web_app_with_quotes, web_app_without_quotes, web_url_with_quotes, web_url_without_quotes]:
+    for (web_interaction_type, compiled_regular_expression) in [
+            web_app_with_quotes, web_app_without_quotes, web_url_with_quotes, web_url_without_quotes]:
         result = compiled_regular_expression.match(interaction)
         if result:
             return WebInteraction(web_interaction_type, result.group(1))

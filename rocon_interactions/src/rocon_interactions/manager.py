@@ -122,8 +122,8 @@ class InteractionsManager(object):
         '''
         services = {}
         services['get_roles'] = rospy.Service('~get_roles',
-                                                     interaction_srvs.GetRoles,
-                                                     self._ros_service_get_roles)
+                                              interaction_srvs.GetRoles,
+                                              self._ros_service_get_roles)
         services['get_interactions'] = rospy.Service('~get_interactions',
                                                      interaction_srvs.GetInteractions,
                                                      self._ros_service_get_interactions)
@@ -195,7 +195,8 @@ class InteractionsManager(object):
         try:
             filtered_interactions = self.interactions_table.filter(request.roles, request.uri)
         except rocon_uri.RoconURIValueError as e:
-            rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri [%s][%s]" % (request.uri, str(e)))
+            rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri"
+                         " [%s][%s]" % (request.uri, str(e)))
             filtered_interactions = []
         for i in filtered_interactions:
             response.interactions.append(i.msg)
@@ -206,7 +207,8 @@ class InteractionsManager(object):
         try:
             filtered_interactions = self.interactions_table.filter([], uri)
         except rocon_uri.RoconURIValueError as e:
-            rospy.logerr("Interactions : received request for roles to be filtered by an invalid rocon uri [%s][%s]" % (rocon_uri, str(e)))
+            rospy.logerr("Interactions : received request for roles to be filtered by an invalid rocon uri"
+                         " [%s][%s]" % (rocon_uri, str(e)))
             filtered_interactions = []
         role_list = list(set([i.role for i in filtered_interactions]))
         role_list.sort()

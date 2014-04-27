@@ -13,4 +13,4 @@ from .interactions import load_msgs_from_yaml_resource
 from exceptions import *
 
 import web_interactions  # the library functions
-from .web_interactions import WebInteraction  # the main class
+#from .web_interactions import WebInteraction  # the main class

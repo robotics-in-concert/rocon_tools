@@ -2,7 +2,7 @@
 # Web URLS
 ###############################################################################
 
-- name: http://chimek.yujinrobot.com/
+- name: web_url(http://chimek.yujinrobot.com/)
   role: 'Web URLs'
   compatibility: rocon:/
   display_name: Chimek
@@ -10,7 +10,7 @@
   icon:
     resource_name: rocon_bubble_icons/chimek.png
 
-- name: http://wiki.ros.org/rocon_interactions
+- name: web_url(http://wiki.ros.org/rocon_interactions)
   role: 'Web URLs'
   compatibility: rocon:/pc
   display_name: Ros Wiki - Interactions

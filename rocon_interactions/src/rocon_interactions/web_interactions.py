@@ -51,6 +51,8 @@ class WebInteraction(object):
 
     def __init__(self, interaction_type, interaction_url):
         """
+        Don't instantiate this directly, use the `web_interactions.parse` method instead.
+
         :param interaction str: the string to parse
 
         :todo: should do some validation of the incoming url with urlparse here.

@@ -2,8 +2,8 @@
 # Web Apps
 ###############################################################################
 
-#- name: http://chimek.yujinrobot.com/rosjs/listener.html
-- name: http://robotics-in-concert.github.io/rocon_tools/js/current/listener.html
+#- name: web_app(http://chimek.yujinrobot.com/rosjs/listener.html)
+- name: web_app(http://robotics-in-concert.github.io/rocon_tools/js/current/listener.html)
   role: 'Web Apps'
   compatibility: rocon:/*/*/hydro|indigo
   display_name: Listener

@@ -16,6 +16,7 @@ import rocon_python_utils
 import rocon_interaction_msgs.msg as interaction_msgs
 
 from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResourceNotFoundException
+from . import web_interactions
 
 ##############################################################################
 # Utility Methods
@@ -148,9 +149,11 @@ class Interaction(object):
         '''
           Format the interaction into a human-readable string.
         '''
+        web_interaction = web_interactions.parse(self.msg.name)
+        name = self.msg.name if web_interaction is None else web_interaction.url
         s = ''
         s += console.green + "%s" % self.msg.display_name + console.reset + '\n'
-        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.msg.name + console.reset + '\n'  # noqa
+        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % name + console.reset + '\n'  # noqa
         s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa
         s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa
         s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa

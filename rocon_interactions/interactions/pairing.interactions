@@ -1,0 +1,14 @@
+###############################################################################
+# Pairing
+###############################################################################
+
+- name: rocon_interactions/qt_listener.py
+  role: 'Chatter'
+  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+  display_name: Qt Listener
+  description: A pyqt listener for testing pairing.
+  max: -1
+  remappings:
+    - remap_from: chatter
+      remap_to: /conversation/chatter
+  pairing: rocon_apps/talker

@@ -1,0 +1,19 @@
+<!-- 
+   An example that loads up an interaction for pairing with a standalone app manager that can run the
+   rocon_apps/talker rapp.
+-->
+<launch>
+  <!-- Publish master info for the remocon -->
+  <param name="name" value="Rocon Interactions"/>
+  <param name="description" value="A tutorial environment for demonstrating pairing interactions."/>
+  <param name="icon" value="rocon_icons/cybernetic_pirate.png"/>
+  <node pkg="rocon_master_info" type="master.py" name="master"/>
+
+  <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
+    <rosparam param="interactions">[rocon_interactions/pairing]</rosparam>
+  </node>
+
+  <include file="$(find rocon_app_manager)/launch/standalone.launch">
+  </include>
+</launch>
+

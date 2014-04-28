@@ -172,4 +172,6 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
+        if self.msg.pairing:
+            s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing) + console.reset + '\n'  # noqa
         return s

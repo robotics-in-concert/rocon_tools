@@ -11,4 +11,8 @@
   remappings:
     - remap_from: chatter
       remap_to: /conversation/chatter
-  pairing: rocon_apps/talker
+  pairing:
+    rapp: rocon_apps/talker
+    remappings:
+      - remap_from: chatter
+        remap_to: /conversation/chatter

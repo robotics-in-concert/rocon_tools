@@ -19,7 +19,7 @@ from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
 from . import interactions
 from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
-from .rapp_handler import RappHandler, FailedToFindRappManagerError
+from .rapp_handler import RappHandler, FailedToFindRappManagerError, FailedToStartRappError
 
 ##############################################################################
 # Interactions
@@ -170,9 +170,11 @@ class InteractionsManager(object):
                 interactive_client.name = remocon.name
                 interactive_client.id = unique_id.toMsg(uuid.UUID(remocon.status.uuid))
                 interactive_client.platform_info = remocon.status.platform_info
-                if remocon.status.running_app:
-                    interaction = self.interactions_table.find(remocon.status.hash)
-                    interactive_client.app_name = interaction.display_name if interaction is not None else "unknown"
+                interactive_client.running_interactions = []
+                for interaction_hash in remocon.status.running_interactions:
+                    interaction = self.interactions_table.find(interaction_hash)
+                    interactive_client.running_interactions.append(interaction.display_name if interaction is not None else "unknown")
+                if interactive_client.running_interactions:
                     interactive_clients.running_clients.append(interactive_client)
                 else:
                     interactive_clients.idle_clients.append(interactive_client)
@@ -262,27 +264,35 @@ class InteractionsManager(object):
         interaction = self.interactions_table.find(request.hash)
         # for interaction in self.interactions_table.interactions:
         #     rospy.logwarn("Interactions:   [%s][%s][%s]" % (interaction.name, interaction.hash, interaction.max))
-        if interaction is not None:
-            if interaction.max == interaction_msgs.Interaction.UNLIMITED_INTERACTIONS:
-                return response
-            else:
-                count = 0
-                for remocon_monitor in self._remocon_monitors.values():
-                    if remocon_monitor.status is not None and remocon_monitor.status.running_app:
-                        # Todo this is a weak check as it is not necessarily uniquely identifying the app
-                        # Todo - reintegrate this using full interaction variable instead
-                        pass
-                        #if remocon_monitor.status.app_name == request.application:
-                        #    count += 1
-                if count < interaction.max:
-                    return response
-                else:
-                    response.error_code = interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED
-                    response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED
-        else:
+        if interaction is None:
             response.error_code = interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE
             response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE
-        response.result = False
+            response.result = False
+            return response
+        if interaction.max != interaction_msgs.Interaction.UNLIMITED_INTERACTIONS:
+            count = 0
+            for remocon_monitor in self._remocon_monitors.values():
+                if remocon_monitor.status is not None and remocon_monitor.status.running_app:
+                    # Todo this is a weak check as it is not necessarily uniquely identifying the interaction
+                    # Todo - reintegrate this using full interaction variable instead
+                    pass
+                    #if remocon_monitor.status.app_name == request.application:
+                    #    count += 1
+            if count > interaction.max:
+                response.error_code = interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED
+                response.message = interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED
+                response.result = False
+                return response
+        if interaction.pairing.rapp:
+            # start the rapp, because it's a pairing rapp, the filter logic in interactions_table
+            # must be such that rapp_handler has already been successfully defined
+            try:
+                self.rapp_handler.start_rapp(interaction.pairing.rapp, interaction.pairing.remappings)
+            except FailedToStartRappError:
+                response.error_code = interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED
+                response.message = interaction_msgs.ErrorCodes.MSG_START_PAIRED_RAPP_FAILED
+                response.result = False
+        # if we get here, we've succeeded.
         return response
 
     ##########################################################################

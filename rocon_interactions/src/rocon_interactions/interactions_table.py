@@ -111,7 +111,7 @@ class InteractionsTable(object):
         invalid = []
         for msg in msgs:
             # paired check
-            if self.filter_pairing_interactions and msg.pairing:
+            if self.filter_pairing_interactions and msg.pairing.rapp:
                 invalid.append(msg)
             else:
                 try:

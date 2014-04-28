@@ -134,7 +134,18 @@ class Interaction(object):
         self.display_name = self.msg.display_name
         self.hash = self.msg.hash
         self.compatibility = self.msg.compatibility
-        self.max = self.msg.max
+
+    ##############################################################################
+    # Conveniences
+    ##############################################################################
+
+    @property
+    def max(self):
+        return self.msg.max
+
+    @property
+    def pairing(self):
+        return self.msg.pairing
 
     def _eq__(self, other):
         if type(other) is type(self):
@@ -165,13 +176,27 @@ class Interaction(object):
         already_prefixed = False
         for remapping in self.msg.remappings:
             if not already_prefixed:
-                s += console.cyan + "  Remapping" + console.reset + "    : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                s += console.cyan + "  Remappings" + console.reset + "   : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
                 already_prefixed = True
             else:
                 s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
-        if self.msg.pairing:
-            s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing) + console.reset + '\n'  # noqa
+        if self.msg.pairing.rapp:
+            s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
+            already_prefixed = False
+            for remapping in self.msg.pairing.remappings:
+                if not already_prefixed:
+                    s += console.cyan + "    Remappings" + console.reset + " : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                    already_prefixed = True
+                else:
+                    s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+            already_prefixed = False
+            for pair in self.msg.pairing.parameters:
+                if not already_prefixed:
+                    s += console.cyan + "    Parameters" + console.reset + " : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
+                    already_prefixed = True
+                else:
+                    s += "               : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
         return s

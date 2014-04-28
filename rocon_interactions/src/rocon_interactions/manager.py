@@ -19,6 +19,7 @@ from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
 from . import interactions
 from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
+from .rapp_handler import RappHandler, FailedToFindRappManagerError
 
 ##############################################################################
 # Interactions
@@ -32,8 +33,9 @@ class InteractionsManager(object):
     '''
     __slots__ = [
         'interactions_table',  # Dictionary of string : interaction_msgs.RemoconApp[]
-        'publishers',
         'parameters',
+        'rapp_handler',        # Interface for handling interactions-rapps pairing
+        'publishers',
         'services',
         'spin',
         'platform_info',
@@ -46,10 +48,18 @@ class InteractionsManager(object):
     ##########################################################################
 
     def __init__(self):
-        self.interactions_table = InteractionsTable()
+        self.parameters = self._setup_parameters()
+        # pairing mode - rapp handler
+        self.rapp_handler = None
+        if self.parameters['pairing']:
+            try:
+                self.rapp_handler = RappHandler()
+            except FailedToFindRappManagerError as e:
+                self.parameters['pairing'] = False
+                rospy.logerr("Interactions : disabling pairing [%s]" % str(e))
+        self.interactions_table = InteractionsTable(filter_pairing_interactions=not self.parameters['pairing'])
         self.publishers = self._setup_publishers()
         self.services = self._setup_services()
-        self.parameters = self._setup_parameters()
         self._watch_loop_period = 1.0
         self._remocon_monitors = {}  # topic_name : RemoconMonitor
 
@@ -145,6 +155,7 @@ class InteractionsManager(object):
             param['rosbridge_address'] = 'localhost'
         param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
         param['interactions'] = rospy.get_param('~interactions', [])
+        param['pairing'] = rospy.get_param('~pairing', False)
         return param
 
     ##########################################################################

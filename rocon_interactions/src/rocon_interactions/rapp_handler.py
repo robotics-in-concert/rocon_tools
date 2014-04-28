@@ -23,7 +23,6 @@ import rospy
 from rocon_app_manager_msgs.srv import (
     StartRapp, StartRappRequest, StopRapp, StopRappRequest)
 
-
 ##############################################################################
 # Exceptions
 ##############################################################################
@@ -36,6 +35,11 @@ class FailedToStartRappError(Exception):
 
 class FailedToStopRappError(Exception):
     """ Failed to stop rapp. """
+    pass
+
+
+class FailedToFindRappManagerError(Exception):
+    """ Failed to find the rapp manager. """
     pass
 
 ##############################################################################
@@ -52,21 +56,27 @@ class RappHandler(object):
     __slots__ = [
         'namespace',           # conductor's alias for this concert client
         'start_rapp',     # service proxy to this client's start_app service
-        'stop_rapp'       # service proxy to this client's stop_app service
+        'stop_rapp',       # service proxy to this client's stop_app service
     ]
 
-    def __init__(self, rapp_manager_namespace):
+    def __init__(self):
         """
         Initialise the class with the relevant data required to start and stop
         rapps on this concert client.
 
         :param rapp_manager_namespace str: forms the root of the start/stop app service proxies.
+
+        :raises: :exc:`.FailedToFindRappManagerError`
         """
-        self.namespace = rapp_manager_namespace
-        self.start_rapp = rospy.ServiceProxy(
-            '/' + self.namespace + '/start_rapp', StartRapp)
-        self.stop_rapp = rospy.ServiceProxy(
-            '/' + self.namespace + '/stop_rapp', StopRapp)
+        self.start_rapp = rospy.ServiceProxy('start_rapp', StartRapp)
+        self.stop_rapp = rospy.ServiceProxy('stop_rapp', StopRapp)
+        try:
+            self.start_rapp.wait_for_service(15.0)
+            self.stop_rapp.wait_for_service(15.0)
+        except rospy.ROSException:
+            raise FailedToFindRappManagerError("couldn't find the rapp manager (start_rapp/stop_rapp remapped?)")
+        except rospy.ROSInterruptException:
+            pass  # ros is shutting down.
 
     def start(self, rapp, remappings):
         """

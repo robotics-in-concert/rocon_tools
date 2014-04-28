@@ -24,10 +24,15 @@ class InteractionsTable(object):
     '''
     __slots__ = [
         'interactions',  # rocon_interactions.interactions.Interaction[]
+        'filter_pairing_interactions'  # do not load any paired interactions
     ]
 
-    def __init__(self):
+    def __init__(self, filter_pairing_interactions=False):
+        """
+        :param self.filter_pairing_interactions bool: do not load any paired interactions
+        """
         self.interactions = []
+        self.filter_pairing_interactions = filter_pairing_interactions
 
     def roles(self):
         '''
@@ -97,22 +102,25 @@ class InteractionsTable(object):
           Load some interactions into the interaction table. This involves some initialisation
           and validation steps.
 
-          @param msgs : a list of interaction specifications to populate the table with.
-          @type rocon_interaction_msgs.msg.Interaction[]
+          :param msgs rocon_interaction_msgs.msg.Interaction[]: a list of interaction specifications to populate the table with.
 
-          @return list of all additions and any that were flagged as invalid
-          @rtype (interactions.Interaction[], rocon_interaction_msgs.msg..Interaction[]) : (new, invalid)
+          :returns: list of all additions and any that were flagged as invalid
+          :rtype: (interactions.Interaction[], rocon_interaction_msgs.msg..Interaction[]) : (new, invalid)
         '''
         new = []
         invalid = []
         for msg in msgs:
-            try:
-                interaction = interactions.Interaction(msg)
-                self.interactions.append(interaction)
-                self.interactions = list(set(self.interactions))  # uniquify the list, just in case
-                new.append(interaction)
-            except InvalidInteraction:
+            # paired check
+            if self.filter_pairing_interactions and msg.pairing:
                 invalid.append(msg)
+            else:
+                try:
+                    interaction = interactions.Interaction(msg)
+                    self.interactions.append(interaction)
+                    self.interactions = list(set(self.interactions))  # uniquify the list, just in case
+                    new.append(interaction)
+                except InvalidInteraction:
+                    invalid.append(msg)
         return new, invalid
 
     def unload(self, msgs):

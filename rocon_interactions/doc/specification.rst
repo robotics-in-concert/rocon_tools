@@ -40,8 +40,8 @@ The names above resolve as follows:
    * direct executable : either program name (must be on the PATH), or absolute path to the program, e.g. rqt_graph 
    * rosrunnable : a ros resource name (pkg/filename) pair, e.g. rocon_interactions/loader 
    * roslaunchable : a ros resource name (pkg/launcher) where the filename is a .launch file, e.g. rocon_interactions/rviz_markers.launch 
-   * web url : a normal web url, e.g. http://wiki.ros.org/rocon_interactions
-   * web app : a normal web url pointing to a valid ros web app, e.g. http://robotics-in-concert.github.io/rocon_interactions/js/listener.html
+   * web url : a normal web url with the ``web_url()`` wrapper, e.g. web_url(http://wiki.ros.org/rocon_interactions)
+   * web app : a normal web url pointing to a valid ros web app with the ``web_app()`` wrapper, e.g. web_app(http://robotics-in-concert.github.io/rocon_interactions/js/listener.html)
    * android activity : the fully qualified name for launching an activity, e.g. com.github.robotics_in_concert.rocon_android.SolutionManager
 
  * ``role``: the role to embed this interaction in, e.g. admin, dev, customer
@@ -73,7 +73,7 @@ Web app:
 
 .. code-block:: yaml
 
-   name: http://robotics-in-concert.github.io/rocon_tools/js/current/listener.html
+   name: web_app(http://robotics-in-concert.github.io/rocon_tools/js/current/listener.html)
    role: 'Web Apps'
    compatibility: rocon:/*/*/hydro|indigo
    display_name: Listener

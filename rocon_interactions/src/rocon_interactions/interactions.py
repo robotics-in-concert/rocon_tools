@@ -135,6 +135,12 @@ class Interaction(object):
         self.hash = self.msg.hash
         self.compatibility = self.msg.compatibility
 
+    def is_paired_type(self):
+        """
+        Classify whether this interaction is to be paired with a rapp or not.
+        """
+        return True if self.msg.pairing.rapp else False
+
     ##############################################################################
     # Conveniences
     ##############################################################################

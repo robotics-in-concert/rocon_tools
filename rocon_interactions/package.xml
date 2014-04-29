@@ -30,6 +30,7 @@
   <run_depend>rocon_python_utils</run_depend>
   <run_depend>rocon_std_msgs</run_depend>
   <run_depend>rocon_uri</run_depend>
+  <run_depend>std_msgs</run_depend>
   <run_depend>unique_id</run_depend>
 
   <export>

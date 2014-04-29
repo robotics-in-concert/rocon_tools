@@ -60,7 +60,7 @@ if __name__ == '__main__':
     publisher = rospy.Publisher(topic_name, interaction_msgs.RemoconStatus, latch=True)
     status = interaction_msgs.RemoconStatus()
     status.platform_info = remocon_platform_info()
-    status.running_app = False
+    status.running_interactions = []
     status.uuid = key.hex
     publisher.publish(status)
     rospy.spin()

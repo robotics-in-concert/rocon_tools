@@ -58,7 +58,7 @@ class InteractionsManager(object):
         self.rapp_handler = None
         if self.parameters['pairing']:
             try:
-                self.rapp_handler = RappHandler()
+                self.rapp_handler = RappHandler(self._rapp_manager_status_update_callback)
                 self.is_pairing = None
                 self.publishers['pairing'].publish(self.is_pairing)
             except FailedToFindRappManagerError as e:
@@ -139,6 +139,13 @@ class InteractionsManager(object):
                         except FailedToStopRappError as e:
                             rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
         self._ros_publish_interactive_clients()
+
+    def _rapp_manager_status_update_callback(self):
+        """
+        Called if the rapp manager has a rapp that is stopping - an indication that we need to
+        stop a pairing interaction if one is running.
+        """
+        rospy.logwarn("Rapp stopped!")
 
     def _setup_publishers(self):
         '''

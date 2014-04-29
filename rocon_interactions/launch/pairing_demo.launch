@@ -14,6 +14,7 @@
     <rosparam param="pairing">true</rosparam>
     <remap from="start_rapp" to="app_manager/start_rapp"/>
     <remap from="stop_rapp" to="app_manager/stop_rapp"/>
+    <remap from="status" to="app_manager/status"/>
   </node>
 
   <include file="$(find rocon_app_manager)/launch/standalone.launch">

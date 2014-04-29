@@ -29,9 +29,6 @@ endif()
 
 #install(
 #    PROGRAMS 
-#        scripts/rocon_interactions
+#        scripts/rocon_find_resource
 #    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 #    )
-
-#install(DIRECTORY launch
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

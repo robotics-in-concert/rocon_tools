@@ -14,7 +14,6 @@ import unique_id
 import rocon_interaction_msgs.msg as interaction_msgs
 import rocon_interaction_msgs.srv as interaction_srvs
 import rocon_uri
-import std_msgs.msg as std_msgs
 
 from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
@@ -41,9 +40,9 @@ class InteractionsManager(object):
         'services',
         'spin',
         'platform_info',
-        'is_pairing',             # string indicating the remocon it is pairing with or None
+        'pair',                # interaction_msgs/Pair showing rapp and remocon that are pairing
         '_watch_loop_period',
-        '_remocon_monitors'  # list of currently connected remocons.
+        '_remocon_monitors'    # list of currently connected remocons.
     ]
 
     ##########################################################################
@@ -59,8 +58,8 @@ class InteractionsManager(object):
         if self.parameters['pairing']:
             try:
                 self.rapp_handler = RappHandler(self._rapp_manager_status_update_callback)
-                self.is_pairing = None
-                self.publishers['pairing'].publish(self.is_pairing)
+                self.pair = interaction_msgs.Pair()
+                self.publishers['pairing'].publish(self.pair)
             except FailedToFindRappManagerError as e:
                 self.parameters['pairing'] = False
                 rospy.logerr("Interactions : disabling pairing [%s]" % str(e))
@@ -128,14 +127,14 @@ class InteractionsManager(object):
         """
         # could also possibly use the remocon id here
         if self.parameters['pairing']:
-            if self.is_pairing is not None:
+            if self.is_pairing():
                 for interaction_hash in finished_interactions:
                     interaction = self.interactions_table.find(interaction_hash)
                     if interaction.is_paired_type():
                         try:
                             self.rapp_handler.stop()
-                            self.is_pairing = None
-                            self.publishers['pairing'].publish("")
+                            self.pair = interaction_msgs.Pair()
+                            self.publishers['pairing'].publish(self.pair)
                         except FailedToStopRappError as e:
                             rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
         self._ros_publish_interactive_clients()
@@ -146,6 +145,8 @@ class InteractionsManager(object):
         stop a pairing interaction if one is running.
         """
         rospy.logwarn("Rapp stopped!")
+        self.pair.rapp = ""
+        self.publishers['pairing'].publish(self.pair)
 
     def _setup_publishers(self):
         '''
@@ -157,7 +158,7 @@ class InteractionsManager(object):
                                                             interaction_msgs.InteractiveClients,
                                                             latch=True)
         if self.parameters['pairing']:
-            publishers['pairing'] = rospy.Publisher('~pairing', std_msgs.String, latch=True)
+            publishers['pairing'] = rospy.Publisher('~pairing', interaction_msgs.Pair, latch=True)
 
         return publishers
 
@@ -313,12 +314,12 @@ class InteractionsManager(object):
         if self.parameters['pairing']:
             if interaction.is_paired_type():
                 # abort if already pairing
-                if self.is_pairing is not None:
+                if self.is_pairing():
                     return request_interaction_response(interaction_msgs.ErrorCodes.ALREADY_PAIRING)
                 try:
                     self.rapp_handler.start_rapp(interaction.pairing.rapp, interaction.pairing.remappings)
-                    self.is_pairing = request.remocon
-                    self.publishers['pairing'].publish(self.is_pairing)
+                    self.pair = interaction_msgs.Pair(rapp=interaction.pairing.rapp, remocon=request.remocon)
+                    self.publishers['pairing'].publish(self.pair)
                 except FailedToStartRappError:
                     return request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
         # if we get here, we've succeeded.
@@ -352,6 +353,13 @@ class InteractionsManager(object):
             #                                                              rocon_python_utils.ros.get_rosdistro())
         return interactions
 
+    def is_pairing(self):
+        """
+        :returns: whether there is an active pairing or not
+        :rtype bool:
+        """
+        # just check if either string is non-empty
+        return self.pair.rapp or self.pair.remocon
 
 ##############################################################################
 # Utility methods/factories

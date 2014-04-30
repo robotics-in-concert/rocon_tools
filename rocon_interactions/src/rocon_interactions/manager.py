@@ -144,7 +144,6 @@ class InteractionsManager(object):
         Called if the rapp manager has a rapp that is stopping - an indication that we need to
         stop a pairing interaction if one is running.
         """
-        rospy.logwarn("Rapp stopped!")
         self.pair.rapp = ""
         self.publishers['pairing'].publish(self.pair)
 

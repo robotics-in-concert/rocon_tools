@@ -1,9 +1,9 @@
 ###############################################################################
-# Pairing
+# Pairing - to run/test these interactions see rocon_app_manager_tutorials
 ###############################################################################
 
 # A true interaction pair
-- name: rocon_interactions/qt_listener.py
+- name: rocon_qt_listener/qt_listener.py
   role: Pairing
   compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Qt Listener

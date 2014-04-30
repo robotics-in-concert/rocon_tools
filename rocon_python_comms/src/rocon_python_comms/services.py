@@ -45,8 +45,8 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
     while not rospy.is_shutdown() and time.time() < timeout_time and not service_names:
         try:
             service_names = rosservice_find(service_type)
-        except ROSServiceIOException:
-            raise NotFoundException("ros shutdown")
+        except ROSServiceIOException as e:
+            raise NotFoundException(str(e))
         if unique:
             if len(service_names) > 1:
                 raise NotFoundException("multiple services found %s." % service_names)

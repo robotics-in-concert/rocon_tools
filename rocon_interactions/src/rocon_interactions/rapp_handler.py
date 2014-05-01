@@ -22,6 +22,7 @@ and start/stop rapps on a rapp manager running on the same ros master.
 import rospy
 import rocon_app_manager_msgs.msg as rocon_app_manager_msgs
 import rocon_app_manager_msgs.srv as rocon_app_manager_srvs
+import rocon_python_comms
 
 ##############################################################################
 # Exceptions
@@ -73,9 +74,17 @@ class RappHandler(object):
         """
         self.is_running = False
         self.status_callback = status_callback
-        self.start_rapp = rospy.ServiceProxy('start_rapp', rocon_app_manager_srvs.StartRapp)
-        self.stop_rapp = rospy.ServiceProxy('stop_rapp', rocon_app_manager_srvs.StopRapp)
-        self.status_subscriber = rospy.Subscriber('status', rocon_app_manager_msgs.Status, self._ros_status_subscriber)
+
+        try:
+            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(5.0), unique=True)
+            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(5.0), unique=True)
+            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(5.0), unique=True)
+        except rocon_python_comms.NotFoundException as e:
+            raise FailedToFindRappManagerError("couldn't find the start rapp manager start_rapp topic [%s]" % str(e))
+
+        self.start_rapp = rospy.ServiceProxy(start_rapp_service_name, rocon_app_manager_srvs.StartRapp)
+        self.stop_rapp = rospy.ServiceProxy(stop_rapp_service_name, rocon_app_manager_srvs.StopRapp)
+        self.status_subscriber = rospy.Subscriber(status_topic_name, rocon_app_manager_msgs.Status, self._ros_status_subscriber)
 
         try:
             self.start_rapp.wait_for_service(15.0)

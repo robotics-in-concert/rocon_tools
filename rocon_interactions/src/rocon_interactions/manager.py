@@ -302,7 +302,7 @@ class InteractionsManager(object):
         if interaction.max != interaction_msgs.Interaction.UNLIMITED_INTERACTIONS:
             count = 0
             for remocon_monitor in self._remocon_monitors.values():
-                if remocon_monitor.status is not None and remocon_monitor.status.running_app:
+                if remocon_monitor.status is not None and remocon_monitor.status.running_interactions:
                     # Todo this is a weak check as it is not necessarily uniquely identifying the interaction
                     # Todo - reintegrate this using full interaction variable instead
                     pass

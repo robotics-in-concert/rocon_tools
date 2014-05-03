@@ -2,7 +2,7 @@
   <name>rocon_bubble_icons</name>
   <version>0.1.4</version>
   <description>
-    Bubble icons for rocon.
+    Bubble icon library for rocon.
   </description>
   <maintainer email="d.stonier@gmail.com">Daniel Stonier</maintainer>
   <license>BSD</license>
@@ -12,5 +12,9 @@
   <author>Daniel Stonier</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>python-catkin-pkg</build_depend>
 
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
 </package>

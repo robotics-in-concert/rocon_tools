@@ -23,6 +23,7 @@ import rospy
 import rocon_app_manager_msgs.msg as rocon_app_manager_msgs
 import rocon_app_manager_msgs.srv as rocon_app_manager_srvs
 import rocon_python_comms
+import threading
 
 ##############################################################################
 # Exceptions
@@ -61,6 +62,7 @@ class RappHandler(object):
         'status_subscriber',  # look for status updates (particularly rapp running/not running)
         'is_running',         # flag indicating present running status of the rapp manager.
         'status_callback',    # function that handles toggling of pairing mode when a running rapp stops.
+        'initialised',        # flag indicating whether the rapp manager is ready or not.
     ]
 
     def __init__(self, status_callback):
@@ -74,13 +76,17 @@ class RappHandler(object):
         """
         self.is_running = False
         self.status_callback = status_callback
+        thread = threading.Thread(target=self._setup_rapp_manager_connections())
+        thread.start()
+        self.initialised = False
 
+    def _setup_rapp_manager_connections(self):
         try:
-            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(5.0), unique=True)
-            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(5.0), unique=True)
-            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(5.0), unique=True)
+            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(15.0), unique=True)
+            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(15.0), unique=True)
+            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(15.0), unique=True)
         except rocon_python_comms.NotFoundException as e:
-            raise FailedToFindRappManagerError("couldn't find the start rapp manager start_rapp topic [%s]" % str(e))
+            rospy.logerr("Interactions : timed out trying to find the rapp manager start_rapp, stop_rapp services and status topic [%s]" % str(e))
 
         self.start_rapp = rospy.ServiceProxy(start_rapp_service_name, rocon_app_manager_srvs.StartRapp)
         self.stop_rapp = rospy.ServiceProxy(stop_rapp_service_name, rocon_app_manager_srvs.StopRapp)
@@ -91,10 +97,12 @@ class RappHandler(object):
             self.stop_rapp.wait_for_service(15.0)
             # I should also check the subscriber has get_num_connections > 0 here
             # (need to create a wait_for_publisher in rocon_python_comms)
+            self.initialised = True
+            rospy.loginfo("Interactions : initialised rapp handler connections for pairing.")
         except rospy.ROSException:
-            raise FailedToFindRappManagerError("couldn't find the rapp manager (start_rapp/stop_rapp remapped?)")
+            rospy.logerr("Interactions : rapp manager services disappeared.")
         except rospy.ROSInterruptException:
-            pass  # ros is shutting down.
+            rospy.logerr("Interactions : ros shutdown while looking for the rapp manager services.")
 
     def start(self, rapp, remappings):
         """
@@ -105,6 +113,8 @@ class RappHandler(object):
 
         :raises: :exc:`.FailedToStartRappError`
         """
+        if not self.initialised:
+            raise FailedToStartRappError("rapp manager's location not known")
         try:
             self.start_rapp(rocon_app_manager_srvs.StartRappRequest(name=rapp, remappings=remappings))
         except (rospy.service.ServiceException,
@@ -118,6 +128,8 @@ class RappHandler(object):
         doesn't need a rapp specification since only one rapp can ever be
         running - it will just stop the currently running rapp.
         """
+        if not self.initialised:
+            raise FailedToStopRappError("rapp manager's location not known")
         try:
             self.stop_rapp(rocon_app_manager_srvs.StopRappRequest())
         except (rospy.service.ServiceException,

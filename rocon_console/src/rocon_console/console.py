@@ -4,6 +4,37 @@
 #
 
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: console
+   :platform: Unix
+   :synopsis: Tools for colourising the console.
+
+Colour definitions and logging functions for colourising the console.
+
+----
+
+**Colour Definitions**
+
+The current list of colour definitions include:
+
+ * ``Regular``: black, red, green, yellow, blue, magenta, cyan, white,
+ * ``Bold``: bold, bold_black, bold_red, bold_green, bold_yellow, bold_blue, bold_magenta, bold_cyan, bold_white
+
+These colour definitions can be used in the following way:
+
+.. code-block:: python
+
+   import rocon_console.console as console
+   print(console.cyan + "    Name" + console.reset + ": " + console.yellow + "Dude" + console.reset)
+
+----
+
+"""
+
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -15,6 +46,11 @@ import sys
 
 
 def console_has_colours(stream):
+    """
+    Detects if the specified stream has colourising capability.
+
+    :param stream: stream to check (typically sys.stdout)
+    """
     if not hasattr(stream, "isatty"):
         return False
     if not stream.isatty():
@@ -77,27 +113,56 @@ def warning(msg):
     print(yellow + msg + reset)
 
 
+def info(msg):
+    print(msg)
+
+
 def error(msg):
     print(red + msg + reset)
 
 
 def logdebug(message):
+    '''
+    Prefixes '[debug]' and colours the message green.
+
+    :param message str: message to log.
+    '''
     print(green + "[debug] " + message + reset)
 
 
 def loginfo(message):
+    '''
+    Prefixes '[info]' to the message.
+
+    :param message str: message to log.
+    '''
     print("[info] " + message)
 
 
 def logwarn(message):
+    '''
+    Prefixes '[warn]' and colours the message yellow.
+
+    :param message str: message to log.
+    '''
     print(yellow + "[warning] " + message + reset)
 
 
 def logerror(message):
+    '''
+    Prefixes '[error]' and colours the message red.
+
+    :param message str: message to log.
+    '''
     print(red + "[error] " + message + reset)
 
 
 def logfatal(message):
+    '''
+    Prefixes '[fatal]' and colours the message bold red.
+
+    :param message str: message to log.
+    '''
     print(bold_red + "[error] " + message + reset)
 
 
@@ -108,10 +173,10 @@ def logfatal(message):
 if __name__ == '__main__':
     for colour in colours:
         pretty_print("dude\n", colour)
-    logdebug("info message")
-    logwarn("warning message")
-    logerror("error message")
-    logfatal("fatal message")
+    logdebug("loginfo message")
+    logwarn("logwarn message")
+    logerror("logerror message")
+    logfatal("logfatal message")
     pretty_print("red\n", red)
     print("some normal text")
     print(cyan + "    Name" + reset + ": " + yellow + "Dude" + reset)

@@ -12,5 +12,10 @@
   <author>Daniel Stonier</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>python-catkin-pkg</build_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
 
 </package>

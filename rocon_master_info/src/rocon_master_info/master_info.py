@@ -3,6 +3,20 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: master_info
+   :platform: Unix
+   :synopsis: Client utilities for retrieving rocon master information.
+
+Some methods for retrieving the rocon master information. Also provides the
+main method for scripts/tools that do this.
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -22,11 +36,15 @@ import rocon_std_msgs.msg as rocon_std_msgs
 def get_master_info(timeout=1.0):
     '''
       Tries to gather the rocon master info but if not available, return
-      with useful information explaining that it could not be found.
+      with a rocon_std_msgs.MasterInfo_ object filled with appropriate information
+      ("Unknown Master" ...).
 
       :param double timeout: how long to blather around looking for the master info topic.
 
-      :return master_info: a rocon_std_msgs.MasterInfo() object
+      :returns: the master information
+      :rtype: rocon_std_msgs.MasterInfo_
+
+      .. include:: weblinks.rst
     '''
     # default values
     master_info = rocon_std_msgs.MasterInfo()
@@ -61,10 +79,7 @@ def get_master_info(timeout=1.0):
 ##############################################################################
 
 def console_only_main(node_name='master_info', title='Master Information'):
-    '''
-      Establishes a connection and prints master information to the console.
-    '''
-
+    # Establishes a connection and prints master information to the console.
     rospy.init_node(node_name)
     master_info = get_master_info()
 #     display_available = True if 'DISPLAY' in os.environ.keys() else False

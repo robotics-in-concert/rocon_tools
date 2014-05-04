@@ -8,6 +8,8 @@
 
 """
 .. module:: exceptions
+   :platform: Unix
+   :synopsis: Exceptions thrown parsing/formatting rocon uri's.
 
 This module defines exceptions raised by the rocon_uri package.
 These exception names are all included in the main
@@ -15,6 +17,8 @@ rocon_uri namespace.  To catch one, import it this
 way::
 
     from rocon_uri import RoconURIValueError
+
+----
 
 """
 

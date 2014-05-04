@@ -8,10 +8,17 @@
 
 """
 .. module:: rules
+   :platform: Unix
+   :synopsis: EBNF rules used in parsing rocon_uri strings.
 
-This module defines ebnf rules used in parsing rocon_uri strings. It should
+This module defines `ebnf rules`_ used in parsing rocon_uri strings. It should
 never be used directly, it is the engine for the core parsing and
 manipulation module.
+
+.. _`ebnf rules`: http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form
+
+----
+
 """
 
 ##############################################################################

@@ -7,12 +7,11 @@ Rocon Python Redis
 ==================
 
 This is a ros-wrapped implementation of the `redis-py`_ client package.
-It is used in the `Robotics in Concert`_ framework for working with `rocon gateways`_ and hubs_.
+It is currently used for working with `rocon gateways`_ and hubs_.
 
 .. _`redis-py` : https://github.com/andymccurdy/redis-py
 .. _`rocon gateways` : http://wiki.ros.org/rocon_gateway
 .. _hubs : http://wiki.ros.org/rocon_hub
-.. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
 
 
 Contents:

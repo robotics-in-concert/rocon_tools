@@ -9,6 +9,8 @@
 
 """
 .. module:: rapp_handler
+   :platform: Unix
+   :synopsis: Works with the rocon app manager to support pairing interactions.
 
 This module provides a class that can be used by other nodes to introspect
 and start/stop rapps on a rapp manager running on the same ros master.

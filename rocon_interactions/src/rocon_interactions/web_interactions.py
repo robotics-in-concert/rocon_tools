@@ -2,11 +2,21 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
 """
 .. module:: web_interactions
+   :platform: Unix
+   :synopsis: Parser for web url/web app interaction strings.
+
 
 Module for parsing web interaction strings provided to the interactions
 manager.
+
+----
+
 """
 ##############################################################################
 # Imports
@@ -45,27 +55,49 @@ def parse(interaction):
 
 
 class WebInteraction(object):
+    """
+    Generic web interaction object that stores the type (web url or app) and
+    the actual url to be used. This is important because the resulting
+    url that will get formed for this interaction will have many extra arguments
+    (name, remappings, parameters) appended to the url here if it is a web app.
+    """
 
     WEB_APP = "web_app"
+    """Prefix used to define web apps (e.g. web_app(https://github.com/...)"""
     WEB_URL = "web_url"
+    """Prefix used to define web urls (e.g. web_url(http://wiki.ros.org/rocon_interactions)"""
 
     def __init__(self, interaction_type, interaction_url):
         """
-        Don't instantiate this directly, use the `web_interactions.parse` method instead.
+        Don't instantiate this directly, use the :func:`.parse` method instead.
 
-        :param interaction str: the string to parse
-
-        :todo: should do some validation of the incoming url with urlparse here.
+        :param str interaction_type: either :data:`.WEB_APP` or :data:`.WEB_URL`.
+        :param str interaction_url: the parsed url
         """
         self._type = interaction_type
         self._url = interaction_url
 
     def is_web_app(self):
+        """
+        Is a web app or not.
+
+        :returns: result of the query
+        :rtype: bool
+        """
         return True if self._type == WebInteraction.WEB_APP else False
 
     def is_web_url(self):
+        """
+        Is a web url or not.
+
+        :returns: result of the query
+        :rtype: bool
+        """
         return True if self._type == WebInteraction.WEB_URL else False
 
     @property
     def url(self):
+        """
+        The interaction url (e.g. http://wiki.ros.org/rocon_interactions).
+        """
         return self._url

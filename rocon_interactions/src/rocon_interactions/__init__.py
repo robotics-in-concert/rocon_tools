@@ -3,6 +3,17 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Documentation
+##############################################################################
+
+"""
+This is the top-level namespace of the rocon_interactions_ ROS
+package. It provides python utilities for working with the console.
+
+.. _rocon_interactions: http://wiki.ros.org/rocon_interactions
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 

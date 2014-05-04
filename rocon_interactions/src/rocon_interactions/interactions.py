@@ -3,6 +3,22 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: interactions
+   :platform: Unix
+   :synopsis: Representative class and methods for an *interaction*.
+
+
+This module defines a class and methods that represent the core of what
+an interaction is.
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -23,38 +39,39 @@ from . import web_interactions
 ##############################################################################
 
 
-def generate_hash(name, role, namespace):
+def generate_hash(display_name, role, namespace):
     '''
       Compute a unique hash for this interaction corresponding to the
-      name-role-namespace triple. We use zlib's crc32 here instead of unique_id because
-      of it's brevity which is important when trying to id a remocon app by its hash
+      display_name-role-namespace triple. We use zlib's crc32 here instead of unique_id because
+      of it's brevity which is important when trying to id an interaction by its hash
       from an nfc tag.
 
-      Might be worth checking here http://docs.python.org/2.7/library/zlib.html#zlib.crc32 if
-      his doesn't produce the same hash on all platforms.
+      Might be worth checking http://docs.python.org/2.7/library/zlib.html#zlib.crc32 if
+      this doesn't produce the same hash on all platforms.
 
-      :param name: the executable name of the interaction
-      :type name: str
-      :param role: the role the interaction is embedded in
-      :type role: str
-      :param namespace: the namespace in which to embed this interaction
-      :type namespace: str
+      :param str display_name: the display name of the interaction
+      :param str role: the role the interaction is embedded in
+      :param str namespace: the namespace in which to embed this interaction
+
+      :returns: the hash
+      :rtype: int32
     '''
-    return zlib.crc32(name + "-" + role + "-" + namespace)
+    return zlib.crc32(display_name + "-" + role + "-" + namespace)
 
 
 def load_msgs_from_yaml_resource(resource_name):
     """
       Load interactions from a yaml resource.
 
-      :param resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
-      :type resource_name: str
+      :param str resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
 
       :returns: a list of ros msg interaction specifications
-      :rtype: concert_msgs.Interaction[]
+      :rtype: rocon_interaction_msgs.Interaction_ []
 
-      :raises: :exc:`rocon_interactions.YamlResourceNotFoundException,` if yaml is not found.
-      :raises: :exc:`rocon_interactions.MalformedInteractionsYaml,` if yaml is malformed.
+      :raises: :exc:`.YamlResourceNotFoundException` if yaml is not found.
+      :raises: :exc:`.MalformedInteractionsYaml` if yaml is malformed.
+
+      .. include:: weblinks.rst
     """
     interactions = []
     try:
@@ -87,8 +104,11 @@ def load_msgs_from_yaml_resource(resource_name):
 
 class Interaction(object):
     '''
-      Defines an interaction. This wraps the base ros msg data structure with
-      a few convenient management handles.
+      This class defines an interaction. It does so by wrapping the base
+      rocon_interaction_msgs.Interaction_ msg structure with
+      a few convenient variables and methods.
+
+      .. include:: weblinks.rst
     '''
     __slots__ = [
         'msg',           # rocon_interaction_msgs.Interaction
@@ -103,17 +123,21 @@ class Interaction(object):
     ]
 
     def __init__(self, msg):
-        '''
-          Validate the incoming fields and populate remaining fields with sane defaults.
-          Also compute a unique hash for this object based on the incoming
-          name-role-namespace triple.
+        """
+          Validate the incoming fields supplied by the interaction msg
+          and populate remaining fields with proper defaults (e.g. calculate the
+          unique hash for this interaction). The hash is calculated based on the
+          incoming display_name-role-namespace triple.
 
-          @param msg
-          @type rocon_interaction_msgs.Interaction
+          :param msg: underlying data structure with fields minimally filled via :func:`.load_msgs_from_yaml_resource`.
+          :type msg: rocon_interaction_msgs.Interaction_
 
-          @raise exceptions.InvalidInteraction
-        '''
+          :raises: :exc:`.InvalidInteraction` if the interaction variables were improperly defined (e.g. max = -1)
+
+          .. include:: weblinks.rst
+        """
         self.msg = msg
+        """Underlying data structure (rocon_interaction_msgs.Interaction_)"""
         if self.msg.max < -1:
             raise InvalidInteraction("maximum instance configuration cannot be negative [%s]" % self.msg.display_name)
         if self.msg.max == 0:
@@ -126,18 +150,27 @@ class Interaction(object):
             self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
             self.msg.namespace = '/'
-        self.msg.hash = generate_hash(self.msg.name, self.msg.role, self.msg.namespace)
-        # some convenient aliases
+        self.msg.hash = generate_hash(self.msg.display_name, self.msg.role, self.msg.namespace)
+        # some convenient aliases - these should be properties!
         self.role = self.msg.role
+        """The group under which this interaction should be embedded [int]."""
         self.name = self.msg.name
+        """Executable name for this interaction, can be a roslaunch, rosrunnable, global executable, web url or web app [int]."""
         self.namespace = self.msg.namespace
+        """Default namespace under which ros services and topics should be embedded for this interaction [int]."""
         self.display_name = self.msg.display_name
+        """A human friendly name that also uniquely helps uniquely identify this interaction (you can have more than one configured ``name`` instance) [int]."""
         self.hash = self.msg.hash
+        """A crc32 unique identifier key for this interaction, see also :func:`.generate_hash` [int32]."""
         self.compatibility = self.msg.compatibility
+        """A rocon_uri_ string that indicates what platforms it may run on [int]."""
 
     def is_paired_type(self):
         """
         Classify whether this interaction is to be paired with a rapp or not.
+
+        :returns: whether it is a pairing interaction or not
+        :rtype: bool
         """
         return True if self.msg.pairing.rapp else False
 
@@ -147,6 +180,9 @@ class Interaction(object):
 
     @property
     def max(self):
+        """
+        Maximum number of instantiations that is permitted (e.g. teleop should only allow 1) [int].
+        """
         return self.msg.max
 
     @property

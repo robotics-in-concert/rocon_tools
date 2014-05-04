@@ -24,25 +24,10 @@ import rocon_app_manager_msgs.msg as rocon_app_manager_msgs
 import rocon_app_manager_msgs.srv as rocon_app_manager_srvs
 import rocon_python_comms
 import threading
-
-##############################################################################
-# Exceptions
-##############################################################################
-
-
-class FailedToStartRappError(Exception):
-    """ Failed to start rapp. """
-    pass
-
-
-class FailedToStopRappError(Exception):
-    """ Failed to stop rapp. """
-    pass
-
-
-class FailedToFindRappManagerError(Exception):
-    """ Failed to find the rapp manager. """
-    pass
+from .exceptions import(
+                        FailedToStartRappError,
+                        FailedToStopRappError,
+                        )
 
 ##############################################################################
 # Classes
@@ -56,7 +41,6 @@ class RappHandler(object):
     a convenience to start and stop rapps on the concert client.
     """
     __slots__ = [
-        'namespace',          # conductor's alias for this concert client
         'start_rapp',         # service proxy to this client's start_app service
         'stop_rapp',          # service proxy to this client's stop_app service
         'status_subscriber',  # look for status updates (particularly rapp running/not running)
@@ -71,14 +55,21 @@ class RappHandler(object):
         rapps on this concert client.
 
         :param status_callback function: handles toggling of pairing mode upon appropriate status updates
-
-        :raises: :exc:`.FailedToFindRappManagerError`
         """
         self.is_running = False
+        """Flag indicating if there is a monitored rapp running on the rapp manager."""
         self.status_callback = status_callback
+        """Callback that handles status updates of the rapp manager appropriately at a higher level (the interactions manager level)."""
         thread = threading.Thread(target=self._setup_rapp_manager_connections())
         thread.start()
         self.initialised = False
+        """Flag indicating that the rapp manager has been found and services/topics connected."""
+        self.start_rapp = None
+        """Service proxy to the rapp manager's start_rapp service"""
+        self.stop_rapp = None
+        """Service proxy to the rapp manager's stop_rapp service"""
+        self.status_subscriber = None
+        """Subscriber to the rapp manager's status publisher"""
 
     def _setup_rapp_manager_connections(self):
         try:
@@ -108,8 +99,11 @@ class RappHandler(object):
         """
         Start the rapp with the specified remappings.
 
-        :param rapp str: name of the rapp to start (e.g. rocon_apps/teleop)
-        :param remappings rocon_std_msgs/Remapping[]: remappings to apply to the rapp when starting.
+        :param str rapp: name of the rapp to start (e.g. rocon_apps/teleop)
+        :param remappings: remappings to apply to the rapp when starting.
+        :type remappings: rocon_std_msgs.Remapping_ []
+
+        .. include:: weblinks.rst
 
         :raises: :exc:`.FailedToStartRappError`
         """
@@ -127,6 +121,8 @@ class RappHandler(object):
         Stop a rapp on this concert client (if one should be running). This
         doesn't need a rapp specification since only one rapp can ever be
         running - it will just stop the currently running rapp.
+
+        :raises: :exc:`.FailedToStopRappError`
         """
         if not self.initialised:
             raise FailedToStopRappError("rapp manager's location not known")

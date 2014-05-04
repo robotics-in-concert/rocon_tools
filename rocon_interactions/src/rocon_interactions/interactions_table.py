@@ -158,7 +158,7 @@ class InteractionsTable(object):
         '''
         removed = []
         for msg in msgs:
-            msg_hash = interactions.generate_hash(msg.name, msg.role, msg.namespace)
+            msg_hash = interactions.generate_hash(msg.display_name, msg.role, msg.namespace)
             found = self.find(msg_hash)
             if found is not None:
                 removed.append(msg)

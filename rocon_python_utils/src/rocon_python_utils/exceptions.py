@@ -4,6 +4,28 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: exceptions
+   :platform: Unix
+   :synopsis: General purpose exceptions for the rocon framework.
+
+This module is a library of general purpose exceptions that fill general needs
+not catered for by the `python exception heirarchy`_.
+These exception names are all included in the main
+rocon_python_utils namespace.  To catch one, import it this
+way::
+
+    from rocon_uri import RoconURIValueError
+
+.. _`python exception heirarchy`:https://docs.python.org/2/library/exceptions.html#exception-hierarchy
+
+----
+
+"""
+##############################################################################
 # Exceptions
 ##############################################################################
 

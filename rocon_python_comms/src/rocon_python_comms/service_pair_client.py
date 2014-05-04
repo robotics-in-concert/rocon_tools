@@ -3,6 +3,25 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: service_pair_client
+   :platform: Unix
+   :synopsis: Client side api for communicating across a rocon service pair.
+
+
+This module contains the client side api for communicating across a rocon
+service pair. A `facade pattern`_ is used here to simplify the interaction with
+the client side publisher and subscriber.
+
+.. include:: weblinks.rst
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -62,7 +81,45 @@ class NonBlockingRequestHandler(RequestHandlerBase):
 
 class ServicePairClient(object):
     '''
-      The client side of a pubsub service pair.
+      The client side of a pubsub service pair.This class provides a simplified
+      api for handling requests/responses on the pubsub pair (client side).
+      Although the development of this class was for non-blocking request-response
+      behaviour, it does support legacy style blocking behavious as well.
+
+      **Usage (Blocking):**
+
+      .. code-block:: python
+
+          from rocon_python_comms import ServicePairClient
+
+          spawn_turtle = ServicePairClient('spawn', concert_service_msgs.SpawnTurtlePair)
+          response = spawn_turtle(concert_service_msgs.SpawnTurtleRequest('kobuki'), timeout=rospy.Duration(3.0))
+          if response is not None:  # None indicates the operation timed out
+              # .. do something
+
+      **Usage (Non-Blocking):**
+
+      .. code-block:: python
+
+          from rocon_python_comms import ServicePairClient
+          from concert_service_msgs.msg import SpawnTurtlePair, SpawnTurtlePairRequest, SpawnTurtlePairResponse
+
+          class Foo(object):
+              def __init__():
+                  self.event = threading.Event()
+                  self.response = None
+                  self.spawn_turtle = ServicePairClient('spawn',
+                                                        SpawnTurtlePair
+                                                        )
+                  self.spawn_turtle(SpawnTurtlePairRequest('kobuki'), timeout=rospy.Duration(3.0), callback=self.callback)
+                  self.event.wait()  # practically, you would actually do something here
+                  if self.response is not None:
+                      print("Response %s" % self.response)
+
+              def callback(self, request_id, msg):
+                  self.response = msg
+                  self.event.set()
+
     '''
     __slots__ = [
             '_publisher',
@@ -80,16 +137,17 @@ class ServicePairClient(object):
 
     def __init__(self, name, ServicePairSpec):
         '''
-          @param name : resource name of service pair (e.g. testies for pair topics testies/request, testies/response)
-          @type str
-          @param ServicePairSpec : the pair type (e.g. rocon_service_pair_msgs.msg.TestiesPair)
-          @type str
+          :param str name: resource name of service pair (e.g. testies for pair topics testies/request, testies/response)
+          :param str ServicePairSpec: the pair type (e.g. rocon_service_pair_msgs.msg.TestiesPair)
         '''
         try:
             p = ServicePairSpec()
             self.ServicePairSpec = ServicePairSpec
+            """Base message type for this pair."""
             self.ServicePairRequest = type(p.pair_request)
+            """Request msg type for this pair <ServicePairSpec>Request."""
             self.ServicePairResponse = type(p.pair_response)
+            """Response msg type for this pair <ServicePairSpec>Response."""
         except AttributeError:
             raise ServicePairException("Type is not an pair spec: %s" % str(ServicePairSpec))
         self._lock = threading.Lock()
@@ -101,11 +159,10 @@ class ServicePairClient(object):
         '''
           Waits for the service pair server to appear.
 
-          @param timeout : time to wait for data
-          @type rospy.Duration
+          :param rospy.Duration timeout: time to wait for data
 
-          @raise ROSException: if specified timeout is exceeded
-          @raise ROSInterruptException: if shutdown interrupts wait
+          :raises: rospy.ROSException if specified timeout is exceeded
+          :raises: rospy.ROSInterruptException if shutdown interrupts wait
         '''
         timeout_time = time.time() + timeout.to_sec()
         while not rospy.is_shutdown() and time.time() < timeout_time:
@@ -126,17 +183,20 @@ class ServicePairClient(object):
           Initiates and executes the client request to the server. The type of arguments
           supplied determines whether to apply blocking or non-blocking behaviour.
 
-          @param msg : the request message
-          @type <name>Request
+          If no callback is supplied, the mode is blocking, otherwise non-blocking.
+          If no timeout is specified, then a return of None indicates that the
+          operation timed out.
 
-          @param timeout : time to wait for data
-          @type rospy.Duration
+          :param msg: the request message
+          :type msg: <name>Request
 
-          @param callback : user callback invoked for responses of non-blocking calls
-          @type method with arguments (uuid_msgs.UniqueID, <name>Response)
+          :param rospy.Duration timeout: time to wait for data
 
-          @return msg/id : for blocking calls it is the response message, for non-blocking it is the unique id
-          @rtype <name>Response/uuid_msgs.UniqueID
+          :param callback: user callback invoked for responses of non-blocking calls
+          :type callback: method with arguments (uuid_msgs.UniqueID, <name>Response)
+
+          :returns: msg/id for blocking calls it is the response message, for non-blocking it is the unique id
+          :rtype: <name>Response/uuid_msgs.UniqueID or None (if timed out)
         '''
         pair_request_msg = self.ServicePairRequest()
         pair_request_msg.id = unique_id.toMsg(unique_id.fromRandom())
@@ -157,11 +217,11 @@ class ServicePairClient(object):
 
     def _make_blocking_call(self, request_handler, msg, timeout):
         '''
-          @param request_handler : information and event handler for the request
-          @type RequestHandler
+          :param request_handler: information and event handler for the request
+          :type request_handler: :class:`.RequestHandler`
 
-          @param msg : the request pair message structure
-          @type self.ServicePairRequest
+          :param msg: the request pair message structure
+          :type msg: ServicePairRequest
         '''
         self._publisher.publish(msg)
         if timeout is None:
@@ -177,11 +237,11 @@ class ServicePairClient(object):
 
     def _make_non_blocking_call(self, request_handler, msg, timeout):
         '''
-          @param request_handler : a copy of information and event handler for the request (used for the timer)
-          @type RequestHandler
+          :param request_handler: a copy of information and event handler for the request (used for the timer)
+          :type request_handler: :class:`.RequestHandler`
 
-          @param msg : the request pair message structure
-          @type self.ServicePairRequest
+          :param msg: the request pair message structure
+          :type msg: ServicePairRequest
         '''
         self._publisher.publish(msg)
         if timeout is not None:
@@ -194,12 +254,12 @@ class ServicePairClient(object):
           Handle a timeout for non-blocking requests. This will call the user's defined error callback function
           (with args: (uuid_msgs.UniqueID, str)).
 
-          @param event : regular rospy timer event object (not used)
+          :param event: regular rospy timer event object (not used)
 
-          @param request_handler : a copy of the handler that gets bound when this callback is passed into the timer
-          @type NonBlockingRequestHandler
+          :param request_handler: a copy of the handler that gets bound when this callback is passed into the timer
+          :type request_handler: :class:`.NonBlockingRequestHandler`
 
-          @todo respond on the error callback.
+          :todo: respond on the error callback.
         '''
         already_handled = False
         self._lock.acquire()
@@ -214,8 +274,8 @@ class ServicePairClient(object):
 
     def _internal_callback(self, msg):
         '''
-          @param msg : message returned from the server (with pair id etc)
-          @type self.ServicePairResponse
+          :param msg: message returned from the server (with pair id etc)
+          :type msg: ServicePairResponse
         '''
         # Check if it is a blocking call that has requested it.
         key = unique_id.toHexString(msg.id)

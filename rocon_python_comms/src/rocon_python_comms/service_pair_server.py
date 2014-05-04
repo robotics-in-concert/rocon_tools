@@ -3,6 +3,25 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: service_pair_server
+   :platform: Unix
+   :synopsis: Server side api for communicating across a rocon service pair.
+
+
+This module contains the server side api for communicating across a rocon
+service pair. A `facade pattern`_ is used here to simplify the interaction with
+the server side publisher and subscriber.
+
+.. include:: weblinks.rst
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -19,7 +38,50 @@ from .exceptions import ServicePairException
 
 class ServicePairServer(object):
     '''
-      The server side of a pubsub service pair.
+      The server side of a pubsub service pair. This class provides a simplified
+      api for handling requests/responses on the pubsub pair. There are two
+      modes of operation - 1) blocking and 2) threaded.
+
+      **Blocking Mode**
+
+      In the first, the users' callback function directly runs whenever an
+      incoming request is received. In this case, your callbacks should be
+      very minimal so that incoming requests don't get blocked and queued up.
+
+      .. code-block:: python
+
+          from rocon_python_comms import ServicePairServer
+
+          class Foo(object):
+              def __init__():
+                  self.server = ServicePairServer('add_two_ints',
+                                                  self.callback,
+                                                  awesome_msgs.AddTwoIntsPair,
+                                                 )
+
+              def callback(self, request_id, msg):
+                  sum = msg.first + msg.second
+                  self.server.reply(request_id, awesome_msgs.AddTwoIntsPairResponse(sum))
+
+      **Threaded**
+
+      In the second, we spawn a background thread and shunt the callback into this thread.
+
+      .. code-block:: python
+
+          from rocon_python_comms import ServicePairServer
+
+          class Foo(object):
+              def __init__():
+                  self.server = ServicePairServer('capture_teleop',
+                                                  self.callback,
+                                                  concert_tutorial_msgs.CaptureTeleopPair,
+                                                  use_threads=True
+                                                 )
+
+              def callback(self, request_id, msg):
+                  # do alot of work in here, possibly other ros service calls with indeterminate delay
+                  self.server.reply(request_id, concert_tutorial_msgs.CaptureTeleopPairResponse(result=True))
     '''
     __slots__ = [
             '_publisher',
@@ -38,19 +100,21 @@ class ServicePairServer(object):
 
     def __init__(self, name, callback, ServicePairSpec, use_threads=False):
         '''
-          @param name : resource name of service pair (e.g. testies for pair topics testies/request, testies/response)
-          @type str
-          @param callback : function invoked when a request arrives
-          @param ServicePairSpec : the pair type (e.g. rocon_service_pair_msgs.msg.TestiesPair)
-          @type str
+        :param str name: resource name of service pair (e.g. testies for pair topics testies/request, testies/response)
+        :param callback: function invoked when a request arrives
+        :param ServicePairSpec: the pair type (e.g. rocon_service_pair_msgs.msg.TestiesPair)
+        :param bool use_threads: put the callback function into a fresh background thread when a request arrives.
         '''
         self._callback = callback
         self._use_threads = use_threads
         try:
             p = ServicePairSpec()
             self.ServicePairSpec = ServicePairSpec
+            """Base message type for this pair."""
             self.ServicePairRequest = type(p.pair_request)
+            """Request msg type for this pair <ServicePairSpec>Request."""
             self.ServicePairResponse = type(p.pair_response)
+            """Response msg type for this pair <ServicePairSpec>Response."""
         except AttributeError:
             raise ServicePairException("Type is not an pair spec: %s" % str(ServicePairSpec))
         self._subscriber = rospy.Subscriber(name + "/request", self.ServicePairRequest, self._internal_callback)
@@ -62,11 +126,12 @@ class ServicePairServer(object):
 
     def reply(self, request_id, msg):
         '''
-          @param request_id : the request id to associate with this response.
-          @type uuid_msgs.UniqueID
+        Send a reply to a previously received request (identified by request_id). Use this
+        instead of writing directly to the publisher - just pass the content of the
+        response data and the id that was issued with the request.
 
-          @param msg : the response
-          @type ServiceResponse
+        :param uuid_msgs.UniqueID request_id: the request id to associate with this response.
+        :param ServiceResponse msg: the response
         '''
         pair_response = self.ServicePairResponse()
         pair_response.id = request_id
@@ -79,8 +144,7 @@ class ServicePairServer(object):
 
     def _internal_callback(self, msg):
         '''
-          @param msg : message returned from the server (with pair id etc)
-          @type self.ServicePairRequest
+        :param ServicePairRequest msg: message returned from the server (with pair id etc)
         '''
         # Check if it is a blocking call that has requested it.
         if self._use_threads:

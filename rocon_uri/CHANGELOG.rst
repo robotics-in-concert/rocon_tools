@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* sphinx documentation updated.
+* add hardware platform for utexas BWI segbot
+* Contributors: Daniel Stonier, Jack O'Quin
+
 0.1.4 (2014-04-16)
 ------------------
 * rocon_uri parse provide all parsed information

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* threadified the interactions manager rapp handler find routine, closes `#37 <https://github.com/robotics-in-concert/rocon_tools/issues/37>`_.
+* pairing interactions support, `#34 <https://github.com/robotics-in-concert/rocon_tools/issues/34>`_.
+* web_url(), web_app() specifications for web_urls and web_apps, `#33 <https://github.com/robotics-in-concert/rocon_tools/issues/33>`_.
+* Contributors: Daniel Stonier, Jack O'Quin
+
 0.1.4 (2014-04-16)
 ------------------
 * bugfix get_interaction callback, return the msg, not the class, `#24 <https://github.com/robotics-in-concert/rocon_tools/issues/24>`_

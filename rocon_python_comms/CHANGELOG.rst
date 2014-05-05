@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* sphinx documentation added.
+* better feedback on service communication errors.
+* comment find_node that it only accepts unresolved names.
+* fix missing list return for non-unique find_service requests
+* Contributors: Daniel Stonier
+
 0.1.2 (2014-04-02)
 ------------------
 * bugfix location of rospair bash file.

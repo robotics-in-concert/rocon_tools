@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* sphinx documentation added.
+* Contributors: Daniel Stonier
+
 0.1.4 (2014-04-16)
 ------------------
 * better handling of qt and console output of master info scripts.

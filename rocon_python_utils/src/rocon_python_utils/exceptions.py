@@ -18,9 +18,9 @@ These exception names are all included in the main
 rocon_python_utils namespace.  To catch one, import it this
 way::
 
-    from rocon_uri import RoconURIValueError
+    from rocon_python_comms import TimeoutExpiredError
 
-.. _`python exception heirarchy`:https://docs.python.org/2/library/exceptions.html#exception-hierarchy
+.. _`python exception heirarchy` : https://docs.python.org/2/library/exceptions.html#exception-hierarchy
 
 ----
 
@@ -31,4 +31,5 @@ way::
 
 
 class TimeoutExpiredError(Exception):
+    """General purpose exception usable in any timeout situation."""
     pass

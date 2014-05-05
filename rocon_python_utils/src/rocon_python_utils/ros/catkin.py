@@ -2,6 +2,21 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: ros.catkin
+   :platform: Unix
+   :synopsis: Tools for working with catkin packages.
+
+This module makes use of the python-catkin-pkg module and adds a few extra
+functions for interacting with catkin packages.
+
+----
+
+"""
 
 ##############################################################################
 # Imports
@@ -23,14 +38,14 @@ def package_index_from_package_path(package_paths):
 
     The resulting dictionary is keyed by the package name (so packages with
     duplicate names are overlaid) and the values are the
-    :py:class:`catkin_pkg.package.Package` class
-
-    @note Is this actually implemented as a function in a general ros package?
+    :class:`catkin_pkg.package.Package` class.
 
     :param ros_package_path: list of paths to search
-    :type ros_package_path: list
+    :type ros_package_path: str[]
     :returns: dictionary of package objects keyed by name of the package
     :rtype: dict
+
+    :todo: overlay duplicates only if the version is newer
     """
     result = {}
     for path in reversed(package_paths):

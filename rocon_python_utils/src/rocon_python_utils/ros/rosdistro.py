@@ -3,6 +3,18 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: ros.rosdistro
+   :platform: Unix
+   :synopsis: Lookup the rosdistro version in runtime.
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -22,7 +34,7 @@ def get_rosdistro():
 
       http://answers.ros.org/question/36485/how-do-i-test-the-ros-version-in-python-code/
 
-      @return the human readable string version for the ros distro
-      @str
+      :returns: the human readable string version for the ros distro
+      :rtype: str
     '''
     return rospy.get_param("/rosdistro").rstrip()

@@ -2,6 +2,21 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: ros.resources
+   :platform: Unix
+   :synopsis: Helpers for working with ros resource names.
+
+This module contains helpers that lookup or collect an index of ros resource
+names for various purposes.
+
+----
+
+"""
 
 ##############################################################################
 # Imports
@@ -27,16 +42,26 @@ def find_resource_from_string(resource, rospack=None, extension=None):
       a package. This function passes off the work to find_resource
       once the input string is split.
 
-      @param package : ros package
-      @param resource : string resource identifier of the form package/filename
+      Pass it a shared rospack (:class:`.rospkg.RosPack`) object to accelerate
+      the crawling across the ROS_PACKAGE_PATH when you are calling this
+      function for many resources consecutively.
 
-      @param extension : file name extension to look for/expect
-      @type string
+      .. code-block:: python
 
-      @return full pathname to the resource
-      @rtype str
+           rospack = rospkg.RosPack()
+           for ros_resource_name in ['rocon_interactions/pc.interactions', 'rocon_interactions/demo.interactions']
+               filename = find_resource_from_string(ros_resource_name, rospack)
+               # do something
 
-      @raise rospkg.ResourceNotFound : raised if the resource is not found or has an inappropriate extension.
+      :param str resource: ros resource name (in the form package/filename)
+      :param rospack: a caching utility to help accelerate catkin filesystem lookups
+      :type rospack: :class:`.rospkg.RosPack`
+      :param str extension: file name extension to look for/expect
+
+      :returns: full pathname to the resource
+      :rtype: str
+
+      :raises: :exc:`.rospkg.ResourceNotFound` raised if the resource is not found or has an inappropriate extension.
     '''
     if extension is not None:
         filename_extension = os.path.splitext(resource)[-1]
@@ -56,11 +81,12 @@ def find_resource(package, filename, rospack=None):
       a package. It checks the output, and provides the appropriate
       error if there is one.
 
-      @param package : ros package
-      @param filename : some file inside the specified package
-      @return str : absolute path to the file
+      :param str package: ros package
+      :param str filename: some file inside the specified package
+      :returns: absolute path to the file
+      :rtype: str
 
-      @raise rospkg.ResourceNotFound : raised if there is nothing found or multiple objects found.
+      :raises: :exc:`.rospkg.ResourceNotFound` : raised if there is nothing found or multiple objects found.
     '''
     try:
         resolved = roslib.packages.find_resource(package, filename, rospack=rospack)
@@ -79,11 +105,16 @@ def resource_index_from_package_exports(export_tag, package_paths=None, package_
     '''
       Scans the package path looking for exports and grab the ones we are interested in.
 
-      @param export_tag : export tagname
-      @type str
+      :param str export_tag: export tagname
+      :param package_paths: list of package paths to scan over
+      :type package_paths: str[]
+      :param package_whitelist: list of packages to include (and no other)
+      :type package_paths: str[]
+      :param package_blacklist: list of packages to exclude
+      :type package_paths: str[]
 
-      @return the dictionary of resource and its absolute path
-      @type { resource_name : os.path }
+      :returns: the dictionary of resource and its absolute path
+      :rtype: dict { resource_name : os.path }
     '''
     package_index = _get_package_index(package_paths)
     resources = {}

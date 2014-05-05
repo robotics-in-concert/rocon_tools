@@ -4,6 +4,21 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: ros.icons
+   :platform: Unix
+   :synopsis: Icon manipulation.
+
+This module contains converters and ros resource finders for icons and icon
+messages.
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -24,10 +39,13 @@ from .resources import find_resource_from_string
 def icon_to_msg(filename):
     '''
       Loads the specified filename and puts in
-      rocon_std_msgs.Icon format
+      `rocon_std_msgs.Icon`_ format
 
-      @param : filename to the icon resource.
-      @type : string
+      :param str filename: to the icon resource.
+      :returns: the icon in msg format
+      :rtype: `rocon_std_msgs.Icon`_
+
+      .. include:: weblinks.rst
     '''
     icon = rocon_std_msgs.Icon()
     if filename == None or filename == "":
@@ -47,13 +65,12 @@ def icon_to_msg(filename):
 def icon_resource_to_msg(resource):
     '''
       Loads the icon resource and puts in
-      rocon_std_msgs.Icon format
+      `rocon_std_msgs.Icon`_ format
 
-      @param resource : resource identifier (package/name)
-      @type : string
+      :param str resource: resource identifier (package/name)
 
-      @return the icon message
-      @rtype rocon_std_msgs.msg.Icon
+      :returns: the icon in msg format
+      :rtype: `rocon_std_msgs.Icon`_
     '''
     filename = find_resource_from_string(resource)
     icon = icon_to_msg(filename)

@@ -2,6 +2,21 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: system.popen
+   :platform: Unix
+   :synopsis: Workaround a few of the constrations in the official popen impl.
+
+This module helps workaround the official popen with another implementation
+that solves a few problems (post-exec callbacks, etc)
+
+----
+
+"""
 
 ##############################################################################
 # Imports
@@ -23,6 +38,20 @@ class Popen(object):
       Use this if you want to attach a postexec function to popen (which
       is not supported by popen at all). It also defaults setting and
       terminating whole process groups (something we do quite often in ros).
+
+      **Usage:**
+
+      This is what you'd do starting a rosrunnable with a listener for
+      termination.
+
+      .. code-block:: python
+
+          def process_listener():
+              print("subprocess terminating")
+
+          command_args = ['rosrun', package_name, rosrunnable_filename, '__name:=my_node']
+          process = rocon_python_utils.system.Popen(command_args, postexec_fn=process_listener)
+
     '''
     __slots__ = [
             'pid',
@@ -36,19 +65,17 @@ class Popen(object):
 
     def __init__(self, popen_args, shell=False, preexec_fn=None, postexec_fn=None, env=None):
         '''
-          @param popen_args : list/tuple of usual popen args
-          @type list/tuple
+          :param popen_args: list/tuple of usual popen args
+          :type popen_args: str[]
+          :param bool shell: same as the shell argument passed to subprocess.Popen
 
-          @param shell : same as the shell argument passed to subprocess.Popen
-          @type bool
+          :param preexec_fn: usual popen pre-exec function
+          :type preexec_fn: method with no args
 
-          @param preexec_fn : usual popen pre-exec function
-          @type method with no args
+          :param postexec_fn: the callback which we support for postexec.
+          :type postexec_fn: method with no args
 
-          @param postexec_fn : the callback which we support for postexec.
-          @type method with no args
-
-          :param env dict: a customised environment to run the process in.
+          :param dict env: a customised environment to run the process in.
         '''
         self.pid = None
         self._proc = None
@@ -59,6 +86,12 @@ class Popen(object):
         self._thread.start()
 
     def send_signal(self, sig):
+        """
+        Send the process a posix signal. See `man 7 signal` for a list and pass
+        them by keyword (e.g. signal.SIGINT) or directly by integer value.
+
+        :param int sig: one of the posix signals.
+        """
         os.killpg(self._proc.pid, sig)
         # This would be the normal way if not defaulting settings for process groups
         #self._proc.send_signal(sig)
@@ -70,7 +103,7 @@ class Popen(object):
 
     def terminate(self):
         '''
-          @raise OSError if the process has already shut down.
+          :raises: :exc:`.OSError` if the process has already shut down.
         '''
         return os.killpg(self._proc.pid, signal.SIGTERM)
         # if we were not setting process groups

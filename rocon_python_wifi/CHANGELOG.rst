@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.6 (2014-05-06)
+------------------
+* bugfix install rule of original documentation notes.
+* maintainer correctly added.
+* Contributors: Daniel Stonier
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation added.

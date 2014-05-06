@@ -1,6 +1,6 @@
 <package>
   <name>rocon_semantic_version</name>
-  <version>0.1.5</version>
+  <version>0.1.6</version>
   <description>
     Internal packaging of the 2.2.2 version of the python semantic version module.
   </description>

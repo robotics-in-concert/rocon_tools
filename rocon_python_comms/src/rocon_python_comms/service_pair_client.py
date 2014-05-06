@@ -86,40 +86,63 @@ class ServicePairClient(object):
       Although the development of this class was for non-blocking request-response
       behaviour, it does support legacy style blocking behavious as well.
 
-      **Usage (Blocking):**
-
-      .. code-block:: python
-
-          from rocon_python_comms import ServicePairClient
-
-          spawn_turtle = ServicePairClient('spawn', concert_service_msgs.SpawnTurtlePair)
-          response = spawn_turtle(concert_service_msgs.SpawnTurtleRequest('kobuki'), timeout=rospy.Duration(3.0))
-          if response is not None:  # None indicates the operation timed out
-              # .. do something
-
       **Usage (Non-Blocking):**
 
       .. code-block:: python
 
-          from rocon_python_comms import ServicePairClient
-          from concert_service_msgs.msg import SpawnTurtlePair, SpawnTurtlePairRequest, SpawnTurtlePairResponse
+          #!/usr/bin/env python
 
-          class Foo(object):
-              def __init__():
-                  self.event = threading.Event()
+          import rospy
+          from chatter.msg import ChatterRequest, ChatterResponse, ChatterPair
+          from rocon_python_comms import ServicePairClient
+          import unique_id
+
+          class ChatterClient(object):
+
+              def __init__(self):
                   self.response = None
-                  self.spawn_turtle = ServicePairClient('spawn',
-                                                        SpawnTurtlePair
-                                                        )
-                  self.spawn_turtle(SpawnTurtlePairRequest('kobuki'), timeout=rospy.Duration(3.0), callback=self.callback)
-                  self.event.wait()  # practically, you would actually do something here
+                  self.client = ServicePairClient('chatter', ChatterPair)
+                  self.client.wait_for_service(rospy.Duration(3.0)) # should catch some exceptions here in case of timeouts
+                  self.request_id = self.client(ChatterRequest("Hello dude"), timeout=rospy.Duration(3.0), callback=self.callback)
+                  rospy.loginfo("Request id %s" % unique_id.toHexString(self.request_id))
                   if self.response is not None:
                       print("Response %s" % self.response)
 
               def callback(self, request_id, msg):
+                  # ideally you'd check request_id against self.request_id
                   self.response = msg
-                  self.event.set()
+                  rospy.loginfo("Got the response: %s" % msg)
 
+          if __name__ == '__main__':
+              rospy.init_node('chatter_client', anonymous=True)
+              chatter_client = ChatterClient()
+              rospy.spin()
+
+      **Usage (Blocking):**
+
+      .. code-block:: python
+
+         #!/usr/bin/env python
+
+         import rospy
+         from chatter.msg import ChatterRequest, ChatterResponse, ChatterPair
+         from rocon_python_comms import ServicePairClient
+         import unique_id
+
+         class ChatterClient(object):
+
+             def __init__(self):
+                 self.response = None
+                 self.client = ServicePairClient('chatter', ChatterPair)
+                 self.client.wait_for_service(rospy.Duration(3.0)) # should catch some exceptions here in case of timeouts
+                 self.response = self.client(ChatterRequest("Hello dude"), timeout=rospy.Duration(3.0))
+                 if self.response is not None:
+                     print("Response %s" % self.response)
+
+         if __name__ == '__main__':
+             rospy.init_node('chatter_client', anonymous=True)
+             chatter_client = ChatterClient()
+             rospy.spin()
     '''
     __slots__ = [
             '_publisher',

@@ -8,7 +8,7 @@
     ROS ecosystem.
   </description>
 
-  <maintainer email="piyushk@todo.todo">piyushk</maintainer>
+  <maintainer email="d.stonier@gmail.com">Daniel Stonier</maintainer>
   <license>GPLv2</license>
   <url type="website">http://pythonwifi.wikispot.org/</url>
   <url type="repository">https://github.com/robotics-in-concert/rocon_tools</url>

@@ -329,11 +329,13 @@ class InteractionsManager(object):
                 if self.is_pairing():
                     return _request_interaction_response(interaction_msgs.ErrorCodes.ALREADY_PAIRING)
                 try:
-                    self._rapp_handler.start_rapp(interaction.pairing.rapp, interaction.pairing.remappings)
+                    self._rapp_handler.start(interaction.pairing.rapp, interaction.pairing.remappings)
                     self._pair = interaction_msgs.Pair(rapp=interaction.pairing.rapp, remocon=request.remocon)
                     self._publishers['pairing'].publish(self._pair)
-                except FailedToStartRappError:
-                    return _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
+                except FailedToStartRappError as e:
+                    response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
+                    response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
+                    return response
         # if we get here, we've succeeded.
         return _request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)
 

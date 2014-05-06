@@ -2,6 +2,7 @@
   - pc
   - robot:
     - kobuki
+    - gopher
     - pr2
     - robosem
     - robot_other

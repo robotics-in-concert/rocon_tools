@@ -3,6 +3,15 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: network.pinger
+   :platform: Unix
+   :synopsis: Tools built upon the system ping command.
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -35,10 +44,29 @@ def mdev(vals):
 class Pinger(threading.Thread):
     '''
       The pinger class can run a threaded pinger at the desired frequency to
-      check if a machine is available or not
+      check if a machine is available or not.
+
+      **Usage:**
+
+      .. code-block:: python
+
+          from rocon_python_utils.network import Pinger
+
+          pinger = Pinger('192.168.1.3', 0.2)
+          pinger.start()
+          # after some time
+          print("Statistics: %s" % pinger.get_latency())  # [min,avg,max,mean deviation]
+          print("Time since last seen %s" % pinger.get_time_since_last_seen())
     '''
 
     def __init__(self, ip, ping_frequency=0.2):
+        """
+        Initialises but doesn't start the thread yet. Use :func:`.run` to start
+        pinging and collecting statistics.
+
+        :param str ip:
+        :param float ping_frequency: periodically ping at this frequency (Hz)
+        """
 
         threading.Thread.__init__(self)
         self.daemon = True
@@ -54,12 +82,22 @@ class Pinger(threading.Thread):
         self.current_ring_counter = 0
 
     def get_time_since_last_seen(self):
+        """
+          Time in seconds since this ip was last pingable.
+
+          :returns: time (s) since seen
+          :rtype: float
+        """
         return time.time() - self.time_last_seen
 
     def get_latency(self):
         '''
-          Latency states are returned as list of 4 values
-          [min,avg,max,mean deviation]
+          Latency statistics generated from the internal window (buffer).
+          This is a ring buffer, so it will only use the most recent
+          ping data.
+
+          :returns: latency statistics (min, avg, max, mean deviation)
+          :rtype: float[]
         '''
         if self.values_available == 0:
             return [0.0, 0.0, 0.0, 0.0]
@@ -70,6 +108,11 @@ class Pinger(threading.Thread):
         return latency_stats
 
     def run(self):
+        """
+        Thread worker function - this does the actual pinging and records
+        ping data in the ring buffers for processing into latency statistics
+        as needed.
+        """
         rate = WallRate(self.ping_frequency)
         while True:
             # In case of failure, this call will take approx 10s

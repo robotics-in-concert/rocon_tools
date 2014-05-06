@@ -2,6 +2,20 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: system.command_line_wrappers
+   :platform: Unix
+   :synopsis: Call command line executables with convenience wrappers.
+
+This module wraps a few command line executables with a convenient python api.
+
+----
+
+"""
 
 ##############################################################################
 # Imports
@@ -18,8 +32,8 @@ def which(program):
     '''
       Wrapper around the command line 'which' program.
 
-      @return path to the program or None if it doesnt exist.
-      @rtype str or None
+      :returns: path to the program or None if it doesnt exist.
+      :rtype: str or None
     '''
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)

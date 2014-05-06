@@ -1,26 +1,20 @@
 Changelog
 =========
 
-0.1.4 (2014-04-16)
+0.1.5 (2014-05-05)
 ------------------
-* move master info code to a common spot
-* better handling of qt, display, console output of master info scripts.
-* modularising the master info retrieval script.
+* sphinx documentation added.
 * Contributors: Daniel Stonier
 
-0.1.3 (2014-04-09)
+0.1.4 (2014-04-16)
 ------------------
-* a globally visible 'ping' parameter for rocon
+* better handling of qt and console output of master info scripts.
+* modularising the master info retrieval script.
 * Contributors: Daniel Stonier
 
 0.1.0 (2014-03-31)
 ------------------
-* stack changelogs.
-* minor updates.
 * now depending on rocon_icons for its own icons.
-* remove unused comments
-* symbol binding for rosbride parameters, `#6 <https://github.com/robotics-in-concert/rocon_tools/issues/6>`_
-* concert info now going via rocon_master_info.
-* find_topic and rocon_master_info finalised.
-* mid adding master info and find_topic functions.
+* de-concertified the master info script.
+* concert_info first version.
 * Contributors: Daniel Stonier

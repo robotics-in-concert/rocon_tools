@@ -3,6 +3,18 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Documentation
+##############################################################################
+
+"""
+This is the top-level namespace of the rocon_python_comms_ ROS
+package. It provides additional python modules beyond rospy for working with
+ros python communications.
+
+.. _rocon_python_comms: http://wiki.ros.org/rocon_python_comms
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 

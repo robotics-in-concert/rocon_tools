@@ -1,7 +1,20 @@
 Changelog
 =========
 
+0.1.6 (2014-05-06)
+------------------
+* bugfix install rule of original documentation notes.
+* maintainer correctly added.
+* Contributors: Daniel Stonier
+
+0.1.5 (2014-05-05)
+------------------
+* sphinx documentation added.
+* Contributors: Daniel Stonier
+
 0.1.0 (2014-03-31)
 ------------------
-* redis, wifi and interactions moved in, python_utils now official.
+* rocon_python_wifi moved here from `rocon_multimaster`_
 * Contributors: Daniel Stonier
+
+.. _`rocon_multimaster`: https://github.com/robotics-in-concert/rocon_multimaster

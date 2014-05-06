@@ -1,6 +1,6 @@
 <package>
   <name>rocon_ebnf</name>
-  <version>0.1.4</version>
+  <version>0.1.6</version>
   <description>
     Internal packaging of the 0.91 version of the simple python
     <a href="http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form">EBNF</a>
@@ -14,5 +14,10 @@
   <author>LParis</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>python-catkin-pkg</build_depend>
   <test_depend>rosunit</test_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
 </package>

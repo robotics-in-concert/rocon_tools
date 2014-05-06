@@ -8,9 +8,10 @@
 
 """
 This is the top-level namespace of the rocon_console_ ROS
-package. It provides python utilities for working with the console.
+package. It provides nodes, utilities and supporting libraries for enabling
+interactions between users and a ros master.
 
-.. _rocon_console: http://wiki.ros.org/_rocon_console
+.. _rocon_console: http://wiki.ros.org/rocon_console
 
 """
 

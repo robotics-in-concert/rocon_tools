@@ -3,7 +3,22 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_multimaster/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
 
+"""
+.. module:: launch
+   :platform: Unix
+   :synopsis: Machinery for spawning multiple roslaunchers.
+
+
+This module contains the machinery for spawning and managing multiple terminals
+that execute a pre-configured roslaunch inside each.
+
+----
+
+"""
 ##############################################################################
 # Imports
 ##############################################################################
@@ -36,16 +51,25 @@ hold = False  # keep terminals open when sighandling them
 
 def preexec():
     '''
-      Don't forward signals.
+      We pass this to the subprocess executor to define a group for our rocon_launch'd
+      terminals. Specifically here we don't want to forward signals.
 
-      http://stackoverflow.com/questions/3791398/how-to-stop-python-from-propagating-signals-to-subprocesses
+      See http://stackoverflow.com/questions/3791398/how-to-stop-python-from-propagating-signals-to-subprocesses
+      for some interesting information around this topic.
     '''
     os.setpgrp()  # setpgid(0,0)
 
 
 def get_roslaunch_pids(parent_pid):
     '''
-      Search the pstree of the parent pid for any rocon launched process.
+      Search the pstree of the specified pid for roslaunch processes. We use this to
+      aid in gracefully terminating any roslaunch processes running in terminals before
+      closing down the terminals themselves.
+
+      :param str parent_pid: the pid of the parent process.
+      :returns: list of pids
+      :rtype: str[]
+
     '''
     ps_command = subprocess.Popen("ps -o pid -o comm --ppid %d --noheaders" % parent_pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     ps_output = ps_command.stdout.read()
@@ -67,6 +91,15 @@ def get_roslaunch_pids(parent_pid):
 
 
 def signal_handler(sig, frame):
+    '''
+      Special handler that gets triggered if someone hits CTRL-C in the original terminal that executed
+      'rocon_launch'. We catch the interrupt here, search and eliminate all child roslaunch processes
+      first (give them time to gracefully quit) and then finally close the terminals themselves.
+      closing down the terminals themselves.
+
+      :param str sig: signal id (usually looking for SIGINT - 2 here)
+      :param frame: frame
+    '''
     global processes
     global roslaunch_pids
     global hold
@@ -125,12 +158,12 @@ def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mapping
     '''
       Parses an rocon multi-launcher (xml file).
 
-      :param rocon_launcher str: xml string in rocon_launch format
-      :param default_roslaunch_options list: options to pass to roslaunch (usually "--screen")
-      :param args_mappings dict: command line mapping overrides, { arg_name : arg_value }
-      @return launchers : list with launcher parameters as dictionary elements of the list.
+      :param str rocon_launcher: xml string in rocon_launch format
+      :param default_roslaunch_options: options to pass to roslaunch (usually "--screen")
+      :param dict args_mappings: command line mapping overrides, { arg_name : arg_value }
+      :returns: list with launcher parameters as dictionary elements of the list.
 
-      @raise IOError : if it can't find any of the individual launchers on the filesystem.
+      :raises: :exc:`IOError` : if it can't find any of the individual launchers on the filesystem.
     '''
     tree = ElementTree.parse(rocon_launcher)
     root = tree.getroot()
@@ -173,7 +206,7 @@ def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mapping
 
 def parse_arguments():
     global hold
-    parser = argparse.ArgumentParser(description="Rocon's multiple master launcher.")
+    parser = argparse.ArgumentParser(description="Rocon's multi-roslauncher.")
     terminal_group = parser.add_mutually_exclusive_group()
     terminal_group.add_argument('-k', '--konsole', default=False, action='store_true', help='spawn individual ros systems via multiple konsole terminals')
     terminal_group.add_argument('-g', '--gnome', default=False, action='store_true', help='spawn individual ros systems via multiple gnome terminals')
@@ -194,6 +227,12 @@ def parse_arguments():
 def choose_terminal(gnome_flag, konsole_flag):
     '''
       Use ubuntu's x-terminal-emulator to choose the shell, or over-ride if it there is a flag.
+
+      :param bool gnome_flag: force use of gnome-terminal
+      :param bool konsole_flag: force use of konsole
+
+      :returns: string identifying the command to execute
+      :rtype str:
     '''
     if konsole_flag:
         if not rocon_python_utils.system.which('konsole'):

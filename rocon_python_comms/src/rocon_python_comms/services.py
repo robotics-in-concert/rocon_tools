@@ -3,6 +3,22 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: services
+   :platform: Unix
+   :synopsis: Useful methods relating to ros services.
+
+
+This module contains anything relating to introspection or manipulation
+of ros services.
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -20,24 +36,35 @@ from .exceptions import NotFoundException
 
 def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False):
     '''
-      Do a lookup to find services of the type
-      specified. This will raise exceptions if it times out or returns
-      multiple values. It can apply the additional logic of whether this should
-      return a single unique result, or a list.
+    Do a lookup to find services of the type
+    specified. This will raise exceptions if it times out or returns
+    multiple values. It can apply the additional logic of whether this should
+    return a single unique result, or a list. Under the hood this calls out to the ros master for a list
+    of registered services and it parses that to determine the result. If nothing
+    is found, it loops around internally on a 10Hz loop until the result is
+    found or the specified timeout is reached.
 
-      @param service_type : service type specification, e.g. concert_msgs/GetInteractions
-      @type str
+    Usage:
 
-      @param timeout : raise an exception if nothing is found before this timeout occurs.
-      @type rospy.rostime.Duration
+    .. code-block:: python
 
-      @param unique : flag to select the lookup behaviour (single/multiple results)
-      @type bool
+        from rocon_python_comms import find_service
 
-      @return the fully resolved name of the service (unique) or list of names (non-unique)
-      @type str
+        try:
+            service_name = rocon_python_comms.find_service('rocon_interaction_msgs/SetInteractions',
+                                                           timeout=rospy.rostime.Duration(15.0),
+                                                           unique=True)
+        except rocon_python_comms.NotFoundException as e:
+            rospy.logwarn("failed to find the set_interactions service.")
 
-      @raise rocon_python_comms.NotFoundException
+    :param str service_type: service type specification, e.g. concert_msgs/GetInteractions
+    :param rospy.Duration timeout: raise an exception if nothing is found before this timeout occurs.
+    :param bool unique: flag to select the lookup behaviour (single/multiple results)
+
+    :returns: the fully resolved name of the service (unique) or list of names (non-unique)
+    :rtype: str
+
+    :raises: :exc:`.NotFoundException`
     '''
     service_name = None
     service_names = []

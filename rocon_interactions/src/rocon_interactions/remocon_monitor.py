@@ -3,6 +3,21 @@
 #   https://raw.github.com/robotics-in-concert/rocon_concert/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: remocon_monitor
+   :platform: Unix
+   :synopsis: Remocon monitoring tools
+
+
+This module defines a class used monitor the status of connected remocons and
+trigger when certain status updates happen.
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -18,6 +33,8 @@ class RemoconMonitor(object):
     '''
       Attaches a subscriber to a remocon publisher and monitors the
       status of the remocon.
+
+      .. include:: weblinks.rst
     '''
     __slots__ = [
         'name',
@@ -31,6 +48,8 @@ class RemoconMonitor(object):
     ##########################################################################
 
     def __init__(self, topic_name, remocon_status_update_callback):
+        self.name = None
+        """Name of the connected remocon."""
         if topic_name.startswith(interaction_msgs.Strings.REMOCONS_NAMESPACE + '/'):
             uuid_postfixed_name = topic_name[len(interaction_msgs.Strings.REMOCONS_NAMESPACE) + 1:]
             (self.name, unused_separator, unused_uuid_part) = uuid_postfixed_name.rpartition('_')
@@ -38,7 +57,9 @@ class RemoconMonitor(object):
             self.name = 'unknown'  # should raise an error here
             return
         self._subscriber = rospy.Subscriber(topic_name, interaction_msgs.RemoconStatus, self._callback)
+        """Subscriber connected to a remocon's status topic."""
         self.status = None
+        """Holds the latest status (rocon_interaction_msgs.RemoconStatus_) update from the remocon."""
         self._status_callback = remocon_status_update_callback
 
     def _callback(self, msg):
@@ -54,4 +75,7 @@ class RemoconMonitor(object):
         self._status_callback(new_interactions, finished_interactions)
 
     def unregister(self):
+        """
+        Unregister the subscriber attached to this remocon's status topic.
+        """
         self._subscriber.unregister()

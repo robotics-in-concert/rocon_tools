@@ -2,6 +2,20 @@
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: system.pid
+   :platform: Unix
+   :synopsis: Helpers for working with system pids.
+
+This module includes a few helpers to enable working with system pids in python.
+
+----
+
+"""
 
 ##############################################################################
 # Imports
@@ -21,7 +35,13 @@ from rocon_python_utils.exceptions import TimeoutExpiredError
 
 
 def pid_exists(pid):
-    """Check whether pid exists in the current process table."""
+    """
+    Check whether pid exists in the current process table.
+
+    :param int pid:
+    :returns: true or false depending on its existence.
+    :rtype: bool
+    """
     if pid < 0:
         return False
     try:
@@ -41,7 +61,10 @@ def wait_pid(pid, timeout=None):
 
     If pid does not exist at all return None immediately.
 
-    Raise TimeoutExpiredError on timeout expired (if specified).
+    :param int pid:
+    :param float timeout: timeout in seconds
+
+    :raises: :exc:`.TimeoutExpiredError` on timeout expired (if specified).
     """
     def check_timeout(delay):
         if timeout is not None:

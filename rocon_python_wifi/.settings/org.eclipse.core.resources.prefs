@@ -1,4 +1,5 @@
 eclipse.preferences.version=1
+encoding//doc/conf.py=utf-8
 encoding//examples/iwconfig.py=utf-8
 encoding//examples/iwlist.py=utf-8
 encoding//src/rocon_python_wifi/flags.py=utf-8

@@ -14,8 +14,8 @@ to a non-coloured syntax for printing.
 Colour Definitions
 ------------------
 
-The rocon_console has definintions for many of the basic console colour codes
-(send a pull request if you want support for anything more). The current list of colour definitions include:
+There are definitions for many of the basic console colour codes
+(send a pull request if you want support for anything more). The current list includes:
 
  * ``Regular``: black, red, green, yellow, blue, magenta, cyan, white,
  * ``Bold``: bold, bold_black, bold_red, bold_green, bold_yellow, bold_blue, bold_magenta, bold_cyan, bold_white

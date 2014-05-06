@@ -1,9 +1,33 @@
 #
 # License: BSD
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: nodes
+   :platform: Unix
+   :synopsis: Useful methods relating to ros nodes.
+
+
+This module contains anything relating to introspection or manipulation
+of ros nodes.
+
+----
+
+"""
+
+##############################################################################
+# Imports
+##############################################################################
 
 import rosnode
 from .exceptions import NotFoundException
+
+##############################################################################
+# Methods
+##############################################################################
 
 
 def find_node(wanted_node_name, unique=False):
@@ -14,12 +38,12 @@ def find_node(wanted_node_name, unique=False):
       This will raise exceptions, if the node couldn't be found
       or in case unique is set multiple nodes with the same name are found.
 
-      :param wanted_node_name str: unresolved name of the node looked for (e.g. 'gateway', not '/concert/gateway')
+      :param str wanted_node_name: unresolved name of the node looked for (e.g. 'gateway', not '/concert/gateway')
 
       :returns: the fully resolved name of the node (unique) or list of fully resolved names (non-unique)
       :rtype: str
 
-      :raises: rocon_python_comms.NotFoundException
+      :raises: :exc:`.NotFoundException`
 
       :todo: accept resolved names -> https://github.com/robotics-in-concert/rocon_tools/issues/30
     '''

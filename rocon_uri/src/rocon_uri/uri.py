@@ -8,6 +8,8 @@
 
 """
 .. module:: uri
+   :platform: Unix
+   :synopsis: The public api for parsing and comparing rocon uri's.
 
 This module contains the public api and classes used to parse and
 compare rocon uri strings.

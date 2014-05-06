@@ -13,8 +13,8 @@ install(PROGRAMS
 )
 
 install(FILES
-  doc/api-2011.txt
-  doc/README.md
+  doc/original_docs/api-2011.txt
+  doc/original_docs/README.md
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 

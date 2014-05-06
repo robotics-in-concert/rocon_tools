@@ -3,6 +3,31 @@
 #   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: loader
+   :platform: Unix
+   :synopsis: External loader of interactions.
+
+
+This module provides a class that lets you conveniently load interactions
+from outside the interactions manager node post startup (i.e. not using params).
+This class is the skeleton of the ``load_interactions`` script which can be used
+in a roslaunch file in the following way:
+
+.. code-block:: xml
+
+   <!-- instead of params, use the external loader and configure groups with default namespaces -->
+   <node pkg="rocon_interactions" type="load_interactions" name="load_interactions" args="-n '/web' rocon_interactions web">
+     <remap from="load_interactions/set_interactions" to="interactions/set_interactions"/>
+   </node>
+
+----
+
+"""
+##############################################################################
 # Imports
 ##############################################################################
 
@@ -31,7 +56,7 @@ class InteractionsLoader(object):
         Don't do any loading here, just set up infrastructure and overrides from
         the solution.
 
-        @raise rocon_python_comms.NotFoundException, rospy.exceptions.ROSException,
+        :raises: rocon_python_comms.NotFoundException, rospy.exceptions.ROSException,
                rospy.exceptions.ROSInterruptException
         '''
         try:
@@ -51,16 +76,11 @@ class InteractionsLoader(object):
         the setting of a namespace for the whole group which will only get applied if
         an interaction has no setting in the yaml.
 
-        @param interactions_yaml_resource : yaml resource name for role-app parameterisation
-        @type yaml string
+        :param str interactions_yaml_resource: yaml resource name for role-app parameterisation
+        :param str namespace: namespace to push connections down into (e.g. /interactions)
+        :param bool load: either load or unload the interaction information.
 
-        @param namespace: namespace to push connections down into
-        @type string (e.g. /interactions)
-
-        @param load : either load or unload the interaction information.
-        @type boolean
-
-        @raise YamlResourceNotFoundException, MalformedInteractionsYaml
+        :raises: :exc:`.YamlResourceNotFoundException`, :exc:`.MalformedInteractionsYaml`
         '''
         request = interaction_srvs.SetInteractionsRequest()
         request.load = load

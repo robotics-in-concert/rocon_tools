@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* sphinx documentation added.
+* rocon_find_resource helper script.
+* Contributors: Daniel Stonier
+
 0.1.4 (2014-04-16)
 ------------------
 * Store rapps catkin package information

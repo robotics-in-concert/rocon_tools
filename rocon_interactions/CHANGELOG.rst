@@ -1,15 +1,22 @@
 Changelog
 =========
 
+0.1.5 (2014-05-05)
+------------------
+* threadified the interactions manager rapp handler find routine, closes `#37 <https://github.com/robotics-in-concert/rocon_tools/issues/37>`_.
+* pairing interactions support, `#34 <https://github.com/robotics-in-concert/rocon_tools/issues/34>`_.
+* web_url(), web_app() specifications for web_urls and web_apps, `#33 <https://github.com/robotics-in-concert/rocon_tools/issues/33>`_.
+* Contributors: Daniel Stonier, Jack O'Quin
+
 0.1.4 (2014-04-16)
 ------------------
-* fix get interaction callback, return the msg, not the class, fixes `#24 <https://github.com/robotics-in-concert/rocon_tools/issues/24>`_
+* bugfix get_interaction callback, return the msg, not the class, `#24 <https://github.com/robotics-in-concert/rocon_tools/issues/24>`_
 * Contributors: Daniel Stonier
 
 0.1.3 (2014-04-09)
 ------------------
 * rocon_uri variable name clashes with module name, fixed.
-* get roles moved to a service.
+* get_roles moved to a service.
 * more precise rocon uri os fields for pc interactions, also added trusty to the os rules.
 * catch invalid uri's when filtering.
 * bugfix the request interactions hash handling, had legacy msg code still being used.
@@ -17,33 +24,20 @@ Changelog
 
 0.1.1 (2014-04-01)
 ------------------
-* testing dependencies.
+* test dependencies.
 * Contributors: Daniel Stonier
 
 0.1.0 (2014-03-31)
 ------------------
-* stack changelogs.
-* minor bugfixes to tests.
-* documentation for rocon_uri.
-* use noqa instead of pydev's custom macro to avoid pep8.
+* documentation
 * roslint for rocon_interactions
-* install rule for interactions and javascript.
-* added parameters
-* updated docs with rosapi and interaction specifications.
-* rocon icon for listener - chimek doesn't make sense.
-* add the web url's to the pc demo
-* update rviz launching.
-* tutorial setup.
-* web apps finalised.
-* interactions javascript and listener html.
-* added javascript functions to parse interaction queries for web apps.
-* allow users to enter yaml structures instead of strings for parameters in interaction yamls.
-* interactions formatting for web apps.
-* do not add the schema to the rosbridge argument
-* a rocon interactions tutorial setup.
-* Switch default icon from concert_master -> rocon_bubble_icons.
+* tutorials
+* listener html example
+* javascript library to parse interaction queries for web apps.
+* yaml structures instead of strings for parameters in interaction yamls
+* interactions for web apps
 * publish roles after pre-loading, fixes `#7 <https://github.com/robotics-in-concert/rocon_tools/issues/7>`_.
-* icon packs.
-* fake remocons test.
+* a test with fake remocons
 * symbol binding for rosbridge parameters, `#6 <https://github.com/robotics-in-concert/rocon_tools/issues/6>`_
+* rosbridge support for the interaction manager
 * Contributors: Daniel Stonier, Jihoon Lee

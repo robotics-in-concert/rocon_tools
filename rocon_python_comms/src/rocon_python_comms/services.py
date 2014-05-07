@@ -22,9 +22,11 @@ of ros services.
 # Imports
 ##############################################################################
 
+import rosgraph
 import rospy
+import socket
 import time
-from rosservice import rosservice_find, ROSServiceIOException
+from rosservice import ROSServiceIOException, get_service_headers
 
 # Local imports
 from .exceptions import NotFoundException
@@ -66,14 +68,33 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
 
     :raises: :exc:`.NotFoundException`
     '''
+    # we could use rosservice_find here, but that throws exceptions and aborts if it comes
+    # across any rosservice on the system which is no longer valid. To be robust against this
+    # I've just pulled the internals of rosservice_find (ugh its fugly) and replicated it here
+    # with the only difference in that I continue over that exception.
     service_name = None
     service_names = []
     timeout_time = time.time() + timeout.to_sec()
+    master = rosgraph.Master(rospy.get_name())
     while not rospy.is_shutdown() and time.time() < timeout_time and not service_names:
+        services_information = []
         try:
-            service_names = rosservice_find(service_type)
-        except ROSServiceIOException as e:
-            raise NotFoundException(str(e))
+            _, _, services = master.getSystemState()
+            for service_name, unused_node_name in services:
+                service_uri = master.lookupService(service_name)
+                services_information.append((service_name, service_uri))
+        except (rosgraph.masterapi.Error, rosgraph.masterapi.Failure, socket.error) as e:
+            raise NotFoundException("unable to communicate with the master [%s]" % str(e))
+        for (service_name, service_uri) in services_information:
+            try:
+                next_service_type = get_service_headers(service_name, service_uri).get('type', None)
+            except ROSServiceIOException:  # should also catch socket.error?
+                # ignore this - it is usually a sign of a bad service that could be thrown
+                # up by somebody else and not what we're trying to find. If we can skip past it
+                # here we can be robust to other people's problems.
+                continue
+            if next_service_type == service_type:
+                service_names.append(service_name)
         if unique:
             if len(service_names) > 1:
                 raise NotFoundException("multiple services found %s." % service_names)

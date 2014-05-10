@@ -10,12 +10,12 @@ or modified, make a pull request against this file on the relevant branch.
 * rules.yaml [`Indigo`_]
 * rules.yaml [`Hydro-Devel`_]
 
-.. _`Indigo`: https://github.com/robotics-in-concert/rocon_tools/tree/indigo/rocon_uri/yaml/rules.yaml
-.. _`Hydro-Devel`: https://github.com/robotics-in-concert/rocon_tools/tree/hydro-devel/rocon_uri/yaml/rules.yaml
+.. _`Indigo`: https://github.com/robotics-in-concert/rocon_tools/tree/indigo/rocon_uri/src/rocon_uri/rules/rules.yaml
+.. _`Hydro-Devel`: https://github.com/robotics-in-concert/rocon_tools/tree/hydro-devel/rocon_uri/src/rocon_uri/rules/rules.yaml
 
 A snapshot of the current rules yaml:
 
-.. literalinclude:: ../yaml/rules.yaml
+.. literalinclude:: ../src/rocon_uri/rules/rules.yaml
    :language: yaml
    :linenos:
 

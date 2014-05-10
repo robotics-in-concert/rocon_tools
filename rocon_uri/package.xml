@@ -13,6 +13,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   
+  <run_depend>rocon_console</run_depend>
+  <run_depend>rocon_ebnf</run_depend>
   <run_depend>rospy</run_depend>
 
   <test_depend>rosunit</test_depend>

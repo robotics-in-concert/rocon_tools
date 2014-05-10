@@ -18,13 +18,13 @@ catkin_python_setup()
 # Installs
 ##############################################################################
 
-install(DIRECTORY yaml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(FILES src/rocon_uri/rules/rules.yaml DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rules.yaml)
 
-#install(
-#    PROGRAMS 
-#        scripts/rospair
-#    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#    )
+install(
+    PROGRAMS 
+        scripts/rocon_uri
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )
 
 ##############################################################################
 # Unit Tests

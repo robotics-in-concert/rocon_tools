@@ -234,8 +234,13 @@ class InteractionsManager(object):
           Handle incoming requests for a single app.
         '''
         response = interaction_srvs.GetInteractionResponse()
-        response.interaction = self._interactions_table.find(request.hash).msg
-        response.result = False if response.interaction is None else True
+        interaction = self._interactions_table.find(request.hash)
+        if interaction is None:
+            response.interaction = interaction_msgs.Interaction()
+            response.result = False
+        else:
+            response.interaction = interaction.msg
+            response.result = True
         return response
 
     def _ros_service_get_interactions(self, request):

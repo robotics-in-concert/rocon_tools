@@ -112,14 +112,6 @@ class Interaction(object):
     '''
     __slots__ = [
         'msg',           # rocon_interaction_msgs.Interaction
-        # aliases
-        'name',
-        'compatibility',
-        'namespace',
-        'display_name',
-        'role',
-        'hash',
-        'max',
     ]
 
     def __init__(self, msg):
@@ -152,18 +144,6 @@ class Interaction(object):
             self.msg.namespace = '/'
         self.msg.hash = generate_hash(self.msg.display_name, self.msg.role, self.msg.namespace)
         # some convenient aliases - these should be properties!
-        self.role = self.msg.role
-        """The group under which this interaction should be embedded [int]."""
-        self.name = self.msg.name
-        """Executable name for this interaction, can be a roslaunch, rosrunnable, global executable, web url or web app [int]."""
-        self.namespace = self.msg.namespace
-        """Default namespace under which ros services and topics should be embedded for this interaction [int]."""
-        self.display_name = self.msg.display_name
-        """A human friendly name that also uniquely helps uniquely identify this interaction (you can have more than one configured ``name`` instance) [int]."""
-        self.hash = self.msg.hash
-        """A crc32 unique identifier key for this interaction, see also :func:`.generate_hash` [int32]."""
-        self.compatibility = self.msg.compatibility
-        """A rocon_uri_ string that indicates what platforms it may run on [int]."""
 
     def is_paired_type(self):
         """
@@ -179,11 +159,53 @@ class Interaction(object):
     ##############################################################################
 
     @property
+    def name(self):
+        """Executable name for this interaction, can be a roslaunch, rosrunnable, global executable, web url or web app [int]."""
+        return self.msg.name
+
+    @property
+    def role(self):
+        """The group under which this interaction should be embedded [int]."""
+        return self.msg.role
+
+    @property
+    def compatibility(self):
+        """A rocon_uri_ string that indicates what platforms it may run on [int]."""
+        return self.msg.compatibility
+
+    @property
+    def display_name(self):
+        """A human friendly name that also uniquely helps uniquely identify this interaction (you can have more than one configured ``name`` instance) [int]."""
+        return self.msg.display_name
+
+    @property
+    def description(self):
+        return self.msg.description
+
+    @property
+    def namespace(self):
+        """Default namespace under which ros services and topics should be embedded for this interaction [int]."""
+        return self.msg.namespace
+
+    @property
     def max(self):
         """
         Maximum number of instantiations that is permitted (e.g. teleop should only allow 1) [int].
         """
         return self.msg.max
+
+    @property
+    def remappings(self):
+        return self.msg.remappings
+
+    @property
+    def parameters(self):
+        return self.msg.parameters
+
+    @property
+    def hash(self):
+        """A crc32 unique identifier key for this interaction, see also :func:`.generate_hash` [int32]."""
+        return self.msg.hash
 
     @property
     def pairing(self):

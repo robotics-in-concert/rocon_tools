@@ -6,6 +6,7 @@ from catkin_pkg.python_setup import generate_distutils_setup
 d = generate_distutils_setup(
     packages=['rocon_uri'],
     package_dir={'': 'src'},
+    package_data = {'rocon_uri': ['rules/rules.yaml']},
     scripts=['scripts/rocon_uri'],
 )
 

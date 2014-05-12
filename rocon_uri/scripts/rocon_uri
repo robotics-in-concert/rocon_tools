@@ -66,7 +66,7 @@ def _rocon_uri_cmd_fields():
                 print(prefix + console.yellow + "  - " + element + console.reset)
 
     print("\nYou can modify or extend the list of permitted fields with a pull request at \n")
-    print(console.green + "\thttps://github.com/robotics-in-concert/rocon_tools/blob/indigo/rocon_uri/yaml/rules.yaml\n" + console.reset)
+    print(console.green + "\thttps://github.com/robotics-in-concert/rocon_tools/blob/indigo/rocon_uri/src/rocon_uri/rules/rules.yaml\n" + console.reset)
 
 def _rocon_uri_cmd_rules():
     print("\nThe " + console.bold + "ebnf" + console.reset + " rules used to internally parse a rocon_uri string:\n" + console.reset)

@@ -175,7 +175,7 @@ class ServicePairClient(object):
             raise ServicePairException("Type is not an pair spec: %s" % str(ServicePairSpec))
         self._lock = threading.Lock()
         self._subscriber = rospy.Subscriber(name + "/response", self.ServicePairResponse, self._internal_callback)
-        self._publisher = rospy.Publisher(name + "/request", self.ServicePairRequest)
+        self._publisher = rospy.Publisher(name + "/request", self.ServicePairRequest, queue_size=5)
         self._request_handlers = {}  # [uuid_msgs/UniqueId]
 
     def wait_for_service(self, timeout):

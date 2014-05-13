@@ -168,9 +168,15 @@ class InteractionsManager(object):
         publishers = {}
         publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
                                                             interaction_msgs.InteractiveClients,
-                                                            latch=True)
+                                                            latch=True,
+                                                            queue_size=5
+                                                           )
         if self._parameters['pairing']:
-            publishers['pairing'] = rospy.Publisher('~pairing', interaction_msgs.Pair, latch=True)
+            publishers['pairing'] = rospy.Publisher('~pairing',
+                                                    interaction_msgs.Pair,
+                                                    latch=True,
+                                                    queue_size=5
+                                                    )
 
         return publishers
 

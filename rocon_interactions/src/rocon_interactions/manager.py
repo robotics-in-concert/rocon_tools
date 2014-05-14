@@ -29,6 +29,7 @@ import unique_id
 import rocon_interaction_msgs.msg as interaction_msgs
 import rocon_interaction_msgs.srv as interaction_srvs
 import rocon_uri
+import socket
 
 from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
@@ -128,6 +129,8 @@ class InteractionsManager(object):
                 rospy.logerr("Interactions : error trying to retrieve information from the local master.")
             except rosgraph.masterapi.Failure:
                 rospy.logerr("Interactions : failure trying to retrieve information from the local master.")
+            except socket.error:
+                rospy.logerr("Interactions : socket error trying to retrieve information from the local master.")
             rospy.rostime.wallsleep(self._watch_loop_period)
 
     def _remocon_status_update_callback(self, new_interactions, finished_interactions):

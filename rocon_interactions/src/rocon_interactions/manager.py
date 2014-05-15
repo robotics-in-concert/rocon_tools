@@ -336,17 +336,20 @@ class InteractionsManager(object):
                     #if remocon_monitor.status.app_name == request.application:
                     #    count += 1
             if count > interaction.max:
+                rospy.loginfo("Interactions : rejected interaction request [interaction quota exceeded]")
                 return _request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED)
         if self._parameters['pairing']:
             if interaction.is_paired_type():
                 # abort if already pairing
                 if self.is_pairing():
+                    rospy.loginfo("Interactions : rejected interaction request [already pairing]")
                     return _request_interaction_response(interaction_msgs.ErrorCodes.ALREADY_PAIRING)
                 try:
                     self._rapp_handler.start(interaction.pairing.rapp, interaction.pairing.remappings)
                     self._pair = interaction_msgs.Pair(rapp=interaction.pairing.rapp, remocon=request.remocon)
                     self._publishers['pairing'].publish(self._pair)
                 except FailedToStartRappError as e:
+                    rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")
                     response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
                     return response

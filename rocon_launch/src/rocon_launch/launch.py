@@ -36,6 +36,8 @@ import rosgraph
 import rocon_console.console as console
 import xml.etree.ElementTree as ElementTree
 
+from .exceptions import InvalidRoconLauncher
+
 ##############################################################################
 # Global variables
 ##############################################################################
@@ -187,7 +189,15 @@ def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mapping
         parameters['package'] = launch.get('package')
         parameters['name'] = launch.get('name')
         parameters['title'] = launch.get('title')
-        parameters['path'] = rocon_python_utils.ros.find_resource(parameters['package'], parameters['name'])  # raises an IO error if there is a problem.
+        if parameters['package'] is None:
+            # look for a standalone launcher
+            if os.path.isfile(parameters['name']):
+                parameters['path'] = parameters['name']
+            else:
+                raise InvalidRoconLauncher("roslaunch file does not exist [%s]" % parameters['name'])
+        else:
+            # look for a catkin package launcher
+            parameters['path'] = rocon_python_utils.ros.find_resource(parameters['package'], parameters['name'])  # raises an IO error if there is a problem.
         parameters['port'] = launch.get('port', str(default_port))
         if parameters['port'] == str(default_port):
             default_port += 1
@@ -297,13 +307,12 @@ def main():
         ##########################
         temp = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
         print("Launching %s" % temp.name)
-        launcher_filename = rocon_python_utils.ros.find_resource(launcher['package'], launcher['name'])
         launch_text = '<launch>\n'
         if args.screen:
             launch_text += '  <param name="rocon/screen" value="true"/>\n'
         else:
             launch_text += '  <param name="rocon/screen" value="false"/>\n'
-        launch_text += '  <include file="%s">\n' % launcher_filename
+        launch_text += '  <include file="%s">\n' % launcher['path']
         for (arg_name, arg_value) in launcher['args']:
             launch_text += '    <arg name="%s" value="%s"/>\n' % (arg_name, arg_value)
         launch_text += '  </include>\n'

@@ -32,8 +32,8 @@ launch
 **Attributes**
 
 * *title* - string to use to set the title of the terminal in the window decoration, this helps you quickly identify windows when tabbing through them.
-* *package* - name of the package in which the roslaunch file can be found
-* *name* - name of the roslaunch file to execute
+* *package* - name of the package in which the roslaunch file can be found (optional)
+* *name* - name of the roslaunch file to execute (if no package, then this must be a full path to the roslauncher)
 * *port* - identifies which ros master to roslaunch in (i.e. ROS_MASTER_URI=http://localhost:_port_) 
 
 **Elements**

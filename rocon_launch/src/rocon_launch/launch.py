@@ -34,6 +34,7 @@ import tempfile
 import rocon_python_utils
 import rosgraph
 import rocon_console.console as console
+from urlparse import urlparse
 import xml.etree.ElementTree as ElementTree
 
 from .exceptions import InvalidRoconLauncher
@@ -172,7 +173,9 @@ def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mapping
     # should check for root concert tag
     launchers = []
     ports = []
-    default_port = 11311
+    ros_master_port = urlparse(os.environ["ROS_MASTER_URI"]).port
+    default_port = ros_master_port if ros_master_port is not None else 11311
+
     # These are intended for re-use in launcher args via $(arg ...) like regular roslaunch
     vars_dict = {}
     # We do this the roslaunch way since we use their resolvers, even if we only do it for args.

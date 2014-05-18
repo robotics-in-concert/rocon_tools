@@ -97,6 +97,15 @@ class Popen(object):
         #self._proc.send_signal(sig)
 
     def _preexec_fn(self):
+        """
+        A default preexec function that is usually applicable in terminal
+        launching situations since we need to take care of process groups.
+
+        See http://stackoverflow.com/questions/3791398/how-to-stop-python-from-propagating-signals-to-subprocesses
+        for some interesting information around this topic, specifically with
+        resolving signal forwarding and use of preexec - there are some differences
+        between 2.x and 3.2+ handling in subprocess.
+        """
         os.setpgrp()
         if self._external_preexec_fn is not None:
             self._external_preexec_fn()

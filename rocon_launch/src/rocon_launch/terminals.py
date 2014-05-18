@@ -57,18 +57,6 @@ class Terminal(object):
         """
         self.name = name
 
-    def preexec(self):
-        """
-        A default preexec function that is usually applicable in terminal
-        launching situations since we need to take care of process groups.
-
-        See http://stackoverflow.com/questions/3791398/how-to-stop-python-from-propagating-signals-to-subprocesses
-        for some interesting information around this topic, specifically with
-        resolving signal forwarding and use of preexec - there are some differences
-        between 2.x and 3.2+ handling in subprocess.
-        """
-        os.setpgrp()  # setpgid(0,0)
-
     def shutdown_roslaunch_windows(self, processes, hold):
         """
         Shuts down a roslaunch window cleanly, i.e. it first kills the roslaunch
@@ -111,10 +99,11 @@ class Active(Terminal):
     def __init__(self):
         super(Active, self).__init__(active)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param func postexec_fn: run this after the subprocess finishes
 
         :returns: the subprocess handle
         :rtype: :class:subprocess.Popen
@@ -123,7 +112,7 @@ class Active(Terminal):
         if roslaunch_configuration.options:
             cmd.append(roslaunch_configuration.options)
         cmd.extend(["--port", roslaunch_configuration.port, roslaunch_configuration.path])
-        return subprocess.Popen(cmd, preexec_fn=self.preexec)
+        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
 
 ##############################################################################
 # Konsole
@@ -135,10 +124,11 @@ class Konsole(Terminal):
     def __init__(self):
         super(Konsole, self).__init__(konsole)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param func postexec_fn: run this after the subprocess finishes
 
         :returns: the subprocess handle
         :rtype: :class:subprocess.Popen
@@ -155,7 +145,7 @@ class Konsole(Terminal):
                    (roslaunch_configuration.options,
                     roslaunch_configuration.port,
                     roslaunch_configuration.path)]
-        return subprocess.Popen(cmd, preexec_fn=self.preexec)
+        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
 
 ##############################################################################
 # Gnome Terminal
@@ -167,10 +157,11 @@ class GnomeTerminal(Terminal):
     def __init__(self):
         super(GnomeTerminal, self).__init__(gnome_terminal)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param func postexec_fn: run this after the subprocess finishes
 
         :returns: the subprocess handle
         :rtype: :class:subprocess.Popen
@@ -184,7 +175,7 @@ class GnomeTerminal(Terminal):
                     roslaunch_configuration.port,
                     roslaunch_configuration.path)
               ]
-        return subprocess.Popen(cmd, preexec_fn=self.preexec)
+        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
 
 ##############################################################################
 # Factory

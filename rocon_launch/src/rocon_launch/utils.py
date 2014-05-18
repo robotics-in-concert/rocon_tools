@@ -102,7 +102,12 @@ def get_roslaunch_pids(parent_pid):
     pids = []
     if retcode == 0:
         for pair in ps_output.split("\n")[:-1]:
-            [pid, command] = pair.lstrip(' ').split(" ")
+            try:
+                [pid, command] = pair.lstrip(' ').split(" ")
+            except ValueError:  # when we can't unpack the output into two pieces
+                # ignore, it's not a roslaunch
+                console.warning("Rocon Launch : bad pair while scanning for roslaunch pids [%s]" % pair)
+                continue
             if command == 'roslaunch':
                 pids.append(int(pid))
             else:

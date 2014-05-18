@@ -2,6 +2,7 @@
   - pc
   - robot:
     - kobuki
+    - korus
     - gopher
     - pr2
     - robosem

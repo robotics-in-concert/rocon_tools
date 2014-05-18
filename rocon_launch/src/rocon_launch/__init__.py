@@ -17,4 +17,10 @@ package. It provides machinery for spawning multiple roslaunch environments.
 # Imports
 ##############################################################################
 
-from .launch import main as launch, parse_rocon_launcher, get_roslaunch_pids
+from .launch import main as launch
+from .exceptions import UnsupportedTerminal
+from .roslaunch_configuration import RosLaunchConfiguration
+from .terminals import create_terminal
+from .utils import parse_rocon_launcher, get_roslaunch_pids
+
+from . import terminals  # bring in global variable symbols

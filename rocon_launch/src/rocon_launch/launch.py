@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # License: BSD
-#   https://raw.github.com/robotics-in-concert/rocon_multimaster/license/LICENSE
+#   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
 #
 ##############################################################################
 # Description
@@ -25,200 +25,26 @@ that execute a pre-configured roslaunch inside each.
 
 import os
 import argparse
-import subprocess
 import signal
 import sys
 from time import sleep
 import roslaunch
 import tempfile
+import rocon_python_comms
 import rocon_python_utils
 import rosgraph
 import rocon_console.console as console
-from urlparse import urlparse
-import xml.etree.ElementTree as ElementTree
 
-from .exceptions import InvalidRoconLauncher
-
-##############################################################################
-# Global variables
-##############################################################################
-
-processes = []
-roslaunch_pids = []
-hold = False  # keep terminals open when sighandling them
+from .exceptions import InvalidRoconLauncher, UnsupportedTerminal
+from . import terminals
+from . import utils
 
 ##############################################################################
 # Methods
 ##############################################################################
 
 
-def preexec():
-    '''
-      We pass this to the subprocess executor to define a group for our rocon_launch'd
-      terminals. Specifically here we don't want to forward signals.
-
-      See http://stackoverflow.com/questions/3791398/how-to-stop-python-from-propagating-signals-to-subprocesses
-      for some interesting information around this topic.
-    '''
-    os.setpgrp()  # setpgid(0,0)
-
-
-def get_roslaunch_pids(parent_pid):
-    '''
-      Search the pstree of the specified pid for roslaunch processes. We use this to
-      aid in gracefully terminating any roslaunch processes running in terminals before
-      closing down the terminals themselves.
-
-      :param str parent_pid: the pid of the parent process.
-      :returns: list of pids
-      :rtype: str[]
-
-    '''
-    ps_command = subprocess.Popen("ps -o pid -o comm --ppid %d --noheaders" % parent_pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    ps_output = ps_command.stdout.read()
-
-    retcode = ps_command.wait()
-    pids = []
-    if retcode == 0:
-        for pair in ps_output.split("\n")[:-1]:
-            [pid, command] = pair.lstrip(' ').split(" ")
-            if command == 'roslaunch':
-                pids.append(int(pid))
-            else:
-                pids.extend(get_roslaunch_pids(int(pid)))
-    else:
-        # Presume this roslaunch was killed by ctrl-c or terminated already.
-        # Am not worrying about classifying between the above presumption and real errors for now
-        pass
-    return pids
-
-
-def signal_handler(sig, frame):
-    '''
-      Special handler that gets triggered if someone hits CTRL-C in the original terminal that executed
-      'rocon_launch'. We catch the interrupt here, search and eliminate all child roslaunch processes
-      first (give them time to gracefully quit) and then finally close the terminals themselves.
-      closing down the terminals themselves.
-
-      :param str sig: signal id (usually looking for SIGINT - 2 here)
-      :param frame: frame
-    '''
-    global processes
-    global roslaunch_pids
-    global hold
-    for p in processes:
-        roslaunch_pids.extend(get_roslaunch_pids(p.pid))
-    # kill roslaunch's
-    for pid in roslaunch_pids:
-        try:
-            os.kill(pid, signal.SIGHUP)
-        except OSError:
-            continue
-    for pid in roslaunch_pids:
-        console.pretty_println("Terminating roslaunch [pid: %d]" % pid, console.bold)
-        rocon_python_utils.system.wait_pid(pid)
-        #console.pretty_println("Terminated roslaunch [pid: %d]" % pid, console.bold)
-    sleep(1)
-    if hold:
-        try:
-            raw_input("Press <Enter> to close terminals...")
-        except RuntimeError:
-            pass  # this happens when you ctrl-c again instead of enter
-    # now kill konsoles
-    for p in processes:
-        os.killpg(p.pid, signal.SIGTERM)
-        #p.terminate()
-
-
-def _process_arg_tag(tag, args_dict=None):
-    '''
-      Process the arg tag. Kind of hate replicating what roslaunch does with
-      arg tags, but there's no easy way to pull roslaunch code.
-
-      @param args_dict : dictionary of args previously discovered
-    '''
-    name = tag.get('name')  # returns None if not found.
-    if name is None:
-        console.error("<arg> tag must have a name attribute.")
-        sys.exit(1)
-    value = tag.get('value')
-    default = tag.get('default')
-    #print("Arg tag processing: (%s, %s, %s)" % (name, value, default))
-    if value is not None and default is not None:
-        console.error("<arg> tag must have one and only one of value/default attributes specified.")
-        sys.exit(1)
-    if value is None and default is None:
-        console.error("<arg> tag must have one of value/default attributes specified.")
-        sys.exit(1)
-    if value is None:
-        value = default
-    if value and '$' in value:
-        value = roslaunch.substitution_args.resolve_args(value, args_dict)
-    return (name, value)
-
-
-def parse_rocon_launcher(rocon_launcher, default_roslaunch_options, args_mappings={}):
-    '''
-      Parses an rocon multi-launcher (xml file).
-
-      :param str rocon_launcher: xml string in rocon_launch format
-      :param default_roslaunch_options: options to pass to roslaunch (usually "--screen")
-      :param dict args_mappings: command line mapping overrides, { arg_name : arg_value }
-      :returns: list with launcher parameters as dictionary elements of the list.
-
-      :raises: :exc:`IOError` : if it can't find any of the individual launchers on the filesystem.
-    '''
-    tree = ElementTree.parse(rocon_launcher)
-    root = tree.getroot()
-    # should check for root concert tag
-    launchers = []
-    ports = []
-    ros_master_port = urlparse(os.environ["ROS_MASTER_URI"]).port
-    default_port = ros_master_port if ros_master_port is not None else 11311
-
-    # These are intended for re-use in launcher args via $(arg ...) like regular roslaunch
-    vars_dict = {}
-    # We do this the roslaunch way since we use their resolvers, even if we only do it for args.
-    vars_dict['arg'] = {}
-    args_dict = vars_dict['arg']  # convenience ref to the vars_dict['args'] variable
-    for tag in root.findall('arg'):
-        name, value = _process_arg_tag(tag, args_dict)
-        args_dict[name] = value
-    args_dict.update(args_mappings)  # bring in command line overrides
-    for launch in root.findall('launch'):
-        parameters = {}
-        parameters['args'] = []
-        parameters['options'] = default_roslaunch_options
-        parameters['package'] = launch.get('package')
-        parameters['name'] = launch.get('name')
-        parameters['title'] = launch.get('title')
-        if parameters['package'] is None:
-            # look for a standalone launcher
-            if os.path.isfile(parameters['name']):
-                parameters['path'] = parameters['name']
-            else:
-                raise InvalidRoconLauncher("roslaunch file does not exist [%s]" % parameters['name'])
-        else:
-            # look for a catkin package launcher
-            parameters['path'] = rocon_python_utils.ros.find_resource(parameters['package'], parameters['name'])  # raises an IO error if there is a problem.
-        parameters['port'] = launch.get('port', str(default_port))
-        if parameters['port'] == str(default_port):
-            default_port += 1
-        if parameters['port'] in ports:
-            parameters['options'] = parameters['options'] + " " + "--wait"
-        else:
-            ports.append(parameters['port'])
-        if parameters['title'] is None:
-            parameters['title'] = 'rocon_launch:%s' % parameters['port']
-        launchers.append(parameters)
-        for tag in launch.findall('arg'):
-            name, value = _process_arg_tag(tag, vars_dict)
-            parameters['args'].append((name, value))
-    return launchers
-
-
 def parse_arguments():
-    global hold
     parser = argparse.ArgumentParser(description="Rocon's multi-roslauncher.")
     terminal_group = parser.add_mutually_exclusive_group()
     terminal_group.add_argument('-k', '--konsole', default=False, action='store_true', help='spawn individual ros systems via multiple konsole terminals')
@@ -233,65 +59,63 @@ def parse_arguments():
     mappings = rosgraph.names.load_mappings(sys.argv)  # gets the arg mappings, e.g. scheduler_type:=simple
     argv = rosgraph.myargv(sys.argv[1:])  # strips the mappings
     args = parser.parse_args(argv)
-    hold = args.hold  # global argument
+    if args.no_terminals:
+        args.terminal_name = terminals.active
+    elif args.konsole:
+        args.terminal_name = terminals.konsole
+    elif args.gnome:
+        args.terminal_name = terminals.gnome_terminal
+    else:
+        args.terminal_name = None
     return (args, mappings)
 
 
-def choose_terminal(gnome_flag, konsole_flag):
-    '''
-      Use ubuntu's x-terminal-emulator to choose the shell, or over-ride if it there is a flag.
+class RoconLaunch(object):
+    __slots__ = [
+                 'terminal',
+                 'processes',
+                 'hold'  # keep terminals open when sighandling them
+                ]
 
-      :param bool gnome_flag: force use of gnome-terminal
-      :param bool konsole_flag: force use of konsole
+    def __init__(self, terminal_name, hold=False):
+        """
+        Initialise empty of processes, but make sure we set the hold argument.
 
-      :returns: string identifying the command to execute
-      :rtype str:
-    '''
-    if konsole_flag:
-        if not rocon_python_utils.system.which('konsole'):
-            console.error("Cannot find 'konsole' [hint: try --gnome for gnome-terminal instead]")
+        :param bool hold: whether or not to hold windows open or not.
+        """
+        self.processes = []
+        self.hold = hold
+        try:
+            self.terminal = terminals.create_terminal(terminal_name)
+        except (UnsupportedTerminal, rocon_python_comms.NotFoundException) as e:
+            console.error("Cannot find a suitable terminal [%s]" % str(e))
             sys.exit(1)
-        return 'konsole'
-    elif gnome_flag:
-        if not rocon_python_utils.system.which('gnome-terminal'):
-            console.error("Cannot find 'gnome' [hint: try --konsole for konsole instead]")
-            sys.exit(1)
-        return 'gnome-terminal'
-    else:
-        if not rocon_python_utils.system.which('x-terminal-emulator'):
-            console.error("Cannot find 'x-terminal-emulator' [hint: try --gnome or --konsole instead]")
-            sys.exit(1)
-        p = subprocess.Popen([rocon_python_utils.system.which('update-alternatives'), '--query', 'x-terminal-emulator'], stdout=subprocess.PIPE)
-        terminal = None
-        for line in p.stdout:
-            if line.startswith("Value:"):
-                terminal = os.path.basename(line.split()[1])
-                break
-        if terminal not in ["gnome-terminal", "gnome-terminal.wrapper", "konsole"]:
-            console.warning("You are using an esoteric unsupported terminal [%s]" % terminal)
-            if rocon_python_utils.system.which('konsole'):
-                terminal = 'konsole'
-                console.warning(" --> falling back to 'konsole'")
-            elif rocon_python_utils.system.which('gnome-terminal'):
-                console.warning(" --> falling back to 'gnome-terminal'")
-                terminal = 'gnome-terminal'
-            else:
-                console.error("Unsupported terminal set for 'x-terminal-emulator' [%s][hint: try --gnome or --konsole instead]" % terminal)
-                sys.exit(1)
-        return terminal
+
+    def signal_handler(self, sig, frame):
+        '''
+          Special handler that gets triggered if someone hits CTRL-C in the original terminal that executed
+          'rocon_launch'. We catch the interrupt here, search and eliminate all child roslaunch processes
+          first (give them time to gracefully quit) and then finally close the terminals themselves.
+          closing down the terminals themselves.
+
+          :param str sig: signal id (usually looking for SIGINT - 2 here)
+          :param frame: frame
+        '''
+        self.terminal.shutdown_roslaunch_windows(self.processes, self.hold)
+
+    def spawn_roslaunch_window(self, launch_configuration):
+        """
+        :param launch_configuration:
+        :type launch_configuration :class:`.RosLaunchConfiguration`
+        """
+        p = self.terminal.spawn_roslaunch_window(launch_configuration)
+        self.processes.append(p)
 
 
 def main():
-    global processes
-    global roslaunch_pids
-    signal.signal(signal.SIGINT, signal_handler)
     (args, mappings) = parse_arguments()
-    terminal = None
-    if not args.no_terminals:
-        if not rocon_python_utils.system.which('konsole') and not rocon_python_utils.system.which('gnome-terminal')and not rocon_python_utils.system.which('x-terminal-emulator'):
-            console.error("Cannot find a suitable terminal [x-terminal-emulator, konsole, gnome-termional]")
-            sys.exit(1)
-        terminal = choose_terminal(args.gnome, args.konsole)
+    rocon_launch = RoconLaunch(args.terminal_name, args.hold)
+    signal.signal(signal.SIGINT, rocon_launch.signal_handler)
 
     if args.package == '':
         rocon_launcher = roslaunch.rlutil.resolve_launch_arguments(args.launcher)[0]
@@ -301,10 +125,10 @@ def main():
         roslaunch_options = "--screen"
     else:
         roslaunch_options = ""
-    launchers = parse_rocon_launcher(rocon_launcher, roslaunch_options, mappings)
+    launchers = utils.parse_rocon_launcher(rocon_launcher, roslaunch_options, mappings)
     temporary_launchers = []
     for launcher in launchers:
-        console.pretty_println("Launching [%s, %s] on port %s" % (launcher['package'], launcher['name'], launcher['port']), console.bold)
+        console.pretty_println("Launching %s on port %s" % (launcher.path, launcher.port), console.bold)
         ##########################
         # Customise the launcher
         ##########################
@@ -315,8 +139,8 @@ def main():
             launch_text += '  <param name="rocon/screen" value="true"/>\n'
         else:
             launch_text += '  <param name="rocon/screen" value="false"/>\n'
-        launch_text += '  <include file="%s">\n' % launcher['path']
-        for (arg_name, arg_value) in launcher['args']:
+        launch_text += '  <include file="%s">\n' % launcher.path
+        for (arg_name, arg_value) in launcher.args:
             launch_text += '    <arg name="%s" value="%s"/>\n' % (arg_name, arg_value)
         launch_text += '  </include>\n'
         launch_text += '</launch>\n'
@@ -324,24 +148,11 @@ def main():
         temp.write(launch_text)
         temp.close()  # unlink it later
         temporary_launchers.append(temp)
+        launcher.path = temp.name  # replace the path to the original launcher with this one
         ##########################
         # Start the terminal
         ##########################
-        if terminal == 'konsole':
-            p = subprocess.Popen([terminal, '-p', 'tabtitle=%s' % launcher['title'], '--nofork', '--hold', '-e', "/bin/bash", "-c", "roslaunch %s --disable-title --port %s %s" %
-                              (launcher['options'], launcher['port'], temp.name)], preexec_fn=preexec)
-        elif terminal == 'gnome-terminal.wrapper' or terminal == 'gnome-terminal':
-            # --disable-factory inherits the current environment, bit wierd.
-            cmd = ['gnome-terminal', '--title=%s' % launcher['title'], '--disable-factory', "-e", "/bin/bash -c 'roslaunch %s --disable-title --port %s %s';/bin/bash" %
-                              (launcher['options'], launcher['port'], temp.name)]
-            p = subprocess.Popen(cmd, preexec_fn=preexec)
-        else:
-            cmd = ["roslaunch"]
-            if launcher['options']:
-                cmd.append(launcher['options'])
-            cmd.extend(["--port", launcher['port'], temp.name])
-            p = subprocess.Popen(cmd, preexec_fn=preexec)
-        processes.append(p)
+        rocon_launch.spawn_roslaunch_window(launcher)
     signal.pause()
     # Have to unlink them here rather than in the for loop above, because the whole gnome-terminal
     # subprocess takes a while to kick in (in the background) and the unlinking may occur before

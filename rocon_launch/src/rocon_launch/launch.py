@@ -27,15 +27,13 @@ import os
 import argparse
 import signal
 import sys
-from time import sleep
 import roslaunch
 import tempfile
 import rocon_python_comms
-import rocon_python_utils
 import rosgraph
 import rocon_console.console as console
 
-from .exceptions import InvalidRoconLauncher, UnsupportedTerminal
+from .exceptions import UnsupportedTerminal
 from . import terminals
 from . import utils
 
@@ -45,6 +43,9 @@ from . import utils
 
 
 def parse_arguments():
+    """
+    Argument parser for the rocon_launch script.
+    """
     parser = argparse.ArgumentParser(description="Rocon's multi-roslauncher.")
     terminal_group = parser.add_mutually_exclusive_group()
     terminal_group.add_argument('-k', '--konsole', default=False, action='store_true', help='spawn individual ros systems via multiple konsole terminals')
@@ -71,6 +72,11 @@ def parse_arguments():
 
 
 class RoconLaunch(object):
+    """
+    The rocon launcher. Responsible for all the pieces of the puzzle
+    that go into spawning roslaunches inside terminals (startup, shutdown
+    and signal handling).
+    """
     __slots__ = [
                  'terminal',
                  'processes',
@@ -79,8 +85,10 @@ class RoconLaunch(object):
 
     def __init__(self, terminal_name, hold=False):
         """
-        Initialise empty of processes, but make sure we set the hold argument.
+        Initialise empty of processes, but configure a terminal
+        so we're ready to go when we start spawning.
 
+        :param str terminal_name: string name (or None) for the terminal to use.
         :param bool hold: whether or not to hold windows open or not.
         """
         self.processes = []
@@ -113,6 +121,9 @@ class RoconLaunch(object):
 
 
 def main():
+    """
+    Main function for the rocon_launch script.
+    """
     (args, mappings) = parse_arguments()
     rocon_launch = RoconLaunch(args.terminal_name, args.hold)
     signal.signal(signal.SIGINT, rocon_launch.signal_handler)

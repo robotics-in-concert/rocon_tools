@@ -52,8 +52,15 @@ The names above resolve as follows:
  
    * ``resource_name``: ros resource name to locate this icon
 
- * ``parameters``: is a free-form yaml variable that apps must parse (only useful for web app and android types)
- * ``remappings``: same meaning as remappings in `roslaunch xml`_ files, see the examples (only useful for web app and android types).
+ * ``parameters``: is a free-form yaml variable used to configure the interaction in various ways:
+
+   * *direct exes/rosrunnables/android app* : loads the yaml directly as private ros parameters.
+   * *roslaunchables* : utilise key-value pairs only and passes these in as roslaunch args. 
+   * *web app* : utilise key-value pairs only and reads these from the query string of the url.
+
+ * ``remappings``: same meaning as remappings in `roslaunch xml`_ files, see the examples
+
+   * *roslaunchables* : currently do not accept remappings (workaround: use parameters passed in as roslaunch args to configure topic names).
 
 Interactions may be combined together in a yaml list for loading onto the interaction node.
 

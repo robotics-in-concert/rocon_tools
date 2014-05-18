@@ -38,9 +38,13 @@ from . import utils
 ##############################################################################
 
 active = "active"  # the currently open terminal
+"""String identifier for the currently open (active) terminal"""
 konsole = "konsole"
+"""String identifier for KDE's konsole terminal"""
 gnome_terminal = "gnome-terminal"
+"""String identifier for Gnome's terminal."""
 gnome_terminal_wrapper = "gnome-terminal.wrapper"  # some systems use this for gnome-terminal
+"""String identifier for an oft used representation of gnome's terminal on desktops like KDE."""
 
 ##############################################################################
 # Terminal
@@ -97,6 +101,7 @@ class Active(Terminal):
     """
 
     def __init__(self):
+        """Dude"""
         super(Active, self).__init__(active)
 
     def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
@@ -120,6 +125,9 @@ class Active(Terminal):
 
 
 class Konsole(Terminal):
+    """
+    Responsible for handling of kde konsole terminals.
+    """
 
     def __init__(self):
         super(Konsole, self).__init__(konsole)
@@ -153,6 +161,9 @@ class Konsole(Terminal):
 
 
 class GnomeTerminal(Terminal):
+    """
+    Responsible for handling of gnome-terminal terminals.
+    """
 
     def __init__(self):
         super(GnomeTerminal, self).__init__(gnome_terminal)

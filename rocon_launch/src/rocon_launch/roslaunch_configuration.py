@@ -23,6 +23,7 @@ This module provides the context for a roslaunch configuration.
 ##############################################################################
 
 import os
+import rocon_console.console as console
 import rocon_python_utils
 from urlparse import urlparse
 
@@ -103,6 +104,17 @@ class RosLaunchConfiguration(object):
                 raise InvalidRoconLauncher("roslaunch file does not exist [%s/%s][%s]" % (self.package, self.name, str(e)))
         self.port = port or RosLaunchConfiguration.default_port
         self.options = options
+
+    def __str__(self):
+        s = console.bold + "Roslaunch Configuration" + console.reset + '\n'
+        if self.package is not None:
+            s += console.cyan + "  Package" + console.reset + "      : " + console.yellow + "%s" % self.package + console.reset + '\n'  # noqa
+        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.name + console.reset + '\n'  # noqa
+        s += console.cyan + "  Port" + console.reset + "         : " + console.yellow + "%s" % str(self.port) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Title" + console.reset + "        : " + console.yellow + "%s" % self.title + console.reset + '\n'  # noqa
+        s += console.cyan + "  Args" + console.reset + "         : " + console.yellow + "%s" % self.args + console.reset + '\n'  # noqa
+        s += console.cyan + "  Options" + console.reset + "      : " + console.yellow + "%s" % self.options + console.reset + '\n'  # noqa
+        return s
 
     def append_option(self, option):
         """

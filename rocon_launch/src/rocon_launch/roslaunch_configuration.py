@@ -123,3 +123,10 @@ class RosLaunchConfiguration(object):
         :param str option:
         """
         self.option = self.option + " " + option
+
+    def screen(self):
+        """
+        :returns: true or false depending on whether --screen is applied or not.
+        :rtype: bool
+        """
+        return '--screen' in self.options

@@ -27,7 +27,9 @@ import rocon_console.console as console
 import rocon_python_comms
 import rocon_python_utils
 import signal
+import sys
 import subprocess
+import tempfile
 import time
 
 from .exceptions import UnsupportedTerminal
@@ -90,6 +92,53 @@ class Terminal(object):
             os.killpg(process.pid, signal.SIGTERM)
             #process.terminate()
 
+    def _prepare_meta_roslauncher(self, roslaunch_configuration):
+        """
+        Generate a meta roslauncher which calls our real roslaunch provided in the
+        launch configuration. This applies the more esoteric options specified
+        in the launch configuration, e.g. screen, args.
+
+        :param roslaunch_configuration: required roslaunch info
+        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :returns: handle to the temporary meta roslaunch file
+        :rtype: :class:`tempfile.NamedTemporaryFile`
+        """
+        ros_launch_file = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+        #print("Launching %s" % temp.name)
+        launch_text = '<launch>\n'
+        if roslaunch_configuration.screen():
+            launch_text += '  <param name="rocon/screen" value="true"/>\n'
+        else:
+            launch_text += '  <param name="rocon/screen" value="false"/>\n'
+        launch_text += '  <include file="%s">\n' % roslaunch_configuration.path
+        for (arg_name, arg_value) in roslaunch_configuration.args:
+            launch_text += '    <arg name="%s" value="%s"/>\n' % (arg_name, arg_value)
+        launch_text += '  </include>\n'
+        launch_text += '</launch>\n'
+        #print launch_text
+        ros_launch_file.write(launch_text)
+        ros_launch_file.close()  # unlink it later
+        return ros_launch_file
+
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+        """
+        :param roslaunch_configuration: required roslaunch info
+        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param func postexec_fn: run this after the subprocess finishes
+
+        :returns: the subprocess and temp roslaunch file handles
+        :rtype: (:class:`subprocess.Popen`, :class:`tempfile.NamedTemporaryFile`
+        """
+        if self.__class__ is Terminal:
+            console.logerror("Do not use 'Terminal' directly, it is an abstract base class")
+            sys.exit(1)
+        if 'prepare_command' not in vars(self.__class__):
+            console.logerror("The method _prepare_command must be implemented in children of rocon_launch.terminals.Terminal")
+            sys.exit(1)
+        meta_roslauncher = self._prepare_meta_roslauncher(roslaunch_configuration)
+        cmd = self.prepare_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
+        return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn), meta_roslauncher)
+
 ##############################################################################
 # Active
 ##############################################################################
@@ -104,20 +153,20 @@ class Active(Terminal):
         """Dude"""
         super(Active, self).__init__(active)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
+        Prepare the custom command for a roslaunch window.
+
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param func postexec_fn: run this after the subprocess finishes
-
-        :returns: the subprocess handle
-        :rtype: :class:subprocess.Popen
+        :param str meta_roslauncher_filename: temporary roslauncher file
         """
         cmd = ["roslaunch"]
         if roslaunch_configuration.options:
             cmd.append(roslaunch_configuration.options)
-        cmd.extend(["--port", roslaunch_configuration.port, roslaunch_configuration.path])
-        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
+        cmd.extend(["--port", roslaunch_configuration.port])
+        cmd.append(meta_roslauncher_filename)
+        return cmd
 
 ##############################################################################
 # Konsole
@@ -132,14 +181,13 @@ class Konsole(Terminal):
     def __init__(self):
         super(Konsole, self).__init__(konsole)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
+        Prepare the custom command for a roslaunch window.
+
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param func postexec_fn: run this after the subprocess finishes
-
-        :returns: the subprocess handle
-        :rtype: :class:subprocess.Popen
+        :param str meta_roslauncher_filename: temporary roslauncher file
         """
         cmd = [self.name,
                '-p',
@@ -152,8 +200,8 @@ class Konsole(Terminal):
                "roslaunch %s --disable-title --port %s %s" %
                    (roslaunch_configuration.options,
                     roslaunch_configuration.port,
-                    roslaunch_configuration.path)]
-        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
+                    meta_roslauncher_filename)]
+        return cmd
 
 ##############################################################################
 # Gnome Terminal
@@ -168,14 +216,13 @@ class GnomeTerminal(Terminal):
     def __init__(self):
         super(GnomeTerminal, self).__init__(gnome_terminal)
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
+        Prepare the custom command for a roslaunch window.
+
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param func postexec_fn: run this after the subprocess finishes
-
-        :returns: the subprocess handle
-        :rtype: :class:subprocess.Popen
+        :param str meta_roslauncher_filename: temporary roslauncher file
         """
         cmd = [self.name,
                '--title=%s' % roslaunch_configuration.title,
@@ -184,7 +231,7 @@ class GnomeTerminal(Terminal):
                "/bin/bash -c 'roslaunch %s --disable-title --port %s %s';/bin/bash" %
                    (roslaunch_configuration.options,
                     roslaunch_configuration.port,
-                    roslaunch_configuration.path)
+                    meta_roslauncher_filename)
               ]
         return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
 

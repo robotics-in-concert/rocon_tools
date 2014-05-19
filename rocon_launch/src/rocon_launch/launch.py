@@ -80,6 +80,7 @@ class RoconLaunch(object):
     __slots__ = [
                  'terminal',
                  'processes',
+                 'temporary_files',  # store temporary files that need to unlinked on shutdown
                  'hold'  # keep terminals open when sighandling them
                 ]
 
@@ -92,6 +93,7 @@ class RoconLaunch(object):
         :param bool hold: whether or not to hold windows open or not.
         """
         self.processes = []
+        self.temporary_files = []
         self.hold = hold
         try:
             self.terminal = terminals.create_terminal(terminal_name)
@@ -110,14 +112,21 @@ class RoconLaunch(object):
           :param frame: frame
         '''
         self.terminal.shutdown_roslaunch_windows(self.processes, self.hold)
+        # Have to unlink them here rather than in the actual spawning stage,
+        # because terminal subprocesses take a while to kick in (in the background)
+        # and the unlinking may occur before it actually runs the roslaunch that
+        # needs the file.
+        for f in self.temporary_files:
+            os.unlink(f.name)
 
     def spawn_roslaunch_window(self, launch_configuration):
         """
         :param launch_configuration:
         :type launch_configuration :class:`.RosLaunchConfiguration`
         """
-        p = self.terminal.spawn_roslaunch_window(launch_configuration)
-        self.processes.append(p)
+        process, meta_roslauncher = self.terminal.spawn_roslaunch_window(launch_configuration)
+        self.processes.append(process)
+        self.temporary_files.append(meta_roslauncher)
 
 
 def main():
@@ -137,36 +146,7 @@ def main():
     else:
         roslaunch_options = ""
     launchers = utils.parse_rocon_launcher(rocon_launcher, roslaunch_options, mappings)
-    temporary_launchers = []
     for launcher in launchers:
         console.pretty_println("Launching %s on port %s" % (launcher.path, launcher.port), console.bold)
-        ##########################
-        # Customise the launcher
-        ##########################
-        temp = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
-        print("Launching %s" % temp.name)
-        launch_text = '<launch>\n'
-        if args.screen:
-            launch_text += '  <param name="rocon/screen" value="true"/>\n'
-        else:
-            launch_text += '  <param name="rocon/screen" value="false"/>\n'
-        launch_text += '  <include file="%s">\n' % launcher.path
-        for (arg_name, arg_value) in launcher.args:
-            launch_text += '    <arg name="%s" value="%s"/>\n' % (arg_name, arg_value)
-        launch_text += '  </include>\n'
-        launch_text += '</launch>\n'
-        #print launch_text
-        temp.write(launch_text)
-        temp.close()  # unlink it later
-        temporary_launchers.append(temp)
-        launcher.path = temp.name  # replace the path to the original launcher with this one
-        ##########################
-        # Start the terminal
-        ##########################
         rocon_launch.spawn_roslaunch_window(launcher)
     signal.pause()
-    # Have to unlink them here rather than in the for loop above, because the whole gnome-terminal
-    # subprocess takes a while to kick in (in the background) and the unlinking may occur before
-    # it actually runs the roslaunch that needs the file.
-    for temporary_launcher in temporary_launchers:
-        os.unlink(temporary_launcher.name)

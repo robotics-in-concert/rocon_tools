@@ -141,7 +141,14 @@ class Terminal(object):
             sys.exit(1)
         meta_roslauncher = self._prepare_meta_roslauncher(roslaunch_configuration)
         cmd = self.prepare_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
-        return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn), meta_roslauncher)
+        # ROS_NAMESPACE is typically set since we often call this from inside a node
+        # itself. Got to get rid of this otherwise it pushes things down
+        roslaunch_env = os.environ.copy()
+        try:
+            del roslaunch_env['ROS_NAMESPACE']
+        except KeyError:
+            pass
+        return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn, env=roslaunch_env), meta_roslauncher)
 
 ##############################################################################
 # Active

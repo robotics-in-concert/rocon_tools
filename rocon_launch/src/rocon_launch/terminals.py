@@ -110,10 +110,14 @@ class Terminal(object):
             launch_text += '  <param name="rocon/screen" value="true"/>\n'
         else:
             launch_text += '  <param name="rocon/screen" value="false"/>\n'
+        if roslaunch_configuration.namespace:
+            launch_text += '  <group ns="%s">\n' % roslaunch_configuration.namespace
         launch_text += '  <include file="%s">\n' % roslaunch_configuration.path
         for (arg_name, arg_value) in roslaunch_configuration.args:
             launch_text += '    <arg name="%s" value="%s"/>\n' % (arg_name, arg_value)
         launch_text += '  </include>\n'
+        if roslaunch_configuration.namespace:
+            launch_text += '  </group>\n'
         launch_text += '</launch>\n'
         #print launch_text
         ros_launch_file.write(launch_text)
@@ -233,7 +237,7 @@ class GnomeTerminal(Terminal):
                     roslaunch_configuration.port,
                     meta_roslauncher_filename)
               ]
-        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn)
+        return cmd
 
 ##############################################################################
 # Factory

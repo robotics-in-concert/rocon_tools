@@ -58,12 +58,13 @@ class RosLaunchConfiguration(object):
     terminals.
     """
     __slots__ = [
-                 'args',
                  'package',
                  'name',
                  'title',
+                 'namespace',
                  'port',
                  'options',
+                 'args',
                  'path'
                 ]
 
@@ -74,6 +75,7 @@ class RosLaunchConfiguration(object):
                  package=None,
                  port=None,
                  title=None,
+                 namespace=None,
                  args=[],
                  options=""):
         """
@@ -87,9 +89,17 @@ class RosLaunchConfiguration(object):
         :raises :exc:`.InvalidRoconLauncher`
         """
         self.args = args
+        """A list of (name, value) tuples representing roslaunch args."""
         self.package = package
+        """Package name in which to find the roslaunch (optional)."""
         self.name = name
+        """Name of the roslauncher (must be absolute if there is no package specified)."""
         self.title = title or "RosLaunch Window"
+        """The string to display on a spawned terminal window (easy for tabbing)."""
+        self.namespace = namespace
+        """Push the roslaunch down into this namespace."""
+        self.path = None
+        """The absolute path to this launcher (automatically derived from package/name)."""
         if self.package is None:
             # look for a standalone launcher
             if os.path.isfile(self.name):
@@ -103,17 +113,20 @@ class RosLaunchConfiguration(object):
             except IOError as e:
                 raise InvalidRoconLauncher("roslaunch file does not exist [%s/%s][%s]" % (self.package, self.name, str(e)))
         self.port = port or RosLaunchConfiguration.default_port
+        """Port to start this configuration on (defaults to env. ROS_MASTER_URI or 11311 if not set)."""
         self.options = options
+        """A string of options to pass to roslaunch (not a list!), e.g. '--screen --local'"""
 
     def __str__(self):
         s = console.bold + "Roslaunch Configuration" + console.reset + '\n'
         if self.package is not None:
-            s += console.cyan + "  Package" + console.reset + "      : " + console.yellow + "%s" % self.package + console.reset + '\n'  # noqa
-        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % self.name + console.reset + '\n'  # noqa
-        s += console.cyan + "  Port" + console.reset + "         : " + console.yellow + "%s" % str(self.port) + console.reset + '\n'  # noqa
-        s += console.cyan + "  Title" + console.reset + "        : " + console.yellow + "%s" % self.title + console.reset + '\n'  # noqa
-        s += console.cyan + "  Args" + console.reset + "         : " + console.yellow + "%s" % self.args + console.reset + '\n'  # noqa
-        s += console.cyan + "  Options" + console.reset + "      : " + console.yellow + "%s" % self.options + console.reset + '\n'  # noqa
+            s += console.cyan + "  Package" + console.reset + "   : " + console.yellow + "%s" % self.package + console.reset + '\n'  # noqa
+        s += console.cyan + "  Name" + console.reset + "      : " + console.yellow + "%s" % self.name + console.reset + '\n'  # noqa
+        s += console.cyan + "  Port" + console.reset + "      : " + console.yellow + "%s" % str(self.port) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Title" + console.reset + "     : " + console.yellow + "%s" % self.title + console.reset + '\n'  # noqa
+        s += console.cyan + "  Namespace" + console.reset + " : " + console.yellow + "%s" % self.namespace + console.reset + '\n'  # noqa
+        s += console.cyan + "  Args" + console.reset + "      : " + console.yellow + "%s" % self.args + console.reset + '\n'  # noqa
+        s += console.cyan + "  Options" + console.reset + "   : " + console.yellow + "%s" % self.options + console.reset + '\n'  # noqa
         return s
 
     def append_option(self, option):

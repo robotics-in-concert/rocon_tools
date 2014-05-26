@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.1.8 (2014-05-26)
+------------------
+* bugfix a variable name typo in ``RosLaunchConfiguration`` (``option``->``options``).
+
 0.1.7 (2014-05-26)
 ------------------
 * expose a public api for other modules (rocon_remocon roslaunchers, turtlesim and gazebo spawners) to use.

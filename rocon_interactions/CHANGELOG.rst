@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.1.7 (2014-05-26)
+------------------
+* documentation specifying updated roslaunch/rosrunnable/web app use of parameters and remaps.
+* be robust against socket errors with the master, we must keep spinning.
+* update rospy publisher queue_size to avoid warning in indigo.
+* missing dependency on rocon_app_manager_msgs, fixes `#43 <https://github.com/robotics-in-concert/rocon_tools/issues/43>`_.
+* bugfix initialisation of variables to fix pairing stop app problems, `#38 <https://github.com/robotics-in-concert/rocon_tools/issues/38>`_.
+* increase timeout for waiting for rapp manager, refs `#37 <https://github.com/robotics-in-concert/rocon_tools/issues/37>`_.
+* Contributors: Daniel Stonier, Jihoon Lee, Marcus Liebhardt
+
 0.1.5 (2014-05-05)
 ------------------
 * threadified the interactions manager rapp handler find routine, closes `#37 <https://github.com/robotics-in-concert/rocon_tools/issues/37>`_.

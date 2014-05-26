@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.1.7 (2014-05-26)
+------------------
+* expose a ``rocon_launch`` api for spawning roslaunch configurations.
+
 0.1.5 (2014-05-05)
 ------------------
 * pairing interactions support

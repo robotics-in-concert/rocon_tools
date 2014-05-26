@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.1.7 (2014-05-26)
+------------------
+* expose a public api for other modules (rocon_remocon roslaunchers, turtlesim and gazebo spawners) to use.
+* roslaunch configurations get namespace support (i.e. pushing down).
+* rocon_launch default port behaviour changed, now uses the ros master env. variable with 11311 as a fallback.
+* allow standalone roslaunches in the rocon_launch xml specification `#47 <https://github.com/robotics-in-concert/rocon_tools/issues/47>`_.
+* Contributors: Daniel Stonier
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation added.

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.1.7 (2014-05-26)
+------------------
+* add korus to the list of robots.
+* make the python module directly responsible for rules.yaml, `#44 <https://github.com/robotics-in-concert/rocon_tools/issues/44>`_
+* adds gopher to the list of robots.
+* Contributors: Daniel Stonier, Marcus Liebhardt
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation updated.

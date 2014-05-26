@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.7 (2014-05-26)
+------------------
+* update publisher queue_size to avoid warning in indigo.
+* Contributors: Daniel Stonier
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation added.

@@ -135,7 +135,7 @@ class RosLaunchConfiguration(object):
 
         :param str option:
         """
-        self.option = self.option + " " + option
+        self.options = self.options + " " + option
 
     def screen(self):
         """

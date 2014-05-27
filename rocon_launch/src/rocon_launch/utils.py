@@ -95,6 +95,9 @@ def get_roslaunch_pids(parent_pid):
       :rtype: str[]
 
     '''
+    if parent_pid is None:
+        console.warning("aborting call to find child roslaunches of a non-existant parent pid (can happen if cancelling spawned processes while they are still establishing).")
+        return []
     ps_command = subprocess.Popen("ps -o pid -o comm --ppid %d --noheaders" % parent_pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     ps_output = ps_command.stdout.read()
 

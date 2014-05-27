@@ -28,7 +28,6 @@ import argparse
 import signal
 import sys
 import roslaunch
-import tempfile
 import rocon_python_comms
 import rosgraph
 import rocon_console.console as console
@@ -93,7 +92,9 @@ class RoconLaunch(object):
         :param bool hold: whether or not to hold windows open or not.
         """
         self.processes = []
+        """List of spawned :class:`subprocess.Popen` terminal processes."""
         self.temporary_files = []
+        """List of temporary files used to construct launches that we must unlink before finishing."""
         self.hold = hold
         try:
             self.terminal = terminals.create_terminal(terminal_name)

@@ -20,7 +20,7 @@ Contents:
    rosapi
    specification
    modules
-   CHANGELOG
+   changelog
 
 
 

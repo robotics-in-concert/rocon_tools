@@ -21,7 +21,7 @@ Contents:
    xml
    terminals
    modules
-   CHANGELOG
+   changelog
 
 
 Indices and tables

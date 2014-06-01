@@ -20,4 +20,4 @@ Contents:
    :maxdepth: 2
 
    modules
-   CHANGELOG
+   changelog

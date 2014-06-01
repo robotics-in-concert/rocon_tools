@@ -22,7 +22,7 @@ Contents:
    :maxdepth: 2
 
    package_details
-   CHANGELOG
+   changelog
 
  
 .. Indices and tables

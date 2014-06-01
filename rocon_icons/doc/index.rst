@@ -13,3 +13,7 @@ or referenced when needed.
 
 .. _`Robotics in Concert`: http://www.robotconcert.org/wiki/Main_Page
 
+.. toctree::
+   :maxdepth: 2
+
+   changelog

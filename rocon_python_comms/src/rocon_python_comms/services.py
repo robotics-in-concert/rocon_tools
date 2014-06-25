@@ -72,7 +72,7 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
     # across any rosservice on the system which is no longer valid. To be robust against this
     # I've just pulled the internals of rosservice_find (ugh its fugly) and replicated it here
     # with the only difference in that I continue over that exception.
-    service_name = None
+    unique_service_name = None
     service_names = []
     timeout_time = time.time() + timeout.to_sec()
     master = rosgraph.Master(rospy.get_name())
@@ -99,9 +99,10 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
             if len(service_names) > 1:
                 raise NotFoundException("multiple services found %s." % service_names)
             elif len(service_names) == 1:
-                service_name = service_names[0]
+                unique_service_name = service_names[0]
         if not service_names:
             rospy.rostime.wallsleep(0.1)
     if not service_names:
         raise NotFoundException("timed out")
-    return service_name if service_name else service_names
+
+    return unique_service_name if unique_service_name else service_names

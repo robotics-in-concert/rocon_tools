@@ -76,9 +76,9 @@ class RappHandler(object):
 
     def _setup_rapp_manager_connections(self):
         try:
-            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(30.0), unique=True)
-            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(30.0), unique=True)
-            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(30.0), unique=True)
+            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(60.0), unique=True)
+            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(60.0), unique=True)
+            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(60.0), unique=True)
         except rocon_python_comms.NotFoundException as e:
             rospy.logerr("Interactions : timed out trying to find the rapp manager start_rapp, stop_rapp services and status topic [%s]" % str(e))
 

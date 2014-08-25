@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.9 (2014-08-25)
+------------------
 * to fix `#54 <https://github.com/robotics-in-concert/rocon_tools/issues/54>`_
 * move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
 * Contributors: Daniel Stonier, Jihoon Lee

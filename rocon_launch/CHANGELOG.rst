@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.9 (2014-08-25)
+------------------
 * move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
 * debugging error added for catching pid problem, `#53 <https://github.com/robotics-in-concert/rocon_tools/issues/53>`_.
 * added a bypass and logged a warning when the parent pid is not yet available when cancelling spawned windows, `#53 <https://github.com/robotics-in-concert/rocon_tools/issues/53>`_

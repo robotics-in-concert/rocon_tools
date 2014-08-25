@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
+* Contributors: Daniel Stonier
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation added.

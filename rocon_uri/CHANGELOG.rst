@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
+* debugging error added for catching pid problem, `#53 <https://github.com/robotics-in-concert/rocon_tools/issues/53>`_.
+* Contributors: Daniel Stonier
+
 0.1.7 (2014-05-26)
 ------------------
 * add korus to the list of robots.

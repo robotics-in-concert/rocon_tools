@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
+* debugging error added for catching pid problem, `#53 <https://github.com/robotics-in-concert/rocon_tools/issues/53>`_.
+* added a bypass and logged a warning when the parent pid is not yet available when cancelling spawned windows, `#53 <https://github.com/robotics-in-concert/rocon_tools/issues/53>`_
+* catch an error if a shutdown signal can't find its terminal process.
+* Contributors: Daniel Stonier
+
 0.1.8 (2014-05-26)
 ------------------
 * bugfix a variable name typo in ``RosLaunchConfiguration`` (``option``->``options``).

@@ -1,6 +1,9 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+
 0.1.5 (2014-05-05)
 ------------------
 * sphinx documentation added.

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* move from symbolic links to includes for changelogs to avoid eclipse bewilderment.
+* Contributors: Daniel Stonier
+
 0.1.7 (2014-05-26)
 ------------------
 * useful comments wrt the preexec parent group setting for our popen.

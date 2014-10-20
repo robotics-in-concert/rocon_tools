@@ -1,9 +1,11 @@
 - hardware_platform:
   - pc
   - robot:
+    - fgopher
+    - gocart
+    - gopher
     - kobuki
     - korus
-    - gopher
     - pr2
     - robosem
     - robot_other

@@ -144,7 +144,7 @@ class RoconURIField(object):
             self.field[instance] = new_field
             self.field_list[instance] = getattr(match_result, self.field_name + "_list")
         except AttributeError:  # result of getattr when it fails, in this case, typically when the match is None
-            raise RoconURIValueError("%s specification is invalid [%s]" % (self.field_name, new_field))
+            raise RoconURIValueError("%s specification is invalid or not officially registered (see https://github.com/robotics-in-concert/rocon_tools/blob/indigo/rocon_uri/src/rocon_uri/rules/rules.yaml)[%s]" % (self.field_name, new_field))
 
 
 class RoconURI(object):

@@ -27,8 +27,9 @@ endif()
 # Installs
 ##############################################################################
 
-#install(
-#    PROGRAMS 
+install(
+    PROGRAMS
 #        scripts/rocon_find_resource
-#    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#    )
+        scripts/topic_relay
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    )

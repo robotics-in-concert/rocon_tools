@@ -29,6 +29,12 @@
     - hydro
     - indigo
     - ros_other
+  - web:
+    - chrome
+    - firefox
+    - safari
+    - opera
+    - internet_explorer
   - opros
   - application_framework_other
 # Try and keep sync of operating system names with:

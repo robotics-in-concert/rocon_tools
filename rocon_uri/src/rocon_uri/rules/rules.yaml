@@ -57,3 +57,9 @@
     - ice_cream_sandwich
     - jellybean
     - kitkat
+  - web:
+    - chrome
+    - firefox
+    - safari
+    - opera
+    - internet_explorer

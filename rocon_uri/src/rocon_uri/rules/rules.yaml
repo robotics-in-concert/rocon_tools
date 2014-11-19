@@ -13,6 +13,7 @@
     - turtlebot
     - turtlebot2
     - waiterbot
+    - furo
   - mobile_device:
     - phone:
       - galaxy

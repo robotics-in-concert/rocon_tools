@@ -5,7 +5,7 @@
 #- name: web_app(http://chimek.yujinrobot.com/rosjs/listener.html)
 - name: web_app(http://robotics-in-concert.github.io/rocon_tools/js/current/listener.html)
   role: 'Web Apps'
-  compatibility: rocon:/*/*/hydro|indigo
+  compatibility: rocon:/*/*/hydro|indigo/chrome/firefox
   display_name: Listener
   description: Simple listener using rosjs in a web app.
   icon:

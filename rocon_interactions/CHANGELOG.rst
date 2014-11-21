@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.10 (2014-11-21)
+-------------------
 * update web interaction examples
 * Contributors: Jihoon Lee
 

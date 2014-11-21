@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.10 (2014-11-21)
+-------------------
 * add install rule for topic_relay closes `#61 <https://github.com/robotics-in-concert/rocon_tools/issues/61>`_
 * add topic_relay script which used for concert gazebo service. topic_relay in topic_tools package does not work for multi master system
 * Contributors: Jihoon Lee

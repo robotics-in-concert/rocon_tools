@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* [rocon_bubble_icons] gopher.
+* [rocon_bubble_icons] waypoint icon
+* Contributors: Daniel Stonier
+
 0.1.9 (2014-08-25)
 ------------------
 

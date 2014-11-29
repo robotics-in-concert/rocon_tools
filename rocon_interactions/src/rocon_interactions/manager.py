@@ -212,6 +212,7 @@ class InteractionsManager(object):
         if param['rosbridge_address'] == "":
             param['rosbridge_address'] = 'localhost'
         param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
+        param['webserver_address'] = rospy.get_param('~webserver_address', 'localhost')
         param['interactions'] = rospy.get_param('~interactions', [])
         param['pairing'] = rospy.get_param('~pairing', False)
         return param
@@ -365,6 +366,7 @@ class InteractionsManager(object):
           Provide some intelligence to the interactions specification by binding designated
           symbols at runtime.
 
+          - interaction.name - __WEBSERVER_ADDRESS__
           - interaction.compatibility - __ROSDISTRO__ (depracated - use | in the compatibility variable itself)
           - interaction.parameters - __ROSBRIDGE_ADDRESS__
           - interaction.parameters - __ROSBRIDGE_PORT__
@@ -376,6 +378,7 @@ class InteractionsManager(object):
           :rtype: request_interactions_msgs.Interaction[]
         '''
         for interaction in interactions:
+            interaction.name = interaction.name.replace('__WEBSERVER_ADDRESS__', self._parameters['webserver_address'])
             interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
                                                                     self._parameters['rosbridge_address'])
             interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__',

@@ -1,6 +1,6 @@
 <package>
   <name>rocon_python_redis</name>
-  <version>0.1.10</version>
+  <version>0.1.11</version>
   <description>
     Locally patched version of the python redis client (https://github.com/andymccurdy/redis-py).
   </description>

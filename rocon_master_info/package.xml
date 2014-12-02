@@ -1,6 +1,6 @@
 <package>
   <name>rocon_master_info</name>
-  <version>0.1.10</version>
+  <version>0.1.11</version>
   <description>
     Publish master information - name, description, icon.
   </description>

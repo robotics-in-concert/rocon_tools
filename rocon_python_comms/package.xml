@@ -1,6 +1,6 @@
 <package>
   <name>rocon_python_comms</name>
-  <version>0.1.10</version>
+  <version>0.1.11</version>
   <description>
     Service pair libraries for pub/sub non-blocking services.
   </description>

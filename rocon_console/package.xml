@@ -1,6 +1,6 @@
 <package>
   <name>rocon_console</name>
-  <version>0.1.10</version>
+  <version>0.1.11</version>
   <description>
     Command line python console utilities (mostly for colourisation).
   </description>

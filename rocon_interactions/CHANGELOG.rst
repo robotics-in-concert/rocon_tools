@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.11 (2014-12-02)
+-------------------
 * add webserver address example
 * fix invalid compatibility fix `#67 <https://github.com/robotics-in-concert/rocon_tools/issues/67>`_
 * webserver address dynamic binding

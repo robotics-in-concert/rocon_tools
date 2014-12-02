@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>rocon_tools</name>
-  <version>0.1.10</version>
+  <version>0.1.11</version>
   <description>
     Utilities and tools developed for rocon, but usable beyond the boundaries
     of rocon.

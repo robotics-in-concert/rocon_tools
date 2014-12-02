@@ -11,6 +11,7 @@
 -->
 <launch>
   <arg name="rosbridge_port" default="8080"/>
+  <arg name="webserver_address" default="robotics-in-concert.github.io"/>
 
   <param name="name" value="Rocon Web App Interactions"/>
   <param name="description" value="A tutorial environment for web app interactions (using rosbridge)) and remocons."/>
@@ -20,6 +21,7 @@
   <node pkg="rocon_interactions" type="interactions_manager.py" name="interactions">
     <rosparam param="interactions">[rocon_interactions/web_apps, rocon_interactions/web]</rosparam>
     <param name="rosbridge_port" value="$(arg rosbridge_port)"/>
+    <param name="webserver_address" value="$(arg webserver_address)"/>
   </node>
 
   <node pkg="roscpp_tutorials" type="talker" name="talker">
@@ -30,4 +32,3 @@
      <arg name="port" value="$(arg rosbridge_port)"/>
   </include>
 </launch>
-

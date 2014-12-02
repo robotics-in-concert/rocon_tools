@@ -4,7 +4,7 @@
 
 - name: web_url(http://chimek.yujinrobot.com/)
   role: 'Web URLs'
-  compatibility: rocon:/*/*/*/chrome|firefox|safari/opera|internet_explorer
+  compatibility: rocon:/*/*/*/chrome|firefox|safari|opera|internet_explorer
   display_name: Chimek
   description: Everything you need to know about chimek to get through life.
   icon:
@@ -12,7 +12,7 @@
 
 - name: web_url(http://wiki.ros.org/rocon_interactions)
   role: 'Web URLs'
-  compatibility: rocon:/*/*/*/chrome|firefox|safari/opera|internet_explorer
+  compatibility: rocon:/*/*/*/chrome|firefox|safari|opera|internet_explorer
   display_name: Ros Wiki - Interactions
   description: Documentation for rocon_interactions on the ros wiki
   icon:

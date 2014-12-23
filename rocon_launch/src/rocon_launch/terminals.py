@@ -129,7 +129,7 @@ class Terminal(object):
         ros_launch_file.close()  # unlink it later
         return ros_launch_file
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None, env = {}):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
@@ -148,9 +148,21 @@ class Terminal(object):
         cmd = self.prepare_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
         # ROS_NAMESPACE is typically set since we often call this from inside a node
         # itself. Got to get rid of this otherwise it pushes things down
+
         roslaunch_env = os.environ.copy()
+
+        if len(env) != 0:
+            for key in env.keys():
+                roslaunch_env[key] = env[key]
+        roslaunch_env['TEST'] = "hahahaha"
+        print roslaunch_env['ROS_MASTER_URI']
+        print roslaunch_env['ROS_HOSTNAME']
+
+
+
         try:
             del roslaunch_env['ROS_NAMESPACE']
+
         except KeyError:
             pass
         return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn, env=roslaunch_env), meta_roslauncher)

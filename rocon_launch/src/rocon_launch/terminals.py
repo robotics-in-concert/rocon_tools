@@ -148,17 +148,10 @@ class Terminal(object):
         cmd = self.prepare_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
         # ROS_NAMESPACE is typically set since we often call this from inside a node
         # itself. Got to get rid of this otherwise it pushes things down
-
         roslaunch_env = os.environ.copy()
-
         if len(env) != 0:
             for key in env.keys():
                 roslaunch_env[key] = env[key]
-        roslaunch_env['TEST'] = "hahahaha"
-        print roslaunch_env['ROS_MASTER_URI']
-        print roslaunch_env['ROS_HOSTNAME']
-
-
 
         try:
             del roslaunch_env['ROS_NAMESPACE']
@@ -193,6 +186,20 @@ class Active(Terminal):
         if roslaunch_configuration.options:
             cmd.append(roslaunch_configuration.options)
         cmd.extend(["--port", roslaunch_configuration.port])
+        cmd.append(meta_roslauncher_filename)
+        return cmd
+
+    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
+        """
+        Prepare the custom command for a roslaunch window.
+
+        :param roslaunch_configuration: required roslaunch info
+        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param str meta_roslauncher_filename: temporary roslauncher file
+        """
+        cmd = ["roslaunch"]
+        if roslaunch_configuration.options:
+            cmd.append(roslaunch_configuration.options)
         cmd.append(meta_roslauncher_filename)
         return cmd
 
@@ -231,6 +238,27 @@ class Konsole(Terminal):
                     meta_roslauncher_filename)]
         return cmd
 
+    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
+        """
+        Prepare the custom command for a roslaunch window.
+
+        :param roslaunch_configuration: required roslaunch info
+        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param str meta_roslauncher_filename: temporary roslauncher file
+        """
+        cmd = [self.name,
+               '-p',
+               'tabtitle=%s' % roslaunch_configuration.title,
+               '--nofork',
+               '--hold',
+               '-e',
+               "/bin/bash",
+               "-c",
+               "roslaunch %s --disable-title %s" %
+                   (roslaunch_configuration.options,
+                    meta_roslauncher_filename)]
+        return cmd
+
 ##############################################################################
 # Gnome Terminal
 ##############################################################################
@@ -260,7 +288,25 @@ class GnomeTerminal(Terminal):
                    (roslaunch_configuration.options,
                     roslaunch_configuration.port,
                     meta_roslauncher_filename)
-              ]
+               ]
+        return cmd
+
+    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
+        """
+        Prepare the custom command for a roslaunch window.
+
+        :param roslaunch_configuration: required roslaunch info
+        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
+        :param str meta_roslauncher_filename: temporary roslauncher file
+        """
+        cmd = [self.name,
+               '--title=%s' % roslaunch_configuration.title,
+               '--disable-factory',
+               "-e",
+               "/bin/bash -c 'roslaunch %s --disable-title %s';/bin/bash" %
+                   (roslaunch_configuration.options,
+                    meta_roslauncher_filename)
+               ]
         return cmd
 
 ##############################################################################

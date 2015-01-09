@@ -31,6 +31,7 @@ import sys
 import subprocess
 import tempfile
 import time
+from urlparse import urlparse
 
 from .exceptions import UnsupportedTerminal
 from . import utils
@@ -129,12 +130,12 @@ class Terminal(object):
         ros_launch_file.close()  # unlink it later
         return ros_launch_file
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None, env = {}):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
         :param func postexec_fn: run this after the subprocess finishes
-
+        :param dict env: a additional customised environment to run ros launcher, {key : value}
         :returns: the subprocess and temp roslaunch file handles
         :rtype: (:class:`subprocess.Popen`, :class:`tempfile.NamedTemporaryFile`
         """
@@ -149,7 +150,11 @@ class Terminal(object):
         # ROS_NAMESPACE is typically set since we often call this from inside a node
         # itself. Got to get rid of this otherwise it pushes things down
         roslaunch_env = os.environ.copy()
+        if len(env) != 0:
+            for key in env.keys():
+                roslaunch_env[key] = env[key]
         try:
+            roslaunch_env['ROS_MASTER_URI'] = roslaunch_env['ROS_MASTER_URI'].replace(str(urlparse(roslaunch_env['ROS_MASTER_URI']).port),str(roslaunch_configuration.port))
             del roslaunch_env['ROS_NAMESPACE']
         except KeyError:
             pass
@@ -180,7 +185,6 @@ class Active(Terminal):
         cmd = ["roslaunch"]
         if roslaunch_configuration.options:
             cmd.append(roslaunch_configuration.options)
-        cmd.extend(["--port", roslaunch_configuration.port])
         cmd.append(meta_roslauncher_filename)
         return cmd
 
@@ -213,9 +217,8 @@ class Konsole(Terminal):
                '-e',
                "/bin/bash",
                "-c",
-               "roslaunch %s --disable-title --port %s %s" %
+               "roslaunch %s --disable-title %s" %
                    (roslaunch_configuration.options,
-                    roslaunch_configuration.port,
                     meta_roslauncher_filename)]
         return cmd
 
@@ -244,11 +247,10 @@ class GnomeTerminal(Terminal):
                '--title=%s' % roslaunch_configuration.title,
                '--disable-factory',
                "-e",
-               "/bin/bash -c 'roslaunch %s --disable-title --port %s %s';/bin/bash" %
+               "/bin/bash -c 'roslaunch %s --disable-title %s';/bin/bash" %
                    (roslaunch_configuration.options,
-                    roslaunch_configuration.port,
                     meta_roslauncher_filename)
-              ]
+               ]
         return cmd
 
 ##############################################################################

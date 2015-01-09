@@ -31,6 +31,7 @@ import sys
 import subprocess
 import tempfile
 import time
+from urlparse import urlparse
 
 from .exceptions import UnsupportedTerminal
 from . import utils
@@ -135,6 +136,8 @@ class Terminal(object):
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
         :param func postexec_fn: run this after the subprocess finishes
 
+        :param dict env: a additional customised environment to run ros launcher. {key : value}
+        
         :returns: the subprocess and temp roslaunch file handles
         :rtype: (:class:`subprocess.Popen`, :class:`tempfile.NamedTemporaryFile`
         """
@@ -152,10 +155,9 @@ class Terminal(object):
         if len(env) != 0:
             for key in env.keys():
                 roslaunch_env[key] = env[key]
-
         try:
+            roslaunch_env['ROS_MASTER_URI'] = roslaunch_env['ROS_MASTER_URI'].replace(str(urlparse(roslaunch_env['ROS_MASTER_URI']).port),str(roslaunch_configuration.port))
             del roslaunch_env['ROS_NAMESPACE']
-
         except KeyError:
             pass
         return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn, env=roslaunch_env), meta_roslauncher)
@@ -175,21 +177,6 @@ class Active(Terminal):
         super(Active, self).__init__(active)
 
     def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
-        """
-        Prepare the custom command for a roslaunch window.
-
-        :param roslaunch_configuration: required roslaunch info
-        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param str meta_roslauncher_filename: temporary roslauncher file
-        """
-        cmd = ["roslaunch"]
-        if roslaunch_configuration.options:
-            cmd.append(roslaunch_configuration.options)
-        cmd.extend(["--port", roslaunch_configuration.port])
-        cmd.append(meta_roslauncher_filename)
-        return cmd
-
-    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
         """
         Prepare the custom command for a roslaunch window.
 
@@ -232,28 +219,6 @@ class Konsole(Terminal):
                '-e',
                "/bin/bash",
                "-c",
-               "roslaunch %s --disable-title --port %s %s" %
-                   (roslaunch_configuration.options,
-                    roslaunch_configuration.port,
-                    meta_roslauncher_filename)]
-        return cmd
-
-    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
-        """
-        Prepare the custom command for a roslaunch window.
-
-        :param roslaunch_configuration: required roslaunch info
-        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param str meta_roslauncher_filename: temporary roslauncher file
-        """
-        cmd = [self.name,
-               '-p',
-               'tabtitle=%s' % roslaunch_configuration.title,
-               '--nofork',
-               '--hold',
-               '-e',
-               "/bin/bash",
-               "-c",
                "roslaunch %s --disable-title %s" %
                    (roslaunch_configuration.options,
                     meta_roslauncher_filename)]
@@ -273,25 +238,6 @@ class GnomeTerminal(Terminal):
         super(GnomeTerminal, self).__init__(gnome_terminal)
 
     def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
-        """
-        Prepare the custom command for a roslaunch window.
-
-        :param roslaunch_configuration: required roslaunch info
-        :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
-        :param str meta_roslauncher_filename: temporary roslauncher file
-        """
-        cmd = [self.name,
-               '--title=%s' % roslaunch_configuration.title,
-               '--disable-factory',
-               "-e",
-               "/bin/bash -c 'roslaunch %s --disable-title --port %s %s';/bin/bash" %
-                   (roslaunch_configuration.options,
-                    roslaunch_configuration.port,
-                    meta_roslauncher_filename)
-               ]
-        return cmd
-
-    def prepare_command_without_port(self, roslaunch_configuration, meta_roslauncher_filename):
         """
         Prepare the custom command for a roslaunch window.
 

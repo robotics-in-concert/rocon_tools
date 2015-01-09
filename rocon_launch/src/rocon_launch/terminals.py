@@ -135,9 +135,7 @@ class Terminal(object):
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
         :param func postexec_fn: run this after the subprocess finishes
-
-        :param dict env: a additional customised environment to run ros launcher. {key : value}
-        
+        :param dict env: a additional customised environment to run ros launcher, {key : value}
         :returns: the subprocess and temp roslaunch file handles
         :rtype: (:class:`subprocess.Popen`, :class:`tempfile.NamedTemporaryFile`
         """

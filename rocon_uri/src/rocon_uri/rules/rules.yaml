@@ -45,6 +45,7 @@
     - gentoo
     - opensuse
     - mint
+      - rebecca
     - ubuntu:
       - precise
       - quantal

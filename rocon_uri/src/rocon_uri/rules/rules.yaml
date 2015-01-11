@@ -44,7 +44,7 @@
     - fedora
     - gentoo
     - opensuse
-    - mint
+    - mint:
       - rebecca
     - ubuntu:
       - precise

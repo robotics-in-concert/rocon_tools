@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* delete command option about port and implement to set port when terminal is spawned
+* make remocon_delay test
+* Contributors: dwlee
+
 0.1.12 (2015-01-08)
 -------------------
 

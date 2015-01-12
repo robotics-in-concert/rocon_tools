@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* delete command option about port and implement to set port when terminal is spawned
+* update test function for test about without port option in roslauch
+* Contributors: dwlee
+
 0.1.12 (2015-01-08)
 -------------------
 

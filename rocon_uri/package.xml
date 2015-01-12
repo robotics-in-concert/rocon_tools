@@ -1,6 +1,6 @@
 <package>
   <name>rocon_uri</name>
-  <version>0.1.12</version>
+  <version>0.1.13</version>
   <description>
     Module for working with rocon uri strings.
   </description>

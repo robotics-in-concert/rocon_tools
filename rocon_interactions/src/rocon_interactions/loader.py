@@ -43,6 +43,7 @@ from . import interactions
 
 
 class InteractionsLoader(object):
+
     '''
       This class is responsible for loading the role manager with the roles
       and app specifications provided in the service definitions.
@@ -69,7 +70,7 @@ class InteractionsLoader(object):
                 % str(e))
         self._set_interactions_proxy = rospy.ServiceProxy(service_name, interaction_srvs.SetInteractions)
 
-    def load(self, interactions_yaml_resource, namespace='/', load=True):
+    def load(self, interactions_yaml_resource, namespace='/', load=True, is_relative_path=True):
         '''
         Parse a set of configurations specified in a yaml file and send the command to
         load/unload these on the interactions manager. For convenience, it also allows
@@ -86,7 +87,7 @@ class InteractionsLoader(object):
         request.load = load
 
         # This can raise YamlResourceNotFoundException, MalformedInteractionsYaml
-        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource)
+        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource, is_relative_path)
         for i in request.interactions:
             if i.namespace == '':
                 i.namespace = namespace

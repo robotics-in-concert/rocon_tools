@@ -24,6 +24,7 @@ an interaction is.
 
 import yaml
 import zlib  # crc32
+import os
 
 import genpy
 import rospkg
@@ -59,7 +60,7 @@ def generate_hash(display_name, role, namespace):
     return zlib.crc32(display_name + "-" + role + "-" + namespace)
 
 
-def load_msgs_from_yaml_resource(resource_name):
+def load_msgs_from_yaml_resource(resource_name, is_relative_path=True):
     """
       Load interactions from a yaml resource.
 
@@ -75,7 +76,12 @@ def load_msgs_from_yaml_resource(resource_name):
     """
     interactions = []
     try:
-        yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
+        if is_relative_path:
+            yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
+        else:
+            yaml_filename = resource_name
+            if not os.path.isfile(yaml_filename):
+                raise YamlResourceNotFoundException(str(e))
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))
     with open(yaml_filename) as f:
@@ -103,6 +109,7 @@ def load_msgs_from_yaml_resource(resource_name):
 
 
 class Interaction(object):
+
     '''
       This class defines an interaction. It does so by wrapping the base
       rocon_interaction_msgs.Interaction_ msg structure with

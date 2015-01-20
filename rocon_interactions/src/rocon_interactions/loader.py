@@ -87,7 +87,7 @@ class InteractionsLoader(object):
         request.load = load
 
         # This can raise YamlResourceNotFoundException, MalformedInteractionsYaml
-        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource, is_relative_path)
+        request.interactions = interactions.load_msgs_from_yaml_file(interactions_yaml_resource)
 
         for i in request.interactions:
             if i.namespace == '':
@@ -113,7 +113,7 @@ class InteractionsLoader(object):
         request.load = load
 
         # This can raise YamlResourceNotFoundException, MalformedInteractionsYaml
-        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource, is_relative_path)
+        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource)
 
         for i in request.interactions:
             if i.namespace == '':

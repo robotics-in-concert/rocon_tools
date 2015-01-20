@@ -77,7 +77,7 @@ class InteractionsLoader(object):
         For convenience, it also allows the setting of a namespace for the whole group
         which will only get applied if an interaction has no setting in the yaml.
 
-        :param str interactions_yaml_resource: yaml resource name for role-app parameterisation
+        :param str interactions_yaml_resource: yaml absolute file path for role-app parameterisation
         :param str namespace: namespace to push connections down into (e.g. /interactions)
         :param bool load: either load or unload the interaction information.
 

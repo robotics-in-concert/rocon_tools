@@ -70,14 +70,14 @@ class InteractionsLoader(object):
                 % str(e))
         self._set_interactions_proxy = rospy.ServiceProxy(service_name, interaction_srvs.SetInteractions)
 
-    def load_from_file(self, interactions_yaml_resource, namespace='/', load=True):
+    def load_from_file(self, interactions_yaml_filepath, namespace='/', load=True):
         '''
         Parse a set of configurations specified in a yaml file found from file path
         and send the command toload/unload these on the interactions manager.
         For convenience, it also allows the setting of a namespace for the whole group
         which will only get applied if an interaction has no setting in the yaml.
 
-        :param str interactions_yaml_resource: yaml absolute file path for role-app parameterisation
+        :param str interactions_yaml_filepath: yaml absolute file path for role-app parameterisation
         :param str namespace: namespace to push connections down into (e.g. /interactions)
         :param bool load: either load or unload the interaction information.
 
@@ -87,7 +87,7 @@ class InteractionsLoader(object):
         request.load = load
 
         # This can raise YamlResourceNotFoundException, MalformedInteractionsYaml
-        request.interactions = interactions.load_msgs_from_yaml_file(interactions_yaml_resource)
+        request.interactions = interactions.load_msgs_from_yaml_file(interactions_yaml_filepath)
 
         for i in request.interactions:
             if i.namespace == '':

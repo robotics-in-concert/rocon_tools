@@ -50,7 +50,7 @@ if __name__ == '__main__':
     except rospy.exceptions.ROSInterruptException as e:
         sys.exit(1)
     try:
-        interactions_loader.load(args.package + '/' + args.yaml, args.namespace)
+        interactions_loader.load_from_resource(args.package + '/' + args.yaml, args.namespace)
     except rocon_interactions.YamlResourceNotFoundException as e:
         rospy.logerr("Interactions Loader : %s." % str(e))
         sys.exit(1)

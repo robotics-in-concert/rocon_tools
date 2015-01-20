@@ -60,11 +60,11 @@ def generate_hash(display_name, role, namespace):
     return zlib.crc32(display_name + "-" + role + "-" + namespace)
 
 
-def load_msgs_from_yaml_resource(resource_name, is_relative_path=True):
+def load_msgs_from_yaml_file(file_path):
     """
       Load interactions from a yaml resource.
 
-      :param str resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
+      :param str file_path: file path of a yaml formatted interactions file (ext=.interactions).
 
       :returns: a list of ros msg interaction specifications
       :rtype: rocon_interaction_msgs.Interaction_ []
@@ -76,12 +76,9 @@ def load_msgs_from_yaml_resource(resource_name, is_relative_path=True):
     """
     interactions = []
     try:
-        if is_relative_path:
-            yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
-        else:
-            yaml_filename = resource_name
-            if not os.path.isfile(yaml_filename):
-                raise YamlResourceNotFoundException(str(e))
+        yaml_filename = file_path
+        if not os.path.isfile(yaml_filename):
+            raise YamlResourceNotFoundException(str(e))
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))
     with open(yaml_filename) as f:
@@ -102,6 +99,30 @@ def load_msgs_from_yaml_resource(resource_name, is_relative_path=True):
                     "malformed yaml preventing converting of yaml to interaction msg type [%s]" % str(e))
             interactions.append(interaction)
     return interactions
+
+
+def load_msgs_from_yaml_resource(resource_name):
+    """
+      Load interactions from a yaml resource.
+
+      :param str resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
+
+      :returns: a list of ros msg interaction specifications
+      :rtype: rocon_interaction_msgs.Interaction_ []
+
+      :raises: :exc:`.YamlResourceNotFoundException` if yaml is not found.
+      :raises: :exc:`.MalformedInteractionsYaml` if yaml is malformed.
+
+      .. include:: weblinks.rst
+    """
+    interactions = []
+    try:
+        yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
+        interactions = load_msgs_from_yaml_file(yaml_filename)
+        return interactions
+    except rospkg.ResourceNotFound as e:  # resource not found.
+        raise YamlResourceNotFoundException(str(e))
+
 
 ##############################################################################
 # Classes

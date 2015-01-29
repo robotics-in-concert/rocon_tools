@@ -167,7 +167,11 @@ class Interaction(object):
         if self.msg.icon.resource_name == "":
             self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
         if not self.msg.icon.data:
-            self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
+            try:
+                self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
+            except rospkg.common.ResourceNotFound as e: # replace with default icon if icon resource is not found.
+                self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
+                self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
             self.msg.namespace = '/'
         self.msg.hash = generate_hash(self.msg.display_name, self.msg.role, self.msg.namespace)

@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* default icon if resource is not found  closes `#76 <https://github.com/robotics-in-concert/rocon_tools/issues/76>`_
+* resource to filepath
+* fix wrong code documents
+* fix bug
+* load fucntion divide up into loading from file and resource part
+* update interaction loader for running with absolute path
+* Contributors: Jihoon Lee, dwlee
+
 0.1.13 (2015-01-12)
 -------------------
 

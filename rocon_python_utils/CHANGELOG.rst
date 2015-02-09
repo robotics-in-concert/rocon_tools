@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.14 (2015-02-09)
+-------------------
 * create new tools about handing name string and path
 * Contributors: dwlee
 

@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.14 (2015-02-09)
+-------------------
 * default icon if resource is not found  closes `#76 <https://github.com/robotics-in-concert/rocon_tools/issues/76>`_
 * resource to filepath
 * fix wrong code documents

@@ -54,9 +54,8 @@ def is_validation_file(file_path):
   :return: validation of file
   :rtype: bool
   '''
-  is_validated = False
+  is_validated = True
   if not os.path.isfile(file_path) or os.stat(file_path).st_size <= 0:
-      is_validated = True
-  else:
       is_validated = False
+  
   return is_validated

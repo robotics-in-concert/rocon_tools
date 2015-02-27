@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* fix wrong condition statement and delete redundant part
+* name change
+* Contributors: dwlee
+
 0.1.14 (2015-02-09)
 -------------------
 * create new tools about handing name string and path

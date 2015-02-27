@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* [rocon_interactions] android demo finally working.
+* Contributors: Daniel Stonier
+
 0.1.14 (2015-02-09)
 -------------------
 * default icon if resource is not found  closes `#76 <https://github.com/robotics-in-concert/rocon_tools/issues/76>`_

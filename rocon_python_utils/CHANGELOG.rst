@@ -1,6 +1,9 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+
 0.1.15 (2015-02-27)
 -------------------
 * fix wrong condition statement and delete redundant part

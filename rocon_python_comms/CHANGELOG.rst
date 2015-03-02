@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* use exceptions informative way `#79 <https://github.com/robotics-in-concert/rocon_tools/issues/79>`_
+* update logic of find_service_namespace `#79 <https://github.com/robotics-in-concert/rocon_tools/issues/79>`_
+* rename is_valid_service
+* rename is_valid_service to service_is_available
+* update namespace finder and service validation checker
+* Contributors: Jihoon Lee, dwlee
+
 0.1.15 (2015-02-27)
 -------------------
 

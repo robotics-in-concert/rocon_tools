@@ -26,4 +26,4 @@ from .services import find_service, service_is_available
 from .subscriber_proxy import SubscriberProxy
 from .topics import find_topic
 from .wall_rate import WallRate
-from .namespace import find_namespace
+from .namespace import find_service_namespace

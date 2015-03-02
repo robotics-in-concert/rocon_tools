@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.16 (2015-03-02)
+-------------------
 * use exceptions informative way `#79 <https://github.com/robotics-in-concert/rocon_tools/issues/79>`_
 * update logic of find_service_namespace `#79 <https://github.com/robotics-in-concert/rocon_tools/issues/79>`_
 * rename is_valid_service

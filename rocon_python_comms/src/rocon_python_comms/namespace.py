@@ -60,10 +60,10 @@ def find_service_namespace(service_name, service_type=None, unique=False):
                 if s.split('/')[-1] == service_name:
                     found_namespaces.append(nodelist[0])
         if len(found_namespaces) == 0:
-            raise NotFoundException('[%s] service not found.' % str(service_name))
+            raise NotFoundException(str(service_name))
         if unique:
             if len(found_namespaces) > 1:
-                raise MultipleFoundException('[%s] service multiple found.' % str(service_name))
+                raise MultipleFoundException(str(found_namespaces))
             else:
                 return found_namespaces[0]
         else:

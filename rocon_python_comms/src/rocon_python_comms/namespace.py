@@ -1,0 +1,64 @@
+#
+# License: BSD
+#   https://raw.github.com/robotics-in-concert/rocon_tools/license/LICENSE
+#
+##############################################################################
+# Description
+##############################################################################
+
+"""
+.. module:: namespace
+   :platform: Unix
+   :synopsis: Useful methods relating to ros namespace.
+
+
+This module contains anything relating to introspection or manipulation
+of namespace.
+
+----
+
+"""
+##############################################################################
+# Imports
+##############################################################################
+
+import rospy
+import rosgraph
+import socket
+from rosservice import get_service_type, ROSServiceIOException
+from .exceptions import NotFoundException
+
+##############################################################################
+# Find namespace
+##############################################################################
+
+
+def find_namespace(service_name, service_type):
+    '''
+    Find a namespace corresponding with service name and service type.
+
+    :param str service_name: unresolved name of the service looked for (e.g. 'get_interactions', not '/concert/interactions/get_interactions')
+    :param str service_type: type name of service looked for (e.g. std_msgs/String)
+
+    :returns: the namespace corresponding with service name and type
+    :rtype: str
+
+    :raises: :exc:`.MultipleFoundException` If it find multiple service
+    :raises: :exc:`.NotFoundException` If it does not find service name in registerd
+    :raises: :exc:`.ROSServiceIOException` If it disconnect with ros master
+
+    '''
+    try:
+        master = rosgraph.Master(rospy.get_name())
+        _, _, srvs = master.getSystemState()
+        found_namespaces = []
+        for s, nodelist in srvs:
+            if s.split('/')[-1] == service_name and get_service_type(s) == service_type:
+                found_namespaces.append(nodelist[0])
+        if len(found_namespaces) == 0:
+            raise NotFoundException('[%s] service not found.' % str(service_name))
+        if len(found_namespaces) > 1:
+            raise MultipleFoundException('[%s] service multiple found.' % str(service_name))    
+        return found_namespaces[0]
+    except socket.error:
+        raise ROSServiceIOException("unable to communicate with master!")

@@ -39,3 +39,10 @@ class NotFoundException(IOError):
       Raised when a requested entity cannot be found, or didn't return the correct result.
     """
     pass
+
+
+class MultipleFoundException(IOError):
+    """
+      Raised when a requested entity found multiple services, or didn't return the correct result.
+    """
+    pass

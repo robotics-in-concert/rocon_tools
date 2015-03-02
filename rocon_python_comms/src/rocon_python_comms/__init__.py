@@ -22,7 +22,8 @@ from .exceptions import *
 from .nodes import find_node
 from .service_pair_client import ServicePairClient
 from .service_pair_server import ServicePairServer
-from .services import find_service
+from .services import find_service, service_is_available
 from .subscriber_proxy import SubscriberProxy
 from .topics import find_topic
 from .wall_rate import WallRate
+from .namespace import find_namespace

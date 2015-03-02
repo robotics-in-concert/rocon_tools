@@ -36,7 +36,7 @@ from .exceptions import NotFoundException
 ##############################################################################
 
 
-def is_valid_service(service_name):
+def service_is_available(service_name):
     '''
     Check whether the specific service is validated or not 
     as retrieving from master state.
@@ -48,12 +48,12 @@ def is_valid_service(service_name):
     '''
     master = rosgraph.Master(rospy.get_name())
     _, _, services = master.getSystemState()
-    is_valid = False
+    is_available = False
     for srv_name, unused_node_name in services:
         if service_name == srv_name:
-            is_valid = True
+            is_available = True
             break
-    return is_valid
+    return is_available
 
 
 def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False):

@@ -21,6 +21,7 @@ managing the ros api that manipulates interactions.
 # Imports
 ##############################################################################
 
+import re
 import uuid
 
 import rospy
@@ -377,6 +378,8 @@ class InteractionsManager(object):
           :returns: the updated interaction list
           :rtype: request_interactions_msgs.Interaction[]
         '''
+
+        # Binding runtime CONSTANTS
         for interaction in interactions:
             interaction.name = interaction.name.replace('__WEBSERVER_ADDRESS__', self._parameters['webserver_address'])
             interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
@@ -385,6 +388,25 @@ class InteractionsManager(object):
                                                                     str(self._parameters['rosbridge_port']))
             #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%',
             #                                                              rocon_python_utils.ros.get_rosdistro())
+
+        # Binding ros param values
+        pattern = '\ __(.*?)__[,|\}]' # searchs for pattern '<space>__PARAMNAME__,'
+        for interaction in interactions:
+            for p in re.findall(pattern, interaction.parameters):
+                if p.startswith('/'):
+                    rparam = rospy.get_param(p)
+                elif p.startswith('~'):
+                    msg = '%s is invalid format for rosparam binding. See https://github.com/robotics-in-concert/rocon_tools/issues/81'%p
+                    raise MalformedInteractionsYaml(str(msg))
+                else:
+                    # See https://github.com/robotics-in-concert/rocon_tools/issues/81 for the rule
+                    ns = interaction.namespace
+                    if not ns:
+                        rparam = rospy.get_param('~'+p)
+                    else:
+                        rparam = rospy.get_param(ns+'/'+p)
+                match = '__' + p + '__'
+                interaction.parameters = interaction.parameters.replace(match, str(rparam))
         return interactions
 
     def is_pairing(self):

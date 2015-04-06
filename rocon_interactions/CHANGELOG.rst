@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.17 (2015-04-06)
+-------------------
 * ros param binding to resolve `#81 <https://github.com/robotics-in-concert/rocon_tools/issues/81>`_
 * set the defualt values in interactions.js
 * Contributors: Jihoon Lee, dwlee

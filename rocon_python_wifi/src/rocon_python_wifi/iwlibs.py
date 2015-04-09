@@ -73,14 +73,14 @@ def getWNICnames():
     """
     device = re.compile('[a-z]{2,}[0-9]*:')
     ifnames = []
-
-    fp = open('/proc/net/wireless', 'r')
-    for line in fp:
-        try:
-            # append matching pattern, without the trailing colon
-            ifnames.append(device.search(line).group()[:-1])
-        except AttributeError:
-            pass
+    if os.path.isfile('/proc/net/wireless'):
+        with open('/proc/net/wireless', 'r') as fp:
+            for line in fp:
+                try:
+                    # append matching pattern, without the trailing colon
+                    ifnames.append(device.search(line).group()[:-1])
+                except AttributeError:
+                    pass
     # if we couldn't lookup the devices, try to ask the kernel
     if ifnames == []:
         ifnames = getConfiguredWNICnames()

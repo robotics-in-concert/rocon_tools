@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* The connection cache, discovers and maintains a detailed list of connection information, added.
+
 0.1.17 (2015-04-06)
 -------------------
 

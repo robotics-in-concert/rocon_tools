@@ -18,6 +18,7 @@ ros python communications.
 # Imports
 ##############################################################################
 
+from .connections import *
 from .exceptions import *
 from .nodes import find_node
 from .service_pair_client import ServicePairClient

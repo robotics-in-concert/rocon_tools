@@ -1,0 +1,6 @@
+<launch>
+  <node name="talker" pkg="roscpp_tutorials" type="talker"/>
+  <node name="fibonacci_server" pkg="actionlib_tutorials" type="fibonacci_server"/>
+
+  <test test-name="test_connection_cache" pkg="rocon_python_comms" type="test_connection_cache.py"/>
+</launch>

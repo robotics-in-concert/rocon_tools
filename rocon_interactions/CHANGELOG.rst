@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.18 (2015-05-06)
+-------------------
 * get_interctions accept empty rocon_uri as wild card closes `#85 <https://github.com/robotics-in-concert/rocon_tools/issues/85>`_
 * Contributors: Jihoon Lee
 

@@ -270,11 +270,12 @@ class InteractionsManager(object):
             for role in unavailable_roles:
                 rospy.logerr("Interactions : received request for interactions of an unregistered role [%s]" % role)
 
+        uri = request.uri if request.uri != '' else 'rocon:/'
         try:
-            filtered_interactions = self._interactions_table.filter(request.roles, request.uri)
+            filtered_interactions = self._interactions_table.filter(request.roles, uri)
         except rocon_uri.RoconURIValueError as e:
             rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri"
-                         " [%s][%s]" % (request.uri, str(e)))
+                         " [%s][%s]" % (uri, str(e)))
             filtered_interactions = []
         for i in filtered_interactions:
             response.interactions.append(i.msg)

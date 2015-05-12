@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.18 (2015-05-06)
+-------------------
+* Don't fail on wifi-if check for different systems
+  In wifi part of detection of network interfaces: Check if /proc/net/wireless exists before trying to read it, instead of failing on OS's / systems that don't have wifi and/or don't use that file.
+* Contributors: Rob Linsalata
+
 0.1.17 (2015-04-06)
 -------------------
 

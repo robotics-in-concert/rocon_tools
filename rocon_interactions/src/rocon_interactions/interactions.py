@@ -78,7 +78,7 @@ def load_msgs_from_yaml_file(file_path):
     try:
         yaml_filename = file_path
         if not os.path.isfile(yaml_filename):
-            raise YamlResourceNotFoundException(str(e))
+            raise YamlResourceNotFoundException(str(yaml_filename) + " NOT FOUND")
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))
     with open(yaml_filename) as f:
@@ -227,6 +227,13 @@ class Interaction(object):
         return self.msg.max
 
     @property
+    def required(self):
+        """
+        Rapp that must be running before starting this interaction [string]
+        """
+        return self.msg.required
+
+    @property
     def remappings(self):
         return self.msg.remappings
 
@@ -279,6 +286,8 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
+        if self.msg.required_rapps:
+            s += console.cyan + "  Required Rapps" + console.reset + "          : " + console.yellow + "%s" % self.msg.required_rapps + console.reset + '\n'  # noqa
         if self.msg.pairing.rapp:
             s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
             already_prefixed = False

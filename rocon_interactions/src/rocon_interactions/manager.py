@@ -286,13 +286,9 @@ class InteractionsManager(object):
             rospy.logwarn('==> checking requirements for %r : %r', i.name, i.required)
             #rospy.logwarn(' Available Rapp : %r ', self._rapp_handler.get_available_rapps().keys())
             #rospy.logwarn(' Running Rapp : %r ', self._rapp_handler.get_running_rapps().keys())
-            if self._rapp_handler.is_running_rapp(i.required.rapp):
-                rospy.logwarn('==> running !')
+            if not len(i.required.rapp) > 0 or self._rapp_handler.is_running_rapp(i.required.rapp):
+                rospy.logwarn('==> OK !')
                 response.interactions.append(i.msg)
-            else:
-                #rospy.logwarn('==> NOT running :( !')
-                #rospy.logwarn('==> Running rapps : %r',  self._rapp_handler.get_running_rapps().keys())
-                pass
         return response
 
     def _ros_service_get_roles(self, request):
@@ -370,7 +366,7 @@ class InteractionsManager(object):
                     response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
                     return response
-        if interaction.required :
+        if len(interaction.required.rapp)>0:
             if not self._rapp_handler.is_running_rapp(interaction.required.rapp):
                 rospy.logwarn('==> REQUIREMENT FOR INTERACTION NOT SATISFIED !')
                 return _request_interaction_response(interaction_msgs.ErrorCodes.MSG_INTERACTION_REQUIREMENT_FAILED)

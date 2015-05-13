@@ -240,6 +240,7 @@ class Interaction(object):
     @property
     def parameters(self):
         return self.msg.parameters
+        return self.msg.parameters
 
     @property
     def hash(self):
@@ -250,7 +251,7 @@ class Interaction(object):
     def pairing(self):
         return self.msg.pairing
 
-    def _eq__(self, other):
+    def __eq__(self, other):
         if type(other) is type(self):
             return self.msg.hash == other.msg.hash
         else:
@@ -286,8 +287,8 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
-        if self.msg.required_rapps:
-            s += console.cyan + "  Required Rapps" + console.reset + "          : " + console.yellow + "%s" % self.msg.required_rapps + console.reset + '\n'  # noqa
+        if self.msg.required:
+            s += console.cyan + "  Required Rapps" + console.reset + "          : " + console.yellow + "%s" % self.msg.required + console.reset + '\n'  # noqa
         if self.msg.pairing.rapp:
             s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
             already_prefixed = False

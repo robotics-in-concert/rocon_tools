@@ -66,7 +66,7 @@ class RappHandler(object):
         """Callback that handles status updates of the rapp manager appropriately at a higher level (the interactions manager level)."""
         self.initialised = False
         """Flag indicating that the rapp manager has been found and services/topics connected."""
-        self.rapp_watcher = RappWatcher( self._namespaces_change, self._rapp_status_change, self._ros_status_subscriber )
+        self.rapp_watcher = RappWatcher(self._namespaces_change, self._available_rapps_list_change, self._running_rapp_status_change, self._ros_status_subscriber)
         """Rapp Watcher instance"""
         self.rapp_watcher.start()
 
@@ -118,23 +118,29 @@ class RappHandler(object):
         else:
             return False
 
-    def get_running_rapps(self):
-        return self.rapp_watcher.get_running_rapps(None)
+    def get_running_rapp(self):
+        return self.rapp_watcher.get_running_rapp(None)
 
     def is_running_rapp(self, rapp_name):
-        if rapp_name in self.get_running_rapps().keys():
-            return True
+        rapp = self.get_running_rapp()
+        if 'name' in rapp.keys():
+            return rapp["name"] == rapp_name
         else:
             return False
 
     def _namespaces_change(self, added_namespaces, removed_namespaces):
-        rospy.logerr('RAPP HANDLER detected namesapce : %r ', added_namespaces)
+        rospy.logerr('RAPP HANDLER detected namespace : %r ', added_namespaces)
         return added_namespaces # we want to watch every added namespace
         pass
 
-    def _rapp_status_change(self, namespace, added_available_rapps, removed_available_rapps, added_running_rapps, removed_running_rapps):
+    def _available_rapps_list_change(self, namespace, added_available_rapps, removed_available_rapps):
 
-        rospy.logerr('RAPP HANDLER status change')
+        rospy.logerr('RAPP HANDLER available rapps list change')
+        pass
+
+    def _running_rapp_status_change(self, namespace, rapp_status, rapp):
+
+        rospy.logerr('RAPP HANDLER running rapp status change')
         pass
 
     def _ros_status_subscriber(self, msg):

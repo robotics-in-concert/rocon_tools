@@ -17,7 +17,7 @@ import rocon_std_msgs.msg as rocon_std_msgs
 import rocon_uri
 import ast
 
-
+# TODO : use concert Rapp wrapper python class
 def list_rapp_msg_to_dict(list_rapp):
     """
     convert msg to dict
@@ -38,6 +38,25 @@ def list_rapp_msg_to_dict(list_rapp):
         dict_rapp[name]["public_parameters"] = rapp.public_parameters
     return dict_rapp
 
+# TODO : use concert Rapp wrapper python class
+def status_rapp_msg_to_dict(rapp):
+    """
+    convert msg to dict
+    """
+    dict_rapp = {}
+    dict_rapp["status"] = rapp.status
+    dict_rapp["name"] = rapp.name
+    dict_rapp["display_name"] = rapp.display_name
+    dict_rapp["description"] = rapp.description
+    dict_rapp["compatibility"] = rapp.compatibility
+    dict_rapp["preferred"] = rapp.preferred
+    dict_rapp["icon"] = rapp.icon
+    dict_rapp["implementations"] = rapp.implementations
+    dict_rapp["public_interface"] = rapp.public_interface
+    dict_rapp["public_parameters"] = rapp.public_parameters
+    return dict_rapp
+
+
 
 #TODO : find more standard/optimized/"we dont have to maintain it" way of doing this ?
 def _dict_key_diff(current_dict, past_dict):
@@ -57,10 +76,11 @@ def _dict_key_diff(current_dict, past_dict):
 class RappWatcher(threading.Thread):
 
     class WatchedNS():
-        def __init__(self, name, rapp_status_change_cb, ns_status_change_cb = lambda : None):
+        def __init__(self, name, available_rapps_change_cb, running_rapp_status_change_cb, ns_status_change_cb=lambda: None):
 
             self.name = name
-            self.rapp_status_change_cb = rapp_status_change_cb
+            self.available_rapps_change_cb = available_rapps_change_cb
+            self.running_rapp_status_change_cb = running_rapp_status_change_cb
             self.ns_status_change_cb = ns_status_change_cb
             self.is_running = False
 
@@ -71,7 +91,7 @@ class RappWatcher(threading.Thread):
             self.rapplist_subscriber = None
 
             self._available_rapps = {}
-            self._running_rapps = {}
+            self._running_rapp = {}
 
         def grab_start_rapp(self, start_rapp_srvs_list):
             if not self.start_rapp :
@@ -106,20 +126,20 @@ class RappWatcher(threading.Thread):
                     if t.startswith(self.name): # if we have found the service name that match the namespace
                         self.status_subscriber = rospy.Subscriber(t, rocon_app_manager_msgs.Status, self._ros_status_subscriber)
                         return True
-                return False # we couldnt grab anything
+                return False # we couldn't grab anything
             return True # we re good, no need for it
 
         def grab_rapplist_subscriber(self, rapplist_topics_list):
             if not self.rapplist_subscriber :
                 for t in rapplist_topics_list :
                     if t.startswith(self.name): # if we have found the service name that match the namespace
-                        self.rapplist_subscriber = rospy.Subscriber(t, rocon_app_manager_msgs.RappList, self._process_rapp_list_msg)
-                        #Latched Topic : First time we connect, we should get the list of rapps
+                        self.rapplist_subscriber = rospy.Subscriber(t, rocon_app_manager_msgs.RappList, self._process_available_rapp_list_msg)
+                        # Latched Topic : First time we connect, we should get the list of rapps
                         return True
                 return False # we couldnt grab anything
             return True # we re good, no need for it
 
-        def _process_rapp_list_msg(self, msg):
+        def _process_available_rapp_list_msg(self, msg):
             """
             Update the available rapp list
 
@@ -127,16 +147,13 @@ class RappWatcher(threading.Thread):
             @type rocon_app_manager_msgs/RappList
             """
 
-            added_available_rapps, removed_available_rapps, _, _ = _dict_key_diff(list_rapp_msg_to_dict(msg.available_rapps),self._available_rapps)
-            added_running_rapps, removed_running_rapps, _, _ = _dict_key_diff(list_rapp_msg_to_dict(msg.running_rapps),self._running_rapps)
+            added_available_rapps, removed_available_rapps, _, _ = _dict_key_diff(list_rapp_msg_to_dict(msg.available_rapps), self._available_rapps)
 
             #callback
-            self.rapp_status_change_cb( self.name, added_available_rapps, removed_available_rapps, added_running_rapps, removed_running_rapps)
+            self.available_rapps_change_cb( self.name, added_available_rapps, removed_available_rapps)
 
             rospy.logwarn('updating available rapps list : %r', [r.name for r in msg.available_rapps])
             self._available_rapps = list_rapp_msg_to_dict(msg.available_rapps)
-            rospy.logwarn('updating running rapps list : %r', [r.name for r in msg.running_rapps])
-            self._running_rapps = list_rapp_msg_to_dict(msg.running_rapps)
 
         def _ros_status_subscriber(self, msg):
             """
@@ -145,21 +162,58 @@ class RappWatcher(threading.Thread):
             @param msg: information of status
             @type rocon_app_manager_msgs/Status
             """
-            # TOCHECK : is this really useful ? duplicated information with app status...
-            #callback
-            self.ns_status_change_cb(msg)
+
+
+            # getting the list of published interface to modify our current running rapp information
+            if msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_RUNNING:
+
+                rospy.logerr('updating running rapp : %r', msg.rapp.name)
+
+                # FIXME : This should probably be done internally in the app_manager
+                # => A we only need the published interface from a running app, without caring about the original specification
+                # => Is this statement always true ?
+                rrapp = status_rapp_msg_to_dict(msg.rapp)
+                for pubif_idx, pubif in enumerate(rrapp['public_interface']):
+                    newvals = ast.literal_eval(pubif.value)
+                    for msgif in msg.published_interfaces:
+                        if ( (pubif.key == 'subscribers' and msgif.interface.connection_type == 'subscriber') or
+                             (pubif.key == 'publishers' and msgif.interface.connection_type == 'publisher')
+                        ):
+                            #rospy.loginfo('newvals %r', newvals)
+                            for newval_idx, newval in enumerate(newvals):
+                                #rospy.loginfo('newvals[%r] %r', newval_idx, newval)
+                                if newval['name'] == msgif.interface.name and newval['type'] == msgif.interface.data_type:
+                                    # Careful we re changing the list in place here
+                                    newvals[newval_idx]['name'] = msgif.name
+                                    #rospy.loginfo('newvals[%r] -> %r', newval_idx, newval)
+                                    # Careful we re changing the list in place here
+                        elif not msgif.interface.connection_type in [ 'publisher', 'subscriber']:
+                            rospy.logerr('unsupported connection type : %r', msgif.interface.connection_type)
+                    # Careful we re changing the list in place here
+                    rrapp['public_interface'][pubif_idx].value = str(newvals)
+
+                # TODO : same for published parameters ?
+
+                self._running_rapp = rrapp
+                rospy.loginfo('new public if : %r', self._running_rapp['public_interface'])
+
+            elif msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_STOPPED:
+                self._running_rapp.clear()
+
+            # callback
+            self.running_rapp_status_change_cb( self.name, msg.rapp_status, self._running_rapp)
 
         @property
-        def available_rapps_list(self):#TODO : remove '_list' from name. misleading
+        def available_rapps(self):
             return self._available_rapps
 
         @property
-        def running_rapps_list(self):#TODO : remove '_list' from name. misleading
-            return self._running_rapps
+        def running_rapp(self):
+            return self._running_rapp
 
     #####class WatchedNS
 
-    def __init__(self, namespaces_change_cb, rapp_status_change_cb, ns_status_change_cb = lambda msg : None, get_rapp_list_service_name = 'list_rapps'):
+    def __init__(self, namespaces_change_cb, available_rapps_list_change_cb, running_rapp_status_change_cb, ns_status_change_cb = lambda msg : None, get_rapp_list_service_name = 'list_rapps'):
         """
         @param namespaces_change_cb : callback for a change of namespaces
         @param ns_status_change_cb : callback for a change of namespace status
@@ -176,7 +230,8 @@ class RappWatcher(threading.Thread):
         self._watched_namespaces = []
 
         #TODO : check callback signature
-        self.rapp_status_change_cb = rapp_status_change_cb
+        self.available_rapps_list_change_cb = available_rapps_list_change_cb
+        self.running_rapp_status_change_cb = running_rapp_status_change_cb
         self.namespaces_change_cb = namespaces_change_cb
         self.ns_status_change_cb = ns_status_change_cb
 
@@ -200,10 +255,10 @@ class RappWatcher(threading.Thread):
                 ns_added = []
                 ns_removed = []
 
-                for ns in self._available_namespaces :
+                for ns in self._available_namespaces:
                     found = False
-                    for fname in list_rapps_service_names :
-                        if fname.startswith(ns) :
+                    for fname in list_rapps_service_names:
+                        if fname.startswith(ns):
                             found = True
                     if not found :
                         ns_removed.append(ns)
@@ -212,19 +267,19 @@ class RappWatcher(threading.Thread):
                             del self.watching_ns[ns]
                             rospy.logerr('STOPPED WATCHING : %r ', ns)
 
-                for fname in list_rapps_service_names :
+                for fname in list_rapps_service_names:
                     if fname.endswith(self.get_rapp_list_service_name):
                         ns = fname[:-len(self.get_rapp_list_service_name)]
                         if ns not in self._available_namespaces :
                             self._available_namespaces.append(ns)
                             ns_added.append(ns)
 
-                if 0 < len(ns_added) or 0 < len(ns_removed) :
+                if 0 < len(ns_added) or 0 < len(ns_removed):
                     to_watch = self.namespaces_change_cb(ns_added, ns_removed)
                     for ns in to_watch :
-                        if ns in self._available_namespaces :
+                        if ns in self._available_namespaces:
                             rospy.logerr('NOW WATCHING FOR RAPPS IN %r ', ns)
-                            self.watching_ns[ns] = self.WatchedNS(ns, self.rapp_status_change_cb, self.ns_status_change_cb)
+                            self.watching_ns[ns] = self.WatchedNS(ns, self.available_rapps_list_change_cb, self.running_rapp_status_change_cb, self.ns_status_change_cb)
 
                 #grabing all services & topics
                 if set(self.watching_ns.keys()) != set(self._watched_namespaces): # if some namespaces are not fully connected
@@ -256,15 +311,15 @@ class RappWatcher(threading.Thread):
         if len(self.watching_ns) > 0 : # if we are already watching namespaces
             if not namespace :
                 namespace = self.watching_ns.keys()[0] # FIXME hack in case namespace is not passed
-            return self.watching_ns[namespace].available_rapps_list
+            return self.watching_ns[namespace].available_rapps
         else :
             return {}
 
-    def get_running_rapps(self, namespace):
+    def get_running_rapp(self, namespace):
         if len(self.watching_ns) > 0 : # if we are already watching namespaces
             if not namespace :
                 namespace = self.watching_ns.keys()[0] # FIXME hack in case namespace is not passed
-            return self.watching_ns[namespace].running_rapps_list
+            return self.watching_ns[namespace].running_rapp
         else :
             return {}
 

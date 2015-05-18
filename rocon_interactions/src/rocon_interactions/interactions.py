@@ -240,7 +240,6 @@ class Interaction(object):
     @property
     def parameters(self):
         return self.msg.parameters
-        return self.msg.parameters
 
     @property
     def hash(self):

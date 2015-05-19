@@ -72,7 +72,7 @@ class InteractionsManager(object):
         self._publishers = self._setup_publishers()  # important to come early, so we can publish is_pairing below
         self._rapp_handler = None
         if self._parameters['pairing'] or self._parameters['rapp_manager']:
-            self._rapp_handler = RappHandler(self._rapp_manager_status_update_callback)
+            self._rapp_handler = RappHandler(self._rapp_manager_status_update_callback, self._rapp_manager_rapp_running_callback)
         if self._parameters['pairing']:
             self._pair = interaction_msgs.Pair()
             self._publishers['pairing'].publish(self._pair)
@@ -165,11 +165,24 @@ class InteractionsManager(object):
         self._pair.rapp = ""
         self._publishers['pairing'].publish(self._pair)
 
+    def _rapp_manager_rapp_running_callback(self, rapp_status, rapp):
+        """
+        Called if a rapp starts/stops to trigger the signaling that interaction list changed.
+        :param rapp_status:
+        :param rapp:
+        :return:
+        """
+        update = interaction_msgs.InteractionsUpdate()
+        update.update = True
+        # TODO : we should check here if the Rapp is a requirement for any of the interactions...
+        rospy.logerr('SIGNALING INTERACTIONS LIST UPDATED')
+        self._publishers['interactions_update'].publish(update)
+
     def _setup_publishers(self):
-        '''
+        """
           These are all public topics. Typically that will drop them into the /concert
           namespace.
-        '''
+        """
         publishers = {}
         publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
                                                             interaction_msgs.InteractiveClients,
@@ -183,6 +196,10 @@ class InteractionsManager(object):
                                                     queue_size=5
                                                     )
 
+        publishers['interactions_update'] = rospy.Publisher('~interactions_update',
+                                                           interaction_msgs.InteractionsUpdate,
+                                                           latch=False,
+                                                           queue_size=1)
         return publishers
 
     def _setup_services(self):

@@ -49,10 +49,11 @@ class RappHandler(object):
         'rapp_watcher',       # keep rapps namespaces in check
         'is_running',         # flag indicating present running status of the rapp manager.
         'status_callback',    # function that handles toggling of pairing mode when a running rapp stops.
+        'rapp_running_callback',    # function that handles signaling added/removed interactions when rapp starts/stops.
         'initialised',        # flag indicating whether the rapp manager is ready or not.
     ]
 
-    def __init__(self, status_callback):
+    def __init__(self, status_callback, rapp_running_callback):
         """
         Initialise the class with the relevant data required to start and stop
         rapps on this concert client.
@@ -64,6 +65,8 @@ class RappHandler(object):
         """Flag indicating if there is a monitored rapp running on the rapp manager."""
         self.status_callback = status_callback
         """Callback that handles status updates of the rapp manager appropriately at a higher level (the interactions manager level)."""
+        self.rapp_running_callback=rapp_running_callback
+        """Callback that handles ignaling the list of available Interactions has changed"""
         self.initialised = False
         """Flag indicating that the rapp manager has been found and services/topics connected."""
         self.rapp_watcher = RappWatcher(self._namespaces_change, self._available_rapps_list_change, self._running_rapp_status_change, self._ros_status_subscriber)
@@ -141,6 +144,7 @@ class RappHandler(object):
     def _running_rapp_status_change(self, namespace, rapp_status, rapp):
 
         rospy.logerr('RAPP HANDLER running rapp status change')
+        self.rapp_running_callback(rapp_status, rapp)
         pass
 
     def _ros_status_subscriber(self, msg):

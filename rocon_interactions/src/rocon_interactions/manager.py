@@ -71,8 +71,9 @@ class InteractionsManager(object):
         self._parameters = self._setup_parameters()  # important to come first since we use self._parameters['pairing'] everywhere
         self._publishers = self._setup_publishers()  # important to come early, so we can publish is_pairing below
         self._rapp_handler = None
+        if self._parameters['pairing'] or self._parameters['rapp_manager']:
+            self._rapp_handler = RappHandler(self._rapp_manager_status_update_callback, self._rapp_manager_rapp_running_callback)
         if self._parameters['pairing']:
-            self._rapp_handler = RappHandler(self._rapp_manager_status_update_callback)
             self._pair = interaction_msgs.Pair()
             self._publishers['pairing'].publish(self._pair)
         self._interactions_table = InteractionsTable(filter_pairing_interactions=not self._parameters['pairing'])
@@ -164,11 +165,24 @@ class InteractionsManager(object):
         self._pair.rapp = ""
         self._publishers['pairing'].publish(self._pair)
 
+    def _rapp_manager_rapp_running_callback(self, rapp_status, rapp):
+        """
+        Called if a rapp starts/stops to trigger the signaling that interaction list changed.
+        :param rapp_status:
+        :param rapp:
+        :return:
+        """
+        update = interaction_msgs.InteractionsUpdate()
+        update.update = True
+        # TODO : we should check here if the Rapp is a requirement for any of the interactions...
+        rospy.logerr('SIGNALING INTERACTIONS LIST UPDATED')
+        self._publishers['interactions_update'].publish(update)
+
     def _setup_publishers(self):
-        '''
+        """
           These are all public topics. Typically that will drop them into the /concert
           namespace.
-        '''
+        """
         publishers = {}
         publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
                                                             interaction_msgs.InteractiveClients,
@@ -182,6 +196,10 @@ class InteractionsManager(object):
                                                     queue_size=5
                                                     )
 
+        publishers['interactions_update'] = rospy.Publisher('~interactions_update',
+                                                           interaction_msgs.InteractionsUpdate,
+                                                           latch=False,
+                                                           queue_size=1)
         return publishers
 
     def _setup_services(self):
@@ -215,6 +233,7 @@ class InteractionsManager(object):
         param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
         param['webserver_address'] = rospy.get_param('~webserver_address', 'localhost')
         param['interactions'] = rospy.get_param('~interactions', [])
+        param['rapp_manager'] = rospy.get_param('~rapp_manager', False)
         param['pairing'] = rospy.get_param('~pairing', False)
         return param
 
@@ -277,8 +296,17 @@ class InteractionsManager(object):
             rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri"
                          " [%s][%s]" % (uri, str(e)))
             filtered_interactions = []
+
+            rapp_list = self._rapp_handler.list()
+            print rapp_list
+
         for i in filtered_interactions:
-            response.interactions.append(i.msg)
+            rospy.logwarn('==> checking requirements for %r : %r', i.name, i.required)
+            #rospy.logwarn(' Available Rapp : %r ', self._rapp_handler.get_available_rapps().keys())
+            #rospy.logwarn(' Running Rapp : %r ', self._rapp_handler.get_running_rapps().keys())
+            if not len(i.required.rapp) > 0 or self._rapp_handler.is_running_rapp(i.required.rapp):
+                rospy.logwarn('==> OK !')
+                response.interactions.append(i.msg)
         return response
 
     def _ros_service_get_roles(self, request):
@@ -356,6 +384,11 @@ class InteractionsManager(object):
                     response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
                     return response
+        if len(interaction.required.rapp)>0:
+            if not self._rapp_handler.is_running_rapp(interaction.required.rapp):
+                rospy.logwarn('==> REQUIREMENT FOR INTERACTION NOT SATISFIED !')
+                return _request_interaction_response(interaction_msgs.ErrorCodes.MSG_INTERACTION_REQUIREMENT_FAILED)
+
         # if we get here, we've succeeded.
         return _request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)
 

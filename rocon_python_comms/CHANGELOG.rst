@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* [rocon_python_comms] connection cache added.
+* Contributors: Daniel Stonier
+
 0.1.18 (2015-05-06)
 -------------------
 

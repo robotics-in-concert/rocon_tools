@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* add icons
+* Contributors: Jihoon Lee
+
 0.1.18 (2015-05-06)
 -------------------
 

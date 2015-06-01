@@ -18,6 +18,9 @@
   <run_depend>rospy</run_depend>
   <run_depend>rocon_std_msgs</run_depend>
   <run_depend>roslib</run_depend>
+  <run_depend>python-numpy</run_depend>
+  <run_depend>cv2</run_depend>
+  <run_depend>sensor_msgs</run_depend>
 
   <!-- testing only -->
   <build_depend>rostest</build_depend>

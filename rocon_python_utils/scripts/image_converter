@@ -12,6 +12,7 @@ import sys
 import argparse
 import rospy
 import cv2
+import cv_bridge
 import numpy
 import sensor_msgs.msg as sensor_msgs
 
@@ -20,7 +21,7 @@ def parse_arguments():
     parser.add_argument('conversion', type=str, help='type of topic being relayed. (none, compressed)')
     myargs = rospy.myargv(argv=sys.argv)
     args = parser.parse_args(args=myargs[1:])
-    args.conversion = conversion
+    conversion = args.conversion
 
     return conversion
 
@@ -30,23 +31,22 @@ def loginfo(msg):
 class Converter(object):
     def __init__(self, conversion):
         self._conversion = conversion
+        self._br = cv_bridge.CvBridge()
 
         # Later we may add more conversions
         if self._conversion == "compressed":
-            self._sub_img = rospy.Subscriber("image", sensor_msgs.Image, self._relay_to_compress)
+            self._sub_img = rospy.Subscriber("image", sensor_msgs.Image, self._relay_to_compressed)
             self._pub_new_img = rospy.Publisher("image/compressed", sensor_msgs.CompressedImage, queue_size=1)
         else:
             loginfo("No conversion is specified. Exiting...")
 
-    def _relay_to_compress(self, msg):
-        np_arr = numpy.fromstring(msg.data, np.uint8)
-        image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
-        
-        new_msg = CompressedImage()
-        msg.header.stamp = rospy.Time.now()
-        msg.format = "jpeg"
-        msg.data = np.array(cv2.imencode('.jpg', image_np)[1]).tostring()
-        self._pub_new_img(msg)
+    def _relay_to_compressed(self, msg):
+        cv_img = self._br.imgmsg_to_cv2(msg)
+        new_msg = sensor_msgs.CompressedImage()
+        new_msg.header.stamp = rospy.Time.now()
+        new_msg.format = "jpeg"
+        new_msg.data = numpy.array(cv2.imencode('.jpg', cv_img)[1]).tostring()
+        self._pub_new_img.publish(new_msg)
 
 if __name__ == '__main__': 
     rospy.init_node('image_converter')

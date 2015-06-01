@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Forthcoming
------------
+0.1.20 (2015-06-01)
+-------------------
 * add nao rule closes `#91 <https://github.com/robotics-in-concert/rocon_tools/issues/91>`_
 * Contributors: Jihoon Lee
 

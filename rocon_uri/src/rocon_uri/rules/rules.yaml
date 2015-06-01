@@ -14,6 +14,7 @@
     - turtlebot2
     - waiterbot
     - furo
+    - aldebaran_nao
   - mobile_device:
     - phone:
       - galaxy

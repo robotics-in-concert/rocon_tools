@@ -169,7 +169,7 @@ class Interaction(object):
         if not self.msg.icon.data:
             try:
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
-            except rospkg.common.ResourceNotFound as e: # replace with default icon if icon resource is not found.
+            except rospkg.common.ResourceNotFound as unused_e:  # replace with default icon if icon resource is not found.
                 self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
@@ -286,8 +286,8 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
-        if self.msg.required:
-            s += console.cyan + "  Required Rapps" + console.reset + "          : " + console.yellow + "%s" % self.msg.required + console.reset + '\n'  # noqa
+        if self.msg.required.rapp:
+            s += console.cyan + "  Required Rapp" + console.reset + ": " + console.yellow + "%s" % self.msg.required.rapp + console.reset + '\n'  # noqa
         if self.msg.pairing.rapp:
             s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
             already_prefixed = False

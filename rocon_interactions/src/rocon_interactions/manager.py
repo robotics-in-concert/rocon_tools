@@ -175,7 +175,6 @@ class InteractionsManager(object):
         update = interaction_msgs.InteractionsUpdate()
         update.update = True
         # TODO : we should check here if the Rapp is a requirement for any of the interactions...
-        rospy.logerr('SIGNALING INTERACTIONS LIST UPDATED')
         self._publishers['interactions_update'].publish(update)
 
     def _setup_publishers(self):

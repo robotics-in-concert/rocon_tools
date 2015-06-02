@@ -60,7 +60,6 @@ class RappHandler(object):
 
         :param status_callback function: handles toggling of pairing mode upon appropriate status updates
         """
-        rospy.logerr('RAPP HANDLER INIT')
         self.is_running = False
         """Flag indicating if there is a monitored rapp running on the rapp manager."""
         self.status_callback = status_callback
@@ -132,20 +131,13 @@ class RappHandler(object):
             return False
 
     def _namespaces_change(self, added_namespaces, removed_namespaces):
-        rospy.logerr('RAPP HANDLER detected namespace : %r ', added_namespaces)
-        return added_namespaces # we want to watch every added namespace
-        pass
+        return added_namespaces  # we want to watch every added namespace
 
     def _available_rapps_list_change(self, namespace, added_available_rapps, removed_available_rapps):
-
-        rospy.logerr('RAPP HANDLER available rapps list change')
         pass
 
     def _running_rapp_status_change(self, namespace, rapp_status, rapp):
-
-        rospy.logerr('RAPP HANDLER running rapp status change')
         self.rapp_running_callback(rapp_status, rapp)
-        pass
 
     def _ros_status_subscriber(self, msg):
         """

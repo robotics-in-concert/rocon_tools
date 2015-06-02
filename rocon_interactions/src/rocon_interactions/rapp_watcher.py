@@ -286,10 +286,14 @@ class RappWatcher(threading.Thread):
                                 #if all services and topics are connected this namespace is considered connected
                                 self._watched_namespaces.append(ns)
                 #TODO : survive if services/topics ever go down... and be able to catch them again when they come back.
+            except rocon_python_comms.exceptions.NotFoundException:
+                rospy.logerr("Interactions : timed out looking for rapp manager services")
             except rospy.ROSException:
-                rospy.logerr("Interactions : rapp manager services disappeared.")
+                if not rospy.is_shutdown():
+                    rospy.logwarn("Interactions : rapp manager services disappeared.")
             except rospy.ROSInterruptException:
-                rospy.logerr("Interactions : ros shutdown while looking for the rapp manager services.")
+                # beq quiet about this, it's not strictly an error
+                rospy.logdebug("Interactions : ros shutdown while looking for the rapp manager services.")
 
     def get_available_rapps(self, namespace):
         if len(self.watching_ns) > 0:  # if we are already watching namespaces

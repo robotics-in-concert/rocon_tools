@@ -34,6 +34,13 @@ class ServicePairIOException(Exception):
     pass
 
 
+class TimedOutException(IOError):
+    """
+      Raised when a requested entity timed out.
+    """
+    pass
+
+
 class NotFoundException(IOError):
     """
       Raised when a requested entity cannot be found, or didn't return the correct result.

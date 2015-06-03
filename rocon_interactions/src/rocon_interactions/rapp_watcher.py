@@ -202,7 +202,7 @@ class RappWatcher(threading.Thread):
             return self._running_rapp
 
     #####class WatchedNS
-    def __init__(self, namespaces_change_cb, available_rapps_list_change_cb, running_rapp_status_change_cb, ns_status_change_cb=lambda msg: None, get_rapp_list_service_name='list_rapps'):
+    def __init__(self, namespaces_change_cb, available_rapps_list_change_cb, running_rapp_status_change_cb, ns_status_change_cb=lambda msg: None, get_rapp_list_service_name='list_rapps', silent_timeout=False):
         """
         @param namespaces_change_cb : callback for a change of namespaces
         @param ns_status_change_cb : callback for a change of namespace status
@@ -217,6 +217,8 @@ class RappWatcher(threading.Thread):
         self._available_namespaces = []
         # all namespace that are completely connected
         self._watched_namespaces = []
+
+        self._silent_timeout = silent_timeout
 
         #TODO : check callback signature
         self.available_rapps_list_change_cb = available_rapps_list_change_cb
@@ -287,7 +289,8 @@ class RappWatcher(threading.Thread):
                                 self._watched_namespaces.append(ns)
                 #TODO : survive if services/topics ever go down... and be able to catch them again when they come back.
             except rocon_python_comms.exceptions.NotFoundException:
-                rospy.logerr("Interactions : timed out looking for rapp manager services")
+                if not self._silent_timeout:
+                    rospy.logerr("Interactions : timed out looking for rapp manager services")
             except rospy.ROSException:
                 if not rospy.is_shutdown():
                     rospy.logwarn("Interactions : rapp manager services disappeared.")

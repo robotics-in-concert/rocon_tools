@@ -29,16 +29,13 @@ import threading
 from .exceptions import(
                         FailedToStartRappError,
                         FailedToStopRappError,
-                        FailedToListRappsError,
                         )
-from .rapp_watcher import RappWatcher
 
 ##############################################################################
 # Classes
 ##############################################################################
 
-#TODO : RappHandler needs to be modified to understand namespaces.
-# => currently will not work within rocon
+
 class RappHandler(object):
     """
     Initialises from a conductor message detailing information about a
@@ -46,14 +43,15 @@ class RappHandler(object):
     a convenience to start and stop rapps on the concert client.
     """
     __slots__ = [
-        'rapp_watcher',       # keep rapps namespaces in check
+        'start_rapp',         # service proxy to this client's start_app service
+        'stop_rapp',          # service proxy to this client's stop_app service
+        'status_subscriber',  # look for status updates (particularly rapp running/not running)
         'is_running',         # flag indicating present running status of the rapp manager.
         'status_callback',    # function that handles toggling of pairing mode when a running rapp stops.
-        'rapp_running_callback',    # function that handles signaling added/removed interactions when rapp starts/stops.
         'initialised',        # flag indicating whether the rapp manager is ready or not.
     ]
 
-    def __init__(self, status_callback, rapp_running_callback):
+    def __init__(self, status_callback):
         """
         Initialise the class with the relevant data required to start and stop
         rapps on this concert client.
@@ -64,13 +62,41 @@ class RappHandler(object):
         """Flag indicating if there is a monitored rapp running on the rapp manager."""
         self.status_callback = status_callback
         """Callback that handles status updates of the rapp manager appropriately at a higher level (the interactions manager level)."""
-        self.rapp_running_callback=rapp_running_callback
-        """Callback that handles ignaling the list of available Interactions has changed"""
         self.initialised = False
         """Flag indicating that the rapp manager has been found and services/topics connected."""
-        self.rapp_watcher = RappWatcher(self._namespaces_change, self._available_rapps_list_change, self._running_rapp_status_change, self._ros_status_subscriber)
-        """Rapp Watcher instance"""
-        self.rapp_watcher.start()
+        self.start_rapp = None
+        """Service proxy to the rapp manager's start_rapp service"""
+        self.stop_rapp = None
+        """Service proxy to the rapp manager's stop_rapp service"""
+        self.status_subscriber = None
+        """Subscriber to the rapp manager's status publisher"""
+
+        thread = threading.Thread(target=self._setup_rapp_manager_connections())
+        thread.start()
+
+    def _setup_rapp_manager_connections(self):
+        try:
+            start_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(60.0), unique=True)
+            stop_rapp_service_name = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(60.0), unique=True)
+            status_topic_name = rocon_python_comms.find_topic('rocon_app_manager_msgs/Status', timeout=rospy.rostime.Duration(60.0), unique=True)
+        except rocon_python_comms.NotFoundException as e:
+            rospy.logerr("Interactions : timed out trying to find the rapp manager start_rapp, stop_rapp services and status topic [%s]" % str(e))
+
+        self.start_rapp = rospy.ServiceProxy(start_rapp_service_name, rocon_app_manager_srvs.StartRapp)
+        self.stop_rapp = rospy.ServiceProxy(stop_rapp_service_name, rocon_app_manager_srvs.StopRapp)
+        self.status_subscriber = rospy.Subscriber(status_topic_name, rocon_app_manager_msgs.Status, self._ros_status_subscriber)
+
+        try:
+            self.start_rapp.wait_for_service(15.0)
+            self.stop_rapp.wait_for_service(15.0)
+            # I should also check the subscriber has get_num_connections > 0 here
+            # (need to create a wait_for_publisher in rocon_python_comms)
+            self.initialised = True
+            rospy.loginfo("Interactions : initialised rapp handler connections for pairing.")
+        except rospy.ROSException:
+            rospy.logerr("Interactions : rapp manager services disappeared.")
+        except rospy.ROSInterruptException:
+            rospy.logerr("Interactions : ros shutdown while looking for the rapp manager services.")
 
     def start(self, rapp, remappings):
         """
@@ -87,7 +113,7 @@ class RappHandler(object):
         if not self.initialised:
             raise FailedToStartRappError("rapp manager's location not known")
         try:
-            unused_response = self.rapp_watcher.start_rapp(None, rocon_app_manager_srvs.StartRappRequest(name=rapp, remappings=remappings))
+            unused_response = self.start_rapp(rocon_app_manager_srvs.StartRappRequest(name=rapp, remappings=remappings))
             # todo check this response and process it
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
@@ -105,39 +131,11 @@ class RappHandler(object):
         if not self.initialised:
             raise FailedToStopRappError("rapp manager's location not known")
         try:
-            unused_response = self.rapp_watcher.stop_rapp(None, rocon_app_manager_srvs.StopRappRequest())
+            self.stop_rapp(rocon_app_manager_srvs.StopRappRequest())
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:
             # Service not found or ros is shutting down
             raise FailedToStopRappError("%s" % str(e))
-
-    def get_available_rapps(self):
-        return self.rapp_watcher.get_available_rapps(None)
-
-    def is_available_rapp(self, rapp_name):
-        if rapp_name in self.get_available_rapps().keys():
-            return True
-        else:
-            return False
-
-    def get_running_rapp(self):
-        return self.rapp_watcher.get_running_rapp(None)
-
-    def is_running_rapp(self, rapp_name):
-        rapp = self.get_running_rapp()
-        if 'name' in rapp.keys():
-            return rapp["name"] == rapp_name
-        else:
-            return False
-
-    def _namespaces_change(self, added_namespaces, removed_namespaces):
-        return added_namespaces  # we want to watch every added namespace
-
-    def _available_rapps_list_change(self, namespace, added_available_rapps, removed_available_rapps):
-        pass
-
-    def _running_rapp_status_change(self, namespace, rapp_status, rapp):
-        self.rapp_running_callback(rapp_status, rapp)
 
     def _ros_status_subscriber(self, msg):
         """

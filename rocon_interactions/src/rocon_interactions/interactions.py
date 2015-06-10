@@ -78,7 +78,7 @@ def load_msgs_from_yaml_file(file_path):
     try:
         yaml_filename = file_path
         if not os.path.isfile(yaml_filename):
-            raise YamlResourceNotFoundException(str(e))
+            raise YamlResourceNotFoundException(str(yaml_filename) + " NOT FOUND")
     except rospkg.ResourceNotFound as e:  # resource not found.
         raise YamlResourceNotFoundException(str(e))
     with open(yaml_filename) as f:
@@ -169,7 +169,7 @@ class Interaction(object):
         if not self.msg.icon.data:
             try:
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
-            except rospkg.common.ResourceNotFound as e: # replace with default icon if icon resource is not found.
+            except rospkg.common.ResourceNotFound as unused_e:  # replace with default icon if icon resource is not found.
                 self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
@@ -227,6 +227,13 @@ class Interaction(object):
         return self.msg.max
 
     @property
+    def required(self):
+        """
+        Rapp that must be running before starting this interaction [string]
+        """
+        return self.msg.required
+
+    @property
     def remappings(self):
         return self.msg.remappings
 
@@ -243,7 +250,7 @@ class Interaction(object):
     def pairing(self):
         return self.msg.pairing
 
-    def _eq__(self, other):
+    def __eq__(self, other):
         if type(other) is type(self):
             return self.msg.hash == other.msg.hash
         else:
@@ -279,6 +286,8 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
+        if self.msg.required.rapp:
+            s += console.cyan + "  Required Rapp" + console.reset + ": " + console.yellow + "%s" % self.msg.required.rapp + console.reset + '\n'  # noqa
         if self.msg.pairing.rapp:
             s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
             already_prefixed = False

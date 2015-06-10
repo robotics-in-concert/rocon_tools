@@ -87,7 +87,6 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
     :rtype: str
 
     :raises: :exc:`.NotFoundException`
-    :raises: :exc:`rospy.ROSInterruptException` : if ros has shut down while searching.
     '''
     # we could use rosservice_find here, but that throws exceptions and aborts if it comes
     # across any rosservice on the system which is no longer valid. To be robust against this
@@ -124,9 +123,6 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
         if not service_names:
             rospy.rostime.wallsleep(0.1)
     if not service_names:
-        if rospy.is_shutdown():
-            raise rospy.ROSInterruptException("ros shut down")
-        else:
-            raise NotFoundException("timed out or ros")
+        raise NotFoundException("timed out")
 
     return unique_service_name if unique_service_name else service_names

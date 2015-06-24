@@ -337,7 +337,7 @@ class InteractionsManager(object):
             for i in new_interactions:
                 rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:
-                rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.display_name,
+                rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" % (i.display_name,
                                                                              i.name,
                                                                              i.role,
                                                                              i.namespace))

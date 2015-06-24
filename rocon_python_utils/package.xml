@@ -19,7 +19,7 @@
   <run_depend>rocon_std_msgs</run_depend>
   <run_depend>roslib</run_depend>
   <run_depend>python-numpy</run_depend>
-  <run_depend>cv2</run_depend>
+  <run_depend>python-opencv</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>sensor_msgs</run_depend>
 

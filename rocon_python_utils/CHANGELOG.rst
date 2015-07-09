@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* fix opencv dependency closes `#96 <https://github.com/robotics-in-concert/rocon_tools/issues/96>`_
+* image conveter works
+* add image converter
+* Contributors: Jihoon Lee
+
 0.1.20 (2015-06-01)
 -------------------
 

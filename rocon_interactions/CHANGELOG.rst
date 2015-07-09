@@ -1,6 +1,22 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* Revert "Enterprise mode for interactions (interaction with a required running rapp)"
+* added optional silencer for rappwatcher
+* [rocon_interactions] better exception handling.
+* [rocon_interactions] deal with required action server detection, pep8 and cleanup.
+* Merge pull request `#89 <https://github.com/robotics-in-concert/rocon_tools/issues/89>`_ from asmodehn/gocart
+  Gocart
+* added a callback to signal when the list of interactions might have changed
+* now getting running rapp from status topic.
+  Also replacing the original public_interface with the published one.
+* cleanup and fixes on required rapp verification.
+* adding required field for interaction
+  adding rapp_watcher and extending rapp_handler.
+* Contributors: AlexV, Daniel Stonier, Jihoon Lee
+
 0.1.20 (2015-06-01)
 -------------------
 

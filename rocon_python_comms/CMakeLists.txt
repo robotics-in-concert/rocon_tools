@@ -27,7 +27,7 @@ install(
 
 install(
     FILES
-        completion/rospairbash
+        completion/rospair.bash
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/completion
     )
 

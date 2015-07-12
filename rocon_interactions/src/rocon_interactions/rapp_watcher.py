@@ -144,7 +144,7 @@ class RappWatcher(threading.Thread):
 
             added_available_rapps, removed_available_rapps, _, _ = _dict_key_diff(list_rapp_msg_to_dict(msg.available_rapps), self._available_rapps)
 
-            #callback
+            # callback
             self.available_rapps_change_cb(self.name, added_available_rapps, removed_available_rapps)
 
             rospy.logwarn('updating available rapps list : %r', [r.name for r in msg.available_rapps])
@@ -166,18 +166,19 @@ class RappWatcher(threading.Thread):
                 for pubif_idx, pubif in enumerate(rrapp['public_interface']):
                     newvals = ast.literal_eval(pubif.value)
                     for msgif in msg.published_interfaces:
-                        if ((pubif.key == 'subscribers' and msgif.interface.connection_type == 'subscriber') or
-                             (pubif.key == 'publishers' and msgif.interface.connection_type == 'publisher')
+                        if (
+                            (pubif.key == 'subscribers' and msgif.interface.connection_type == 'subscriber') or
+                            (pubif.key == 'publishers' and msgif.interface.connection_type == 'publisher')
                         ):
-                            #rospy.loginfo('newvals %r', newvals)
+                            # rospy.loginfo('newvals %r', newvals)
                             for newval_idx, newval in enumerate(newvals):
-                                #rospy.loginfo('newvals[%r] %r', newval_idx, newval)
+                                # rospy.loginfo('newvals[%r] %r', newval_idx, newval)
                                 if newval['name'] == msgif.interface.name and newval['type'] == msgif.interface.data_type:
                                     # Careful we re changing the list in place here
                                     newvals[newval_idx]['name'] = msgif.name
-                                    #rospy.loginfo('newvals[%r] -> %r', newval_idx, newval)
+                                    # rospy.loginfo('newvals[%r] -> %r', newval_idx, newval)
                                     # Careful we re changing the list in place here
-                        elif not msgif.interface.connection_type in rocon_python_comms.connections.connection_types:
+                        elif msgif.interface.connection_type not in rocon_python_comms.connections.connection_types:
                             rospy.logerr('Interactions : unsupported connection type : %r', msgif.interface.connection_type)
                     # Careful we re changing the list in place here
                     rrapp['public_interface'][pubif_idx].value = str(newvals)
@@ -201,7 +202,7 @@ class RappWatcher(threading.Thread):
         def running_rapp(self):
             return self._running_rapp
 
-    #####class WatchedNS
+    # ####class WatchedNS
     def __init__(self, namespaces_change_cb, available_rapps_list_change_cb, running_rapp_status_change_cb, ns_status_change_cb=lambda msg: None, get_rapp_list_service_name='list_rapps', silent_timeout=False):
         """
         @param namespaces_change_cb : callback for a change of namespaces
@@ -209,9 +210,9 @@ class RappWatcher(threading.Thread):
         @param rapp_status_change_cb : callback for a change of rapp status
         """
         super(RappWatcher, self).__init__()
-        #servicename ( to be able to extract namespace )
+        # servicename ( to be able to extract namespace )
         self.get_rapp_list_service_name = get_rapp_list_service_name
-        #contains data by namespace
+        # contains data by namespace
         self.watching_ns = {}
         # all available namespace detected
         self._available_namespaces = []
@@ -220,7 +221,7 @@ class RappWatcher(threading.Thread):
 
         self._silent_timeout = silent_timeout
 
-        #TODO : check callback signature
+        # TODO : check callback signature
         self.available_rapps_list_change_cb = available_rapps_list_change_cb
         self.running_rapp_status_change_cb = running_rapp_status_change_cb
         self.namespaces_change_cb = namespaces_change_cb
@@ -253,7 +254,7 @@ class RappWatcher(threading.Thread):
                             found = True
                     if not found:
                         ns_removed.append(ns)
-                        #stopping to watch removed namespaces
+                        # stopping to watch removed namespaces
                         if ns in self.watching_ns.keys():
                             del self.watching_ns[ns]
 
@@ -270,7 +271,7 @@ class RappWatcher(threading.Thread):
                         if ns in self._available_namespaces:
                             self.watching_ns[ns] = self.WatchedNS(ns, self.available_rapps_list_change_cb, self.running_rapp_status_change_cb, self.ns_status_change_cb)
 
-                #grabing all services & topics
+                # grabing all services & topics
                 if set(self.watching_ns.keys()) != set(self._watched_namespaces):  # if some namespaces are not fully connected
                     start_rapp_service_names = rocon_python_comms.find_service('rocon_app_manager_msgs/StartRapp', timeout=rospy.rostime.Duration(1.0), unique=False)
                     stop_rapp_service_names = rocon_python_comms.find_service('rocon_app_manager_msgs/StopRapp', timeout=rospy.rostime.Duration(1.0), unique=False)
@@ -285,9 +286,9 @@ class RappWatcher(threading.Thread):
                             connect = ns_data.grab_rapplist_subscriber(rapplist_topic_names) and connect
                             connect = ns_data.grab_status_subscriber(status_topic_names) and connect
                             if connect:
-                                #if all services and topics are connected this namespace is considered connected
+                                # if all services and topics are connected this namespace is considered connected
                                 self._watched_namespaces.append(ns)
-                #TODO : survive if services/topics ever go down... and be able to catch them again when they come back.
+                # TODO : survive if services/topics ever go down... and be able to catch them again when they come back.
             except rocon_python_comms.exceptions.NotFoundException:
                 if not self._silent_timeout:
                     rospy.logerr("Interactions : timed out looking for rapp manager services")
@@ -330,5 +331,4 @@ class RappWatcher(threading.Thread):
         else:
             return {}  # FIXME : return empty result of same type
 
-
-#####class RappWatcher(threading.Thread)
+# ####class RappWatcher(threading.Thread)

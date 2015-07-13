@@ -186,7 +186,7 @@ class RappWatcher(threading.Thread):
                 # TODO : same for published parameters ?
 
                 self._running_rapp = rrapp
-                rospy.loginfo('new public if : %r', self._running_rapp['public_interface'])
+                # rospy.loginfo('Interactions : new public if : %r', self._running_rapp['public_interface'])
 
             elif msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_STOPPED:
                 self._running_rapp.clear()

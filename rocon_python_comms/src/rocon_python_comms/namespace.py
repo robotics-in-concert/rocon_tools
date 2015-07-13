@@ -26,7 +26,7 @@ import rospy
 import rosgraph
 import socket
 from rosservice import get_service_type, ROSServiceIOException
-from .exceptions import NotFoundException
+from .exceptions import NotFoundException, MultipleFoundException
 
 ##############################################################################
 # Find namespace

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+* import multiple found exception from exception.py closes `#97 <https://github.com/robotics-in-concert/rocon_tools/issues/97>`_
+* Contributors: Jihoon Lee
+
 0.1.22 (2015-07-13)
 -------------------
 

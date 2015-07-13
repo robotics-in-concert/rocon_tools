@@ -1,6 +1,9 @@
 Changelog
 =========
 
+Forthcoming
+-----------
+
 0.1.22 (2015-07-13)
 -------------------
 * move out image converter and its dependency closes `#98 <https://github.com/robotics-in-concert/rocon_tools/issues/98>`_

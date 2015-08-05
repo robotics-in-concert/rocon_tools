@@ -15,6 +15,7 @@
     - waiterbot
     - furo
     - aldebaran_nao
+    - robotis_op1
   - mobile_device:
     - phone:
       - galaxy

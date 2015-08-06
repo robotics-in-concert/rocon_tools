@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import unittest
 import rospy
+import rocon_console.console as console
 import rocon_service_pair_msgs.msg as rocon_service_pair_msgs
 import rocon_python_comms
 import rostest
@@ -31,15 +32,33 @@ class TestServicePairTimeouts(unittest.TestCase):
         self._error_event = None
 
     def test_non_blocking_call_with_timeout(self):
+        print("")
+        print(console.bold + "\n****************************************************************************************" + console.reset)
+        print(console.bold + "* Non blocking call with timeout" + console.reset)
+        print(console.bold + "****************************************************************************************" + console.reset)
+        print("")
         self._error_event = threading.Event()
         msg_id = self.testies(generate_request_message(), timeout=rospy.Duration(1.0), callback=self.callback, error_callback=self.error_callback)
         result = self._error_event.wait(2.0)
         self.assertTrue(result, "Did not receive an error message")
 
     def test_wait_for_service_pair_server(self):
+        print("")
+        print(console.bold + "\n****************************************************************************************" + console.reset)
+        print(console.bold + "* Wait for service" + console.reset)
+        print(console.bold + "****************************************************************************************" + console.reset)
+        print("")
         wait_failed = False
-        with self.assertRaises(rospy.ROSException):
-            self.testies.wait_for_service(rospy.Duration(1.0))
+        start_time = rospy.Time.now()
+        result = self.testies.wait_for_service()
+        print("One shot: %s" % result)
+        self.assertFalse(result, "shouldn't have gotten a result as there is no service server hooked up to this client")
+        self.assertTrue((rospy.Time.now()-start_time) < rospy.Duration(0.2), "One shot wait_for_service took too long to return")
+        start_time = rospy.Time.now()
+        result = self.testies.wait_for_service(rospy.Duration(1.0))
+        self.assertFalse(result)
+        self.assertTrue((rospy.Time.now()-start_time) > rospy.Duration(1.0), "Should have timed out after 1.0s, but didn't")
+        # no easy way of checking the indefinite wait
 
     def callback(self, msg_id, msg):
         """ User callback to feed into non-blocking requests.

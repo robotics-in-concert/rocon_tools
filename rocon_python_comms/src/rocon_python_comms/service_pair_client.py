@@ -178,24 +178,41 @@ class ServicePairClient(object):
         self._publisher = rospy.Publisher(name + "/request", self.ServicePairRequest, queue_size=5)
         self._request_handlers = {}  # [uuid_msgs/UniqueId]
 
-    def wait_for_service(self, timeout):
+    def wait_for_service(self, timeout=None):
         '''
-          Waits for the service pair server to appear.
+        Waits for the service pair server to appear. The input argument to timeout
+        modifies the behaviour of this function as demonstrated below.
 
-          :param rospy.Duration timeout: time to wait for data
+        .. code-block:: python
 
-          :raises: rospy.ROSException if specified timeout is exceeded
-          :raises: rospy.ROSInterruptException if shutdown interrupts wait
+           # one-shot
+           if client.wait_for_service():
+               # do something useful
+
+           # timeout
+           if not client.wait_for_service(rospy.Duration(5.0)):
+               rospy.logwarn("Timed out waiting for service to appear")
+
+           # indefinite blocking
+           client.wait_for_service(rospy.Duration(0))
+
+        :param rospy.Duration timeout: time to wait for data
+        :returns: bool true if connections found, false otherwise
+        :raises: rospy.ROSInterruptException if shutdown interrupts wait
         '''
+        if timeout is None:
+            return self._subscriber.get_num_connections() > 0 and self._publisher.get_num_connections() > 0
+
         timeout_time = time.time() + timeout.to_sec()
-        while not rospy.is_shutdown() and time.time() < timeout_time:
+        while not rospy.is_shutdown():
+            if timeout > rospy.Duration(0) and time.time() > timeout_time:
+                return False
             if self._subscriber.get_num_connections() > 0 and self._publisher.get_num_connections() > 0:
-                return
+                return True
             rospy.rostime.wallsleep(0.1)
         if rospy.is_shutdown():
             raise rospy.ROSInterruptException("rospy shutdown")
-        else:
-            raise rospy.ROSException("timeout exceeded while waiting for service pair server %s" % self._subscriber.resolved_name[:-len('/response')])
+        return False
 
     ##########################################################################
     # Execute Blocking/NonBlocking

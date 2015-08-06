@@ -3,6 +3,8 @@
   - robot:
     - fgopher
     - gocart
+    - gocart_v1
+    - gocart_v2
     - gopher
     - kobuki
     - korus

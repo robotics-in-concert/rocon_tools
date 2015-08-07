@@ -22,6 +22,7 @@ ros master.
 # Imports
 ##############################################################################
 
+import rospkg
 import rospy
 import rocon_std_msgs.msg as rocon_std_msgs
 import rocon_python_utils
@@ -40,10 +41,10 @@ class RoconMaster(object):
     the lookup themselves.
     """
     __slots__ = [
-            '_publishers',
-            '_parameters',
-            'spin',
-        ]
+        '_publishers',
+        '_parameters',
+        'spin',
+    ]
 
     def __init__(self):
         '''
@@ -61,7 +62,11 @@ class RoconMaster(object):
         master_info = rocon_std_msgs.MasterInfo()
         master_info.name = self._parameters['name']
         master_info.description = self._parameters['description']
-        master_info.icon = rocon_python_utils.ros.icon_resource_to_msg(self._parameters['icon'])
+        try:
+            master_info.icon = rocon_python_utils.ros.icon_resource_to_msg(self._parameters['icon'])
+        except rospkg.ResourceNotFound as e:
+            rospy.logwarn("Master Info : no icon found, using a default [%s][%s]" % (self._parameters['icon'], e))
+            master_info.icon = rocon_python_utils.ros.icon_resource_to_msg("rocon_bubble_icons/rocon_logo.png")
         master_info.version = rocon_std_msgs.Strings.ROCON_VERSION
         self._publishers['info'].publish(master_info)
         # Aliases

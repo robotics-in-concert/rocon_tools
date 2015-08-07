@@ -46,9 +46,12 @@ class SubscriberProxy():
 
         from rocon_python_comms import SubscriberProxy
 
-        gateway_info = SubscriberProxy('gateway_info', gateway_msgs.GatewayInfo)(rospy.Duration(0.5))
-        if gateway_info is not None:
-            # do something
+        try:
+            gateway_info = SubscriberProxy('gateway_info', gateway_msgs.GatewayInfo)(rospy.Duration(0.5))
+            if gateway_info is not None:
+                # do something
+        except rospy.exceptions.ROSInterruptException:  # make sure to handle a Ros shutdown
+            # react something
 
     :todo: upgrade to make use of python events instead of manual loops
     '''

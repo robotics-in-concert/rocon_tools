@@ -48,7 +48,7 @@ def icon_to_msg(filename):
       .. include:: weblinks.rst
     '''
     icon = rocon_std_msgs.Icon()
-    if filename == None or filename == "":
+    if filename is None or not filename:
         return icon
     unused_basename, extension = os.path.splitext(filename)
     if extension.lower() == ".jpg" or extension.lower() == ".jpeg":
@@ -71,6 +71,8 @@ def icon_resource_to_msg(resource):
 
       :returns: the icon in msg format
       :rtype: `rocon_std_msgs.Icon`_
+
+      :raises: :exc:`.rospkg.ResourceNotFound` raised if the resource is not found or has an inappropriate extension.
     '''
     filename = find_resource_from_string(resource)
     icon = icon_to_msg(filename)

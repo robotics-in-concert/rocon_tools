@@ -238,7 +238,11 @@ class RappWatcher(threading.Thread):
         # I am the fire that burns against cold, the light that brings the dawn, the horn that wakes the sleepers, the shield that guards the realms of men.
         # I pledge my life and honor to the Night's Watch, for this night and all the nights to come
         while not rospy.is_shutdown():
-            rate.sleep()  # quick sleep for safety
+            try:
+                rate.sleep()  # quick sleep for safety
+            except rospy.exceptions.ROSInterruptException:
+                # ros is shutting down, catch it on the next loop
+                continue
             try:
                 # long timeout because no point of keep going if we cannot find this one.
                 list_rapps_service_names = rocon_python_comms.find_service('rocon_app_manager_msgs/GetRappList', timeout=rospy.rostime.Duration(60.0), unique=False)

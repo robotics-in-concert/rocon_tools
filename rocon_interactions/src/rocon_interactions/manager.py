@@ -300,12 +300,12 @@ class InteractionsManager(object):
             print rapp_list
 
         for i in filtered_interactions:
-            rospy.logwarn('==> checking requirements for %r : %r', i.name, i.required)
-            #rospy.logwarn(' Available Rapp : %r ', self._rapp_handler.get_available_rapps().keys())
-            #rospy.logwarn(' Running Rapp : %r ', self._rapp_handler.get_running_rapps().keys())
+            log_message_prefix = "checking requirements for %s : %s" % (i.name, i.required)
             if not len(i.required.rapp) > 0 or self._rapp_handler.is_running_rapp(i.required.rapp):
-                rospy.logwarn('==> OK !')
                 response.interactions.append(i.msg)
+                rospy.logdebug("Interactions : %s ==> ok" % log_message_prefix)
+            else:
+                rospy.logwarn("Interactions : %s ==> failed" % log_message_prefix)
         return response
 
     def _ros_service_get_roles(self, request):

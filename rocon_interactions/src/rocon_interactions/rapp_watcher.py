@@ -147,7 +147,7 @@ class RappWatcher(threading.Thread):
             # callback
             self.available_rapps_change_cb(self.name, added_available_rapps, removed_available_rapps)
 
-            rospy.logwarn('updating available rapps list : %r', [r.name for r in msg.available_rapps])
+            rospy.logdebug('Interactions: updating available rapps list : %r', [r.name for r in msg.available_rapps])
             self._available_rapps = list_rapp_msg_to_dict(msg.available_rapps)
 
         def _ros_status_subscriber(self, msg):

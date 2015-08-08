@@ -295,7 +295,7 @@ class RappWatcher(threading.Thread):
                 # TODO : survive if services/topics ever go down... and be able to catch them again when they come back.
             except rocon_python_comms.exceptions.NotFoundException:
                 if not self._silent_timeout:
-                    rospy.logerr("Interactions : timed out looking for rapp manager services")
+                    rospy.logwarn("Interactions : timed out looking for rapp manager services")
             except rospy.ROSException:
                 if not rospy.is_shutdown():
                     rospy.logwarn("Interactions : rapp manager services disappeared.")

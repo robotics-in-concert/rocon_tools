@@ -27,6 +27,7 @@ import rospy
 import socket
 import time
 from rosservice import ROSServiceIOException, get_service_headers
+from roslib.network import ROSHandshakeException
 
 # Local imports
 from .exceptions import NotFoundException
@@ -109,6 +110,9 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
         for (service_name, service_uri) in services_information:
             try:
                 next_service_type = get_service_headers(service_name, service_uri).get('type', None)
+            except ROSHandshakeException:
+                # happens when shutting down (should handle this somehow)
+                continue
             except ROSServiceIOException:  # should also catch socket.error?
                 # ignore this - it is usually a sign of a bad service that could be thrown
                 # up by somebody else and not what we're trying to find. If we can skip past it

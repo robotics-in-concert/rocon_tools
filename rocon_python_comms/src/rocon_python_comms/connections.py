@@ -212,6 +212,11 @@ class Connection(object):
 # Utility Methods
 ##############################################################################
 
+def create_connection(ConnectionMsg):
+    """
+    Creates a Connection instance from a Connection message
+    """
+    return Connection(ConnectionMsg.type, ConnectionMsg.name, ConnectionMsg.node, ConnectionMsg.type_info, ConnectionMsg.xmlrpc_uri)
 
 def create_empty_connection_type_dictionary():
     '''

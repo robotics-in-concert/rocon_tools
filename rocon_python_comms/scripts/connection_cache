@@ -56,7 +56,7 @@ if __name__ == '__main__':
                         for c in new_conns[ct]:
                             rocon_python_comms.create_connection(c)
                             diff_msg.added.append(c.msg)
-                        for c in new_conns[ct]:
+                        for c in lost_conns[ct]:
                             rocon_python_comms.create_connection(c)
                             diff_msg.lost.append(c.msg)
                         for c in conn_cache.connections[ct]:

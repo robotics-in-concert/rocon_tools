@@ -33,7 +33,10 @@ if __name__ == '__main__':
     rospy.init_node('connection_cache')
     spin_rate = rospy.Rate(1)
     conn_cache = rocon_python_comms.ConnectionCache()
+
+    # TODO : use parameter and dynamic_reconfigure instead
     conn_update_rate = rospy.Service("~spin_rate", rocon_std_srvs.SpinRate, spin_rate_request)
+
     conn_list = rospy.Publisher("~list", rocon_std_msgs.ConnectionsList, latch=True, queue_size=1)  # uptodate full list
     conn_diff = rospy.Publisher("~diff", rocon_std_msgs.ConnectionsDiff, queue_size=1)  # differences only for faster parsing.
 

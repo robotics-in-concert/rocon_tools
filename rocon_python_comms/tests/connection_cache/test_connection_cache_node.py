@@ -59,19 +59,22 @@ class TestConnectionCacheNode(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def chatter_detected(self, topicq_clist):
+    def chatter_detected(self, topicq_clist, conn_type, node_name):
         """
         detect the chatter publisher in a connection list
         """
         test = False
         for i, conn in enumerate(topicq_clist):  # lop through all connections in the list
             test = (conn.name == '/chatter'
-                    and conn.type == rocon_python_comms.PUBLISHER
-                    and '/talker' in conn.node
+                    and conn.type == conn_type
+                    and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
                     and conn.type_info == ''
                     and conn.xmlrpc_uri == '')
             if test:  # break right away if found
                 break
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node} type_info:{type_info} xmlrpc_uri:{xmlrpc_uri}".format(name='/chatter', type=conn_type, node=node_name, type_info='', xmlrpc_uri='')
+            print "NOT FOUND IN LIST : {0}".format(topicq_clist)
         return test
 
     def test_detect_publisher_added_lost(self):
@@ -87,10 +90,10 @@ class TestConnectionCacheNode(unittest.TestCase):
         with timeout(5) as t:
             while not t.timed_out:
                 # Here we only check the last message received
-                if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections):  # if we find it
+                if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
                     added_publisher_detected['list'] = True
 
-                if not added_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added):  # if we find it
+                if not added_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
                     added_publisher_detected['diff'] = True
 
                 if added_publisher_detected['list'] and added_publisher_detected['diff']:
@@ -106,10 +109,10 @@ class TestConnectionCacheNode(unittest.TestCase):
         with timeout(5) as t:
             while not t.timed_out:
                 # Here we only check the last message received
-                if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections):  # if we DONT find it
+                if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we DONT find it
                     lost_publisher_detected['list'] = True
 
-                if not lost_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].lost):  # if we find it
+                if not lost_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].lost, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
                     lost_publisher_detected['diff'] = True
 
                 if lost_publisher_detected['list'] and lost_publisher_detected['diff']:
@@ -119,17 +122,57 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert lost_publisher_detected['list'] and lost_publisher_detected['diff']
 
 
-    def test_detect_subscriber_added(self):
-        pass
+    def test_detect_subscriber_added_lost(self):
+        # Start a dummy node
+        listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
+        launch = roslaunch.scriptapi.ROSLaunch()
+        launch.start()
+        process = launch.launch(listener_node)
 
-    def test_detect_subscriber_lost(self):
-        pass
+        added_subscriber_detected = {'list': False, 'diff': False}
+
+        # Loop a bit so we can detect the topic
+        with timeout(5) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not added_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_detected['list'] = True
+
+                if not added_subscriber_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_detected['diff'] = True
+
+                if added_subscriber_detected['list'] and added_subscriber_detected['diff']:
+                    break
+                time.sleep(0.2)
+
+        assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
+        process.stop()
+
+        lost_subscriber_detected = {'list': False, 'diff': False}
+
+        # Loop a bit so we can detect the topic is gone
+        with timeout(5) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not lost_subscriber_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we DONT find it
+                    lost_subscriber_detected['list'] = True
+
+                if not lost_subscriber_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].lost, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    lost_subscriber_detected['diff'] = True
+
+                if lost_subscriber_detected['list'] and lost_subscriber_detected['diff']:
+                    break
+                time.sleep(0.2)
+
+        assert lost_subscriber_detected['list'] and lost_subscriber_detected['diff']
+
 
     def test_detect_service(self):
         pass
 
     # TODO : detect actions server and client
 
+    # TODO : use dynamic_reconfigure instead
     def test_change_spin_rate(self):
         pass
 

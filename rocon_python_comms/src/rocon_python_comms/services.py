@@ -96,7 +96,8 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
     # with the only difference in that I continue over that exception.
     unique_service_name = None
     service_names = []
-    timeout_time = time.time() + timeout.to_sec()
+    start_time = time.time()
+    timeout_time = start_time + timeout.to_sec()
     master = rosgraph.Master(rospy.get_name())
     while not rospy.is_shutdown() and time.time() < timeout_time and not service_names:
         services_information = []
@@ -111,6 +112,7 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
             try:
                 next_service_type = get_service_headers(service_name, service_uri).get('type', None)
             except ROSHandshakeException:
+                rospy.logwarn("Handshake exception after waiting for {0} secs".format(time.time() - start_time))
                 # happens when shutting down (should handle this somehow)
                 continue
             except ROSServiceIOException:  # should also catch socket.error?

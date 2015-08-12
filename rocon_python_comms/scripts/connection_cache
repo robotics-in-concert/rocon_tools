@@ -17,16 +17,17 @@ import rospy
 # Main
 ##############################################################################
 
-spin_rate = None  # needs to be set after rospy.init_node() call
+spin_freq = 1.0
+spin_freq_changed = False
 
 
-def spin_rate_request(req):
-    resp = rocon_std_srvs.SpinRateResponse()
+def set_spin_cb(data):
+    global spin_freq
+    global spin_freq_changed
 
-    if req.new_rate:  # we change the rate if needed
-        spin_rate = req.new_rate
-    resp.current_rate = spin_rate
-    return resp
+    if data.spin_freq and not data.spin_freq == spin_freq:  # we change the rate if needed
+        spin_freq = data.spin_freq
+        spin_freq_changed = True
 
 
 if __name__ == '__main__':
@@ -34,15 +35,25 @@ if __name__ == '__main__':
     spin_rate = rospy.Rate(1)
     conn_cache = rocon_python_comms.ConnectionCache()
 
-    # TODO : use parameter and dynamic_reconfigure instead
-    conn_update_rate = rospy.Service("~spin_rate", rocon_std_srvs.SpinRate, spin_rate_request)
+    conn_cache_spin_pub = rospy.Publisher("~spin", rocon_std_msgs.ConnectionCacheSpin, latch=True, queue_size=1)
+    conn_cache_spin_sub = rospy.Subscriber("~spin", rocon_std_msgs.ConnectionCacheSpin, set_spin_cb)
 
     conn_list = rospy.Publisher("~list", rocon_std_msgs.ConnectionsList, latch=True, queue_size=1)  # uptodate full list
     conn_diff = rospy.Publisher("~diff", rocon_std_msgs.ConnectionsDiff, queue_size=1)  # differences only for faster parsing.
 
     rospy.logdebug("node[%s, %s] entering spin(), pid[%s]", rospy.core.get_caller_id(), rospy.core.get_node_uri(), os.getpid())
     try:
+        spin_rate = rospy.Rate(spin_freq)
+        spin_freq_changed = True
         while not rospy.core.is_shutdown():
+
+            # If needed we change our spin rate, and publish the new frequency
+            if spin_freq_changed:
+                spin_rate = rospy.Rate(spin_freq)
+                spinmsg = rocon_std_msgs.ConnectionCacheSpin()
+                spinmsg.spin_freq = spin_freq
+                spin_freq_changed = False
+                conn_cache_spin_pub.publish(spinmsg)
 
             """
             Update function to call from a looping thread.

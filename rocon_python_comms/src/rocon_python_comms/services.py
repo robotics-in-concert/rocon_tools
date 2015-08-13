@@ -27,7 +27,7 @@ import rospy
 import socket
 import time
 from rosservice import ROSServiceIOException, get_service_headers
-from roslib.network import ROSHandshakeException
+from rosgraph.network import ROSHandshakeException
 
 # Local imports
 from .exceptions import NotFoundException

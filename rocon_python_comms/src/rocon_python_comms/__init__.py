@@ -28,3 +28,4 @@ from .subscriber_proxy import SubscriberProxy
 from .topics import find_topic
 from .wall_rate import WallRate
 from .namespace import find_service_namespace, basename
+from . import utils

@@ -345,8 +345,8 @@ class ConnectionCache(object):
         connections = []
         for action in connection_list:
             action_name = action[0]
-            #goal_topic = action_name + '/goal'
-            #goal_topic_type = rostopic.get_topic_type(goal_topic)
+            # goal_topic = action_name + '/goal'
+            # goal_topic_type = rostopic.get_topic_type(goal_topic)
             # topic_type = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
             nodes = action[1]
             for node in nodes:

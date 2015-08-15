@@ -53,13 +53,13 @@ connection_types = frozenset([PUBLISHER,
                               SERVICE,
                               ACTION_CLIENT,
                               ACTION_SERVER
-                             ])
+                              ])
 connection_types_list = [PUBLISHER,
                          SUBSCRIBER,
                          SERVICE,
                          ACTION_CLIENT,
                          ACTION_SERVER
-                        ]
+                         ]
 action_types = ['/goal', '/cancel', '/status', '/feedback', '/result']
 
 ##############################################################################
@@ -189,21 +189,19 @@ class Connection(object):
         String representation of the connection, it differs a little by connection type.
         '''
         if self.type == SERVICE:
-            return '{type: %s, name: %s, node: %s, uri: %s, service_api: %s}' % (
-                self.type,
-                self.name,
-                self.node,
-                self.xmlrpc_uri,
-                self.type_info
-                )
+            return '{type: %s, name: %s, node: %s, uri: %s, service_api: %s}' % (self.type,
+                                                                                 self.name,
+                                                                                 self.node,
+                                                                                 self.xmlrpc_uri,
+                                                                                 self.type_info
+                                                                                 )
         else:
-            return '{type: %s, name: %s, node: %s, uri: %s, topic_type: %s}' % (
-                self.type,
-                self.name,
-                self.node,
-                self.xmlrpc_uri,
-                self.type_info
-                )
+            return '{type: %s, name: %s, node: %s, uri: %s, topic_type: %s}' % (self.type,
+                                                                                self.name,
+                                                                                self.node,
+                                                                                self.xmlrpc_uri,
+                                                                                self.type_info
+                                                                                )
 
     def __repr__(self):
         return self.__str__()
@@ -212,11 +210,13 @@ class Connection(object):
 # Utility Methods
 ##############################################################################
 
+
 def create_connection(ConnectionMsg):
     """
     Creates a Connection instance from a Connection message
     """
     return Connection(ConnectionMsg.type, ConnectionMsg.name, ConnectionMsg.node, ConnectionMsg.type_info, ConnectionMsg.xmlrpc_uri)
+
 
 def create_empty_connection_type_dictionary():
     '''
@@ -241,11 +241,10 @@ class ConnectionCache(object):
     'generate_xmlrpc_info' on the specific connection (this is a more
     expensive call and you don't want to do this for every connection).
     """
-    __slots__ = [
-                 'connections',
+    __slots__ = ['connections',
                  '_lookup_node',
                  '_get_system_state'
-                ]
+                 ]
 
     def __init__(self):
         master = rosgraph.Master(rospy.get_name())
@@ -285,10 +284,10 @@ class ConnectionCache(object):
             s += ("%s:\n" % connection_type)
             for connection in self.connections[connection_type]:
                 s += "  {name: %s, node: %s, type_info: %s, xmlrpc_uri: %s}\n" % (connection.name,
-                       connection.node,
-                       connection.type_info,
-                       connection.xmlrpc_uri
-                      )
+                                                                                  connection.node,
+                                                                                  connection.type_info,
+                                                                                  connection.xmlrpc_uri
+                                                                                  )
         return s
 
     def update(self, new_system_state=None):
@@ -363,7 +362,7 @@ class ConnectionCache(object):
         connections = []
         for service in connection_list:
             service_name = service[0]
-            #service_uri = rosservice.get_service_uri(service_name)
+            # service_uri = rosservice.get_service_uri(service_name)
             nodes = service[1]
             for node in nodes:
                 # try:
@@ -378,12 +377,12 @@ class ConnectionCache(object):
         connections = []
         for topic in connection_list:
             topic_name = topic[0]
-            #topic_type = rostopic.get_topic_type(topic_name)
-            #topic_type = topic_type[0]
+            # topic_type = rostopic.get_topic_type(topic_name)
+            # topic_type = topic_type[0]
             nodes = topic[1]
             for node in nodes:
                 # try:
-                    #node_uri = self.lookupNode(node)
+                    # node_uri = self.lookupNode(node)
                 # except:
                 #    continue
                 connection = Connection(connection_type, topic_name, node, None, None)  # topic_type, node_uri

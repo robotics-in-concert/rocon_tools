@@ -48,6 +48,7 @@ def basename(name):
     :returns: name stripped up until the last slash or tilde character.
     :rtype: str
     """
+    return name.rsplit('/', 1)[-1].rsplit('~', 1)[-1]
 
 
 def find_service_namespace(service_name, service_type=None, unique=False):

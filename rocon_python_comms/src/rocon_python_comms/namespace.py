@@ -33,6 +33,23 @@ from .exceptions import NotFoundException, MultipleFoundException
 ##############################################################################
 
 
+def basename(name):
+    """
+    Generate the basename from a ros name, e.g.
+
+    ...code-block:: python
+
+       > basename("~dude")
+       > 'dude'
+       > basename("/gang/dude")
+       > 'dude'
+
+    :param str name: ros name as input
+    :returns: name stripped up until the last slash or tilde character.
+    :rtype: str
+    """
+
+
 def find_service_namespace(service_name, service_type=None, unique=False):
     '''
     Find a namespace corresponding with service name and service type.

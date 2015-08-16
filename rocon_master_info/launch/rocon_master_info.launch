@@ -8,10 +8,11 @@
   <arg name="description" default="Pirates in concert."/>
 
   <group ns="rocon">
-    <param name="name" value="$(arg name)"/>
-    <param name="description" value="$(arg description)"/>
-    <param name="icon" value="$(arg icon)"/>
-    <node pkg="rocon_master_info" type="master.py" name="master"/>
+    <node pkg="rocon_master_info" type="master.py" name="master">
+      <param name="name" value="$(arg name)"/>
+      <param name="description" value="$(arg description)"/>
+      <param name="icon" value="$(arg icon)"/>
+    </node>
   </group>
 
 </launch>

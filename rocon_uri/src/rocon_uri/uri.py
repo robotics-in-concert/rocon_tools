@@ -206,7 +206,7 @@ class RoconURI(object):
         except IndexError:  # if optional fields are left off, we end up here
             pass  # ok, since defaults are suitably set by the descriptor
         except RoconURIValueError as e:
-            #print("Raised %s %s" % type(e), str(e))
+            #  print("Raised %s %s" % type(e), str(e))
             raise e
         self.rapp = parsed_url.fragment
 

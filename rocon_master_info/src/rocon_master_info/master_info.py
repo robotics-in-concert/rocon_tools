@@ -86,6 +86,7 @@ def console_only_main(node_name='master_info', title='Master Information'):
 
     rocon_console.pretty_println(title, rocon_console.bold)
     print(rocon_console.cyan + "  Name       : " + rocon_console.yellow + master_info.name + rocon_console.reset)
+    print(rocon_console.cyan + "  Rocon Uri  : " + rocon_console.yellow + master_info.rocon_uri + rocon_console.reset)
     print(rocon_console.cyan + "  Description: " + rocon_console.yellow + master_info.description + rocon_console.reset)
     print(rocon_console.cyan + "  Icon       : " + rocon_console.yellow + master_info.icon.resource_name + rocon_console.reset)
     print(rocon_console.cyan + "  Version    : " + rocon_console.yellow + master_info.version + rocon_console.reset)

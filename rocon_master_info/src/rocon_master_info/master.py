@@ -24,12 +24,48 @@ ros master.
 
 import rospkg
 import rospy
-import rocon_std_msgs.msg as rocon_std_msgs
+import rocon_console.console as console
 import rocon_python_utils
+import rocon_std_msgs.msg as rocon_std_msgs
+import rocon_uri
 
 ##############################################################################
-# Conductor
+# Parameters
 ##############################################################################
+
+
+class Parameters:
+    """
+    The variables of this class are default constructed from parameters on the
+    ros parameter server. Each parameter is nested in the private namespace of
+    the node which instantiates this class.
+
+    :ivar robot_type: used for `rocon_uri`_ rapp compatibility checks *['rapp_manager_script']*
+    :vartype robot_type: str
+    :ivar robot_name: also used for `rocon_uri`_ rapp compatibility checks *['robot']*
+    :vartype robot_name: str
+    :ivar robot_icon: a `resource name` pointing to a representative icon for this platform. *['rocon_bubble_icons/rocon.png']*
+    :vartype robot_icon: str
+
+    .. _rocon_uri: http://wiki.ros.org/rocon_uri
+    .. _resource name: http://wiki.ros.org/Names#Package_Resource_Names
+    """
+    def __init__(self):
+        # see sphinx docs above for more detailed explanations of each parameter
+        self.type = rospy.get_param('~robot_type', 'robot')
+        self.name = rospy.get_param('~robot_name', 'cybernetic_pirate')
+        self.icon = rospy.get_param('~robot_icon', 'rocon_icons/cybernetic_pirate.png')
+        self.description = rospy.get_param('~description', 'A rocon system.')
+        self.version = rocon_std_msgs.Strings.ROCON_VERSION
+        # and set a global version parameter (useful as a ping to check for a rocon master (e.g. by androids)
+        rospy.set_param('version', self.version)
+
+    def __str__(self):
+        s = console.bold + "\nParameters:\n" + console.reset
+        for key in sorted(self.__dict__):
+            s += console.cyan + "    %s: " % key + console.yellow + "%s\n" % (self.__dict__[key] if self.__dict__[key] is not None else '-')
+        s += console.reset
+        return s
 
 
 class RoconMaster(object):
@@ -41,8 +77,8 @@ class RoconMaster(object):
     the lookup themselves.
     """
     __slots__ = [
-        '_publishers',
-        '_parameters',
+        'publishers',
+        'parameters',
         'spin',
     ]
 
@@ -55,36 +91,22 @@ class RoconMaster(object):
         ##################################
         # Pubs, Subs and Services
         ##################################
-        self._publishers = {}
+        self.publishers = {}
         # efficient latched publisher, put in the public concert namespace.
-        self._parameters = self._setup_ros_parameters()
-        self._publishers["info"] = rospy.Publisher("~info", rocon_std_msgs.MasterInfo, latch=True, queue_size=1)
+        self.parameters = Parameters()
+        self.publishers["info"] = rospy.Publisher("~info", rocon_std_msgs.MasterInfo, latch=True, queue_size=1)
+
         master_info = rocon_std_msgs.MasterInfo()
-        master_info.name = self._parameters['name']
-        master_info.description = self._parameters['description']
+        master_info.name = self.parameters.name
+        master_info.description = self.parameters.description
+        master_info.rocon_uri = rocon_uri.generate_platform_rocon_uri(self.parameters.type, self.parameters.name)
         try:
-            master_info.icon = rocon_python_utils.ros.icon_resource_to_msg(self._parameters['icon'])
+            master_info.icon = rocon_python_utils.ros.icon_resource_to_msg(self.parameters.icon)
         except rospkg.ResourceNotFound as e:
-            rospy.logwarn("Master Info : no icon found, using a default [%s][%s]" % (self._parameters['icon'], e))
+            rospy.logwarn("Master Info : no icon found, using a default [%s][%s]" % (self.parameters.icon, e))
             master_info.icon = rocon_python_utils.ros.icon_resource_to_msg("rocon_bubble_icons/rocon_logo.png")
         master_info.version = rocon_std_msgs.Strings.ROCON_VERSION
-        self._publishers['info'].publish(master_info)
+        self.publishers['info'].publish(master_info)
         # Aliases
         self.spin = rospy.spin
         """Spin function, currently this just replicates the rospy spin function since everything is done in the constructor."""
-
-    def _setup_ros_parameters(self):
-        '''
-          Parameters that are configurable (overridable) are currently set via args in the
-          concert master launcher where they are published as parameters. We grab those here.
-
-          Parameters that are fixed (not configurable), we set here so we can access the message
-          string constant and use that (also to avoid roslaunch clutter).
-        '''
-        param = {}
-        param['name'] = rospy.get_param('~name', 'Cybernetic Pirate')
-        param['icon'] = rospy.get_param('~icon', 'rocon_icons/cybernetic_pirate.png')
-        param['description'] = rospy.get_param('~description', 'A rocon system.')
-        # and a global version (useful as a ping to check for a rocon master (e.g. by androids)
-        rospy.set_param('version', rocon_std_msgs.Strings.ROCON_VERSION)
-        return param

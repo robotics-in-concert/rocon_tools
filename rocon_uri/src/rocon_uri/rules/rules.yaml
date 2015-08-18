@@ -1,5 +1,6 @@
 - hardware_platform:
   - pc
+  - concert
   - robot:
     - fgopher
     - gocart
@@ -33,6 +34,7 @@
     - groovy
     - hydro
     - indigo
+    - jade
     - ros_other
   - opros
   - application_framework_other

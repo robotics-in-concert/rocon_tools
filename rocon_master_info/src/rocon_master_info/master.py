@@ -52,9 +52,9 @@ class Parameters:
     """
     def __init__(self):
         # see sphinx docs above for more detailed explanations of each parameter
-        self.type = rospy.get_param('~robot_type', 'robot')
-        self.name = rospy.get_param('~robot_name', 'cybernetic_pirate')
-        self.icon = rospy.get_param('~robot_icon', 'rocon_icons/cybernetic_pirate.png')
+        self.type = rospy.get_param('~type', 'robot')
+        self.name = rospy.get_param('~name', 'cybernetic_pirate')
+        self.icon = rospy.get_param('~icon', 'rocon_icons/cybernetic_pirate.png')
         self.description = rospy.get_param('~description', 'A rocon system.')
         self.version = rocon_std_msgs.Strings.ROCON_VERSION
         # and set a global version parameter (useful as a ping to check for a rocon master (e.g. by androids)

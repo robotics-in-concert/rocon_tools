@@ -2,16 +2,15 @@
   A simple launcher to test the functionality of the rocon master info module. 
  -->
 <launch>
-
   <arg name="name" default="Pirate Master"/>
+  <arg name="type" default="pirate_ship"/>
   <arg name="icon" default="rocon_icons/cybernetic_pirate.png"/>
   <arg name="description" default="Pirates in concert."/>
 
-  <group ns="rocon">
+  <node pkg="rocon_master_info" type="master.py" name="master">
     <param name="name" value="$(arg name)"/>
-    <param name="description" value="$(arg description)"/>
+    <param name="type" value="$(arg type)"/>
     <param name="icon" value="$(arg icon)"/>
-    <node pkg="rocon_master_info" type="master.py" name="master"/>
-  </group>
-
+    <param name="description" value="$(arg description)"/>
+  </node>
 </launch>

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.2.0 (2015-08-18)
+------------------
+* required dependency on a running rapp for interactions
+* sleep function exception handling
+
 0.1.18 (2015-05-06)
 -------------------
 * get_interctions accept empty rocon_uri as wild card closes `#85 <https://github.com/robotics-in-concert/rocon_tools/issues/85>`_

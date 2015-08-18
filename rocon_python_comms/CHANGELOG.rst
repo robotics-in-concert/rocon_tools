@@ -1,11 +1,13 @@
 Changelog
 =========
 
-0.1.18 (2015-05-06)
--------------------
-
-0.1.17 (2015-04-06)
--------------------
+0.2.0 (2015-08-18)
+------------------
+* one shot and indefinite waiting for service pair clients
+* basename function for ros names
+* convenience service/publisher/subscriber mass producers
+* connection cache node prototype
+* connection cache class moved here from the gateway for multi-use
 
 0.1.16 (2015-03-02)
 -------------------

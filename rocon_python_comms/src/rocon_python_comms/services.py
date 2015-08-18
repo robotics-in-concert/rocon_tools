@@ -39,9 +39,9 @@ from .exceptions import NotFoundException
 
 def service_is_available(service_name):
     '''
-    Check whether the specific service is validated or not 
+    Check whether the specific service is validated or not
     as retrieving from master state.
-    
+
     :param: str service_name service name checking validtation
 
     :returns: result of service's validation
@@ -66,6 +66,14 @@ def find_service(service_type, timeout=rospy.rostime.Duration(5.0), unique=False
     of registered services and it parses that to determine the result. If nothing
     is found, it loops around internally on a 10Hz loop until the result is
     found or the specified timeout is reached.
+
+    .. warning::
+
+       This api is particularly dangerous, especially if used across a wireless connection as it
+       creates a socket connection to the master's lookupService api for every service on the system
+       while doing its hunting. More information in:
+
+       * https://github.com/robotics-in-concert/rocon_tools/issues/68
 
     Usage:
 

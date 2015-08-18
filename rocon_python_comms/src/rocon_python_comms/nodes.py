@@ -46,6 +46,7 @@ def find_node(wanted_node_name, unique=False):
       :raises: :exc:`.NotFoundException`
 
       :todo: accept resolved names -> https://github.com/robotics-in-concert/rocon_tools/issues/30
+      :todo: timeout -> https://github.com/robotics-in-concert/rocon_tools/issues/15
     '''
     available_nodes = rosnode.get_node_names()
     found_nodes = []

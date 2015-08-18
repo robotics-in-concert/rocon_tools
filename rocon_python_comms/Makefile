@@ -13,7 +13,7 @@ docs:
 	rosdoc_lite .
 
 upload:
-	ssh ${REMOTE_SSH} 'mkdir -p shared/documentation/${NAME}/${VERSION}; rm -f shared/documentation/${NAME}/latest; ln -sf ${VERSION} shared/documentation/${NAME}/latest'
+	ssh ${REMOTE_SSH} "mkdir -p shared/documentation/${NAME}/${VERSION}; rm -f shared/documentation/${NAME}/latest; ln -sf ${VERSION} shared/documentation/${NAME}/latest"
 	rsync --delete --recursive --links --verbose ${LOCAL_DIR} ${REMOTE_DIR}
 
 

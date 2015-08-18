@@ -58,4 +58,4 @@ class Subscribers:
         :param subscribers: incoming list of service specifications
         :type subscribers: list of (str, str, bool, int) tuples representing (topic_name, subscriber_type, latched, queue_size) specifications.
         """
-        self.__dict__ = {namespace.basename(topic_name): rospy.Publisher(topic_name, subscriber_type, callback) for (topic_name, subscriber_type, callback) in subscribers}
+        self.__dict__ = {namespace.basename(topic_name): rospy.Subscriber(topic_name, subscriber_type, callback) for (topic_name, subscriber_type, callback) in subscribers}

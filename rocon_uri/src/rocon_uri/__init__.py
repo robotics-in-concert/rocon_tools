@@ -18,6 +18,12 @@ describe rocon devices and robots as resources in the rocon framework.
 # Imports
 ##############################################################################
 
-default_uri_string = 'rocon://'
 from .exceptions import RoconURIValueError
+from .platform import generate_platform_rocon_uri
 from uri import parse, is_compatible, RoconURI
+
+##############################################################################
+# Constants
+##############################################################################
+
+default_uri_string = 'rocon://'

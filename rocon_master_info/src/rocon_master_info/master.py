@@ -95,7 +95,6 @@ class RoconMaster(object):
         # efficient latched publisher, put in the public concert namespace.
         self.parameters = Parameters()
         self.publishers["info"] = rospy.Publisher("~info", rocon_std_msgs.MasterInfo, latch=True, queue_size=1)
-
         master_info = rocon_std_msgs.MasterInfo()
         master_info.name = self.parameters.name
         master_info.description = self.parameters.description
@@ -110,3 +109,4 @@ class RoconMaster(object):
         # Aliases
         self.spin = rospy.spin
         """Spin function, currently this just replicates the rospy spin function since everything is done in the constructor."""
+

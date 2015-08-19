@@ -281,6 +281,9 @@ class InteractionsManager(object):
         response = interaction_srvs.GetInteractionsResponse()
         response.interactions = []
 
+        ################################################
+        # Filter by role, rocon_uri
+        ################################################
         if request.roles:  # works for None or empty list
             unavailable_roles = [x for x in request.roles if x not in self._interactions_table.roles()]
             for role in unavailable_roles:
@@ -297,10 +300,17 @@ class InteractionsManager(object):
             rapp_list = self._rapp_handler.list()
             print rapp_list
 
-        # a further filter - check if it's a paired rapp that needs the rapp already running
+        ################################################
+        # Filter pairings by running requirements
+        ################################################
+        if request.runtime_pairing_requirements:
+            filtered_interactions = [interaction for interaction in filtered_interactions if self._running_requirements_are_satisfied(interaction)]
+
+        ################################################
+        # Convert to response format
+        ################################################
         for i in filtered_interactions:
-            if self._running_requirements_are_satisfied(i):
-                response.interactions.append(i.msg)
+            response.interactions.append(i.msg)
         return response
 
     def _running_requirements_are_satisfied(self, interaction):

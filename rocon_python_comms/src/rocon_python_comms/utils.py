@@ -39,6 +39,17 @@ class Services:
         self.__dict__ = {namespace.basename(service_name): rospy.Service(service_name, service_type, callback) for (service_name, service_type, callback) in services}
 
 
+class ServiceProxies:
+    def __init__(self, service_proxies):
+        """
+        Converts the incoming list of service name, service type pairs into proper variables of this class.
+
+        :param services: incoming list of service proxy specifications
+        :type services: list of (str, str) tuples representing (service_name, service_type) pairs.
+        """
+        self.__dict__ = {namespace.basename(service_name): rospy.ServiceProxy(service_name, service_type) for (service_name, service_type) in service_proxies}
+
+
 class Publishers:
     def __init__(self, publishers):
         """

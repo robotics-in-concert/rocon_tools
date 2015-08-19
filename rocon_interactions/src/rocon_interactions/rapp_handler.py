@@ -73,16 +73,17 @@ class RappHandler(object):
 
     :ivar is_running: flag indicating if there is a monitored rapp running on the rapp manager.
     :vartype is_running: bool
-
+    :ivar _running_rapp: None, or dict representation of the running rapp (result of :py:class:`rapp_msg_to_dict()<rocon_interactions.rapp_handler.rapp_msg_to_dict>`)
+    :vartype _running_rapp: dict
     """
-    def __init__(self, status_callback, rapp_running_callback):
+    def __init__(self, rapp_running_state_changed_callback):
         """
         Initialise the class with the relevant data required to start and stop
         rapps on this concert client.
         """
         self._running_rapp = None
         self._available_rapps = {}
-        self.status_callback = status_callback
+        self.rapp_running_state_changed_callback = rapp_running_state_changed_callback
         self.subscribers = rocon_python_comms.utils.Subscribers(
             [
                 ('~status', rocon_app_manager_msgs.Status, self._status_subscriber_callback),
@@ -113,11 +114,23 @@ class RappHandler(object):
     def running_rapp(self):
         return self._running_rapp
 
-    def is_running_rapp(self, rapp_name):
+    def is_running_rapp(self, rapp_name, remappings, parameters):
+        '''
+        Compare the running rapp with an interaction's specification for a paired rapp.
+
+        :param str rapp_name: ros package resource name for this interaction's rapp rapp
+        :param rocon_std_msgs/Remapping[] remappings: rapp remapping rules for this interaction
+        :param rocon_std_msgs/KeyValue[] parameters: rapp parameter rules for this interaction
+        :returns: whether the incoming interaction specification matches the running rapp (used for filtering)
+        :rtype; bool
+        '''
+        # todo : expand on this to check for exact same signature across name, remappings and parameters
         try:
-            return self._running_rapp['name'] == rapp_name
-        except AttributeError:  # i.e. it is None
+            if self._running_rapp['name'] == rapp_name:
+                return True
+        except TypeError:  # NoneType
             return False
+        return False
 
     def is_available_rapp(self, rapp_name):
         return True if rapp_name in self._available_rapps().keys() else False
@@ -183,11 +196,15 @@ class RappHandler(object):
         Update the current status of the rapp manager
         @param rocon_app_manager_msgs/Status msg: detailed report of the rapp manager's current state
         """
+        state_changed = False
+        stopped = False
         if msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_RUNNING:
             # FIXME : This should probably be done internally in the app_manager
             # => A we only need the published interface from a running app, without caring about the original specification
             # => Is this statement always true ?
             running_rapp = rapp_msg_to_dict(msg.rapp)
+            if self._running_rapp is None or self._running_rapp['name'] != running_rapp['name']:
+                state_changed = True
 #             for pubif_idx, pubif in enumerate(running_rapp['public_interface']):
 #                 newvals = ast.literal_eval(pubif.value)
 #                 for msgif in msg.published_interfaces:
@@ -214,4 +231,7 @@ class RappHandler(object):
             was_running = self._running_rapp is not None
             self._running_rapp = None
             if was_running:
-                self.status_callback()  # let the higher level disable pairing mode via this
+                state_changed = True
+                stopped = True  # signal the higher level disable pairing mode via this
+        if state_changed:
+            self.rapp_running_state_changed_callback(stopped)

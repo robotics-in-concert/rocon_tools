@@ -31,6 +31,7 @@ import rocon_interaction_msgs.msg as interaction_msgs
 import rocon_interaction_msgs.srv as interaction_srvs
 import rocon_uri
 import socket
+import std_msgs.msg as std_msgs
 
 from .remocon_monitor import RemoconMonitor
 from .interactions_table import InteractionsTable
@@ -72,7 +73,7 @@ class InteractionsManager(object):
         self._publishers = self._setup_publishers()  # important to come early, so we can publish is_pairing below
         self._rapp_handler = None
         if self._parameters['pairing'] or self._parameters['rapp_manager']:
-            self._rapp_handler = RappHandler(self._rapp_manager_status_update_callback, self._rapp_manager_rapp_running_callback)
+            self._rapp_handler = RappHandler(self._rapp_running_state_changed_callback)
         if self._parameters['pairing']:
             self._pair = interaction_msgs.Pair()
             self._publishers['pairing'].publish(self._pair)
@@ -157,25 +158,21 @@ class InteractionsManager(object):
                             rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
         self._ros_publish_interactive_clients()
 
-    def _rapp_manager_status_update_callback(self):
+    def _rapp_running_state_changed_callback(self, stopped=False):
         """
-        Called if the rapp manager has a rapp that is stopping - an indication that we need to
-        stop a pairing interaction if one is running.
-        """
-        self._pair.rapp = ""
-        self._publishers['pairing'].publish(self._pair)
+        Called if a rapp starts/stops and is used to signal (to remocons et.al.) that
+        the interaction list changed. It also republishes the pairing state.
 
-    def _rapp_manager_rapp_running_callback(self, rapp_status, rapp):
+        :param stopped:
         """
-        Called if a rapp starts/stops to trigger the signaling that interaction list changed.
-        :param rapp_status:
-        :param rapp:
-        :return:
-        """
-        update = interaction_msgs.InteractionsUpdate()
-        update.update = True
+        # interactions publisher update
+        self._publishers['interactions_update'].publish(std_msgs.Empty())
+
         # TODO : we should check here if the Rapp is a requirement for any of the interactions...
-        self._publishers['interactions_update'].publish(update)
+
+        if stopped:
+            self._pair.rapp = ""
+            self._publishers['pairing'].publish(self._pair)
 
     def _setup_publishers(self):
         """
@@ -196,9 +193,10 @@ class InteractionsManager(object):
                                                     )
 
         publishers['interactions_update'] = rospy.Publisher('~interactions_update',
-                                                           interaction_msgs.InteractionsUpdate,
-                                                           latch=False,
-                                                           queue_size=1)
+                                                            std_msgs.Empty,
+                                                            latch=False,
+                                                            queue_size=1
+                                                            )
         return publishers
 
     def _setup_services(self):
@@ -299,14 +297,32 @@ class InteractionsManager(object):
             rapp_list = self._rapp_handler.list()
             print rapp_list
 
+        # a further filter - check if it's a paired rapp that needs the rapp already running
         for i in filtered_interactions:
-            log_message_prefix = "checking requirements for %s : %s" % (i.name, i.required)
-            if not len(i.required.rapp) > 0 or self._rapp_handler.is_running_rapp(i.required.rapp):
+            if self._running_requirements_are_satisfied(i):
                 response.interactions.append(i.msg)
-                rospy.logdebug("Interactions : %s ==> ok" % log_message_prefix)
-            else:
-                rospy.logwarn("Interactions : %s ==> failed" % log_message_prefix)
         return response
+
+    def _running_requirements_are_satisfied(self, interaction):
+        """
+        Right now we only have a single running requirement. If the interaction is a pairing interaction
+        check that the required running rapp is running (if it doesn't control the rapp lifecycle) or
+        that another rapp is not running (if it does control the rapp lifecycle). This is used when we filter
+        the list to provide to the user as well as when we are requested to start an interaction.
+
+        :param rocon_interaction_msgs.Interaction interaction: full info on the interaction we are checking
+        """
+        if interaction.pairing.rapp:
+            if interaction.pairing.control_rapp_lifecycle:
+                if self._rapp_handler.is_running:
+                    if not self._rapp_handler.is_running_rapp(interaction.pairing.rapp, interaction.pairing.remappings, interaction.pairing.parameters):
+                        rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [pairing dependency different to currently running rapp]" % interaction.display_name)
+                        return False
+            else:
+                if not self._rapp_handler.is_running_rapp(interaction.pairing.rapp, interaction.pairing.remappings, interaction.pairing.parameters):
+                    rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [weak pairing dependency different to currently running rapp]" % interaction.display_name)
+                    return False
+        return True
 
     def _ros_service_get_roles(self, request):
         uri = request.uri if request.uri != '' else 'rocon:/'
@@ -338,9 +354,10 @@ class InteractionsManager(object):
                 rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:
                 rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" % (i.display_name,
-                                                                             i.name,
-                                                                             i.role,
-                                                                             i.namespace))
+                                                                               i.name,
+                                                                               i.role,
+                                                                               i.namespace)
+                              )
         else:
             removed_interactions = self._interactions_table.unload(request.interactions)
             for i in removed_interactions:
@@ -363,7 +380,7 @@ class InteractionsManager(object):
                     # Todo this is a weak check as it is not necessarily uniquely identifying the interaction
                     # Todo - reintegrate this using full interaction variable instead
                     pass
-                    #if remocon_monitor.status.app_name == request.application:
+                    # if remocon_monitor.status.app_name == request.application:
                     #    count += 1
             if count > interaction.max:
                 rospy.loginfo("Interactions : rejected interaction request [interaction quota exceeded]")
@@ -383,10 +400,9 @@ class InteractionsManager(object):
                     response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
                     return response
-        if len(interaction.required.rapp)>0:
-            if not self._rapp_handler.is_running_rapp(interaction.required.rapp):
-                rospy.logwarn('==> REQUIREMENT FOR INTERACTION NOT SATISFIED !')
-                return _request_interaction_response(interaction_msgs.ErrorCodes.MSG_INTERACTION_REQUIREMENT_FAILED)
+        if not self._running_requirements_are_satisfied(interaction):
+            rospy.logwarn("Interactions : request interaction for '%s' refused [runtime requirements not met]" % interaction.display_name)
+            return _request_interaction_response(interaction_msgs.ErrorCodes.MSG_INTERACTION_RUNTIME_REQUIREMENTS_FAILED)
 
         # if we get here, we've succeeded.
         return _request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)

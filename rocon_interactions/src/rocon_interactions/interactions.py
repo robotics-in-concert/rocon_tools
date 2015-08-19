@@ -227,13 +227,6 @@ class Interaction(object):
         return self.msg.max
 
     @property
-    def required(self):
-        """
-        Rapp that must be running before starting this interaction [string]
-        """
-        return self.msg.required
-
-    @property
     def remappings(self):
         return self.msg.remappings
 
@@ -286,10 +279,9 @@ class Interaction(object):
         if self.msg.parameters != '':
             s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
-        if self.msg.required.rapp:
-            s += console.cyan + "  Required Rapp" + console.reset + ": " + console.yellow + "%s" % self.msg.required.rapp + console.reset + '\n'  # noqa
         if self.msg.pairing.rapp:
             s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
+            s += console.cyan + "    Control" + console.reset + "    : " + console.yellow + "%s" % ('y' if self.msg.pairing.control_rapp_lifecycle else 'n') + console.reset + '\n'  # noqa
             already_prefixed = False
             for remapping in self.msg.pairing.remappings:
                 if not already_prefixed:

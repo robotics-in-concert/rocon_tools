@@ -22,7 +22,16 @@ import rocon_python_comms
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Prettifies rocon interactions information.')
+    parser = argparse.ArgumentParser(description="\
+        Prettifies the rocon interactions list.:\n\n\
+  1. By default, shows all loaded interactions\n\
+  2. Use args to filter the returned list",
+        epilog="Refer to http://www.ros.org/wiki/rocon_interactions for details.",  #@IgnorePep8
+        formatter_class=argparse.RawTextHelpFormatter                               #@IgnorePep8
+                                     )
+    parser.add_argument('-u', '--rocon-uri', action='store', default=rocon_uri.default_uri_string, help="filter by rocon_uri")
+    parser.add_argument('-r', '--role', action='store', default='', help="filter by role")
+    parser.add_argument('-p', '--runtime-pairing-requirements', default=False, action='store_true', help="filter by runtime pairing requirements")
     args = parser.parse_args()
     return args
 
@@ -43,7 +52,9 @@ if __name__ == '__main__':
               str(e) + console.reset)
         sys.exit(1)
     get_interactions = rospy.ServiceProxy(service_name, interaction_srvs.GetInteractions)
-    request = interaction_srvs.GetInteractionsRequest(roles=[], uri=rocon_uri.default_uri_string)
+    print("%s" % args.role)
+    roles = [args.role] if args.role else []
+    request = interaction_srvs.GetInteractionsRequest(roles=roles, uri=args.rocon_uri, runtime_pairing_requirements=args.runtime_pairing_requirements)
     response = get_interactions(request)
     interactions_table = rocon_interactions.InteractionsTable()
     interactions_table.load(response.interactions)

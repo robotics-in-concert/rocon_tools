@@ -82,7 +82,8 @@ class RappHandler(object):
         """
         self._running_rapp = None
         self._available_rapps = {}
-        self.subscribers = rocon_python_comms.utils.Publishers(
+        self.status_callback = status_callback
+        self.subscribers = rocon_python_comms.utils.Subscribers(
             [
                 ('~status', rocon_app_manager_msgs.Status, self._status_subscriber_callback),
             ]
@@ -164,20 +165,18 @@ class RappHandler(object):
         """
         Loops around (indefinitely) until it makes a connection with the rapp manager and retrieves the rapp list.
         """
-        rate = rospy.Rate(1)  # hz
         # get the rapp list - just loop around until catch it once - it is not dynamically changing
         while not rospy.is_shutdown():
             # msg is rocon_app_manager_msgs/RappList
-            msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)(rospy.Duration(0.1))
+            msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)(rospy.Duration(3.0))
             if msg is None:
                 rospy.logwarn("Interactions : unable to connect with the rocon app manager (wrong remappings?).")
-                try:
-                    rate.sleep()
-                except rospy.exceptions.ROSInterruptException:
-                    continue  # ros is shutting down, catch it on the next loop
             else:
                 self._available_rapps = rapp_list_msg_to_dict(msg.available_rapps)
-                return
+                rospy.loginfo("Interactions : discovered rapp support for pairing modes:")
+                for rapp in msg.available_rapps:
+                    rospy.loginfo("Interactions :     '%s'" % rapp.name)
+                break
 
     def _status_subscriber_callback(self, msg):
         """
@@ -212,19 +211,7 @@ class RappHandler(object):
             self._running_rapp = running_rapp
             # rospy.loginfo('Interactions : new public if : %r', self._running_rapp['public_interface'])
         elif msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_STOPPED:
+            was_running = self._running_rapp is not None
             self._running_rapp = None
-
-    def _running_rapp_status_change(self, namespace, rapp_status, rapp):
-        self.rapp_running_callback(rapp_status, rapp)
-
-    def _ros_status_subscriber(self, msg):
-        """
-        Relay a notification to the status callback function if we detect that a rapp has
-        stopped on the rapp manager. This is to let the higher level disable pairing mode if
-        it is the rapp manager's rapp naturally terminating rather than the user terminating
-        from the user's side.
-        """
-        old_running_status = self.is_running
-        self.is_running = (msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_RUNNING)
-        if old_running_status and msg.rapp_status == rocon_app_manager_msgs.Status.RAPP_STOPPED:
-            self.status_callback()  # let the higher level disable pairing mode via this
+            if was_running:
+                self.status_callback()  # let the higher level disable pairing mode via this

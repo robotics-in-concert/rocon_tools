@@ -82,7 +82,7 @@ class RappHandler(object):
         """
         self._running_rapp = None
         self._available_rapps = {}
-        self.subscribers = rocon_python_comms.utils.Publishers(
+        self.subscribers = rocon_python_comms.utils.Subscribers(
             [
                 ('~status', rocon_app_manager_msgs.Status, self._status_subscriber_callback),
             ]
@@ -168,9 +168,10 @@ class RappHandler(object):
         # get the rapp list - just loop around until catch it once - it is not dynamically changing
         while not rospy.is_shutdown():
             # msg is rocon_app_manager_msgs/RappList
-            msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)(rospy.Duration(0.1))
+            msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)()
             if msg is None:
-                rospy.logwarn("Interactions : unable to connect with the rocon app manager (wrong remappings?).")
+                rapp_list_subname = rospy.resolve_name('~rapp_list')
+                rospy.logwarn("Interactions : unable to connect with the rocon app manager : {0} not found.".format(rapp_list_subname))
                 try:
                     rate.sleep()
                 except rospy.exceptions.ROSInterruptException:

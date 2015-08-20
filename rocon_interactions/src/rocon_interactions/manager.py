@@ -21,24 +21,26 @@ managing the ros api that manipulates interactions.
 # Imports
 ##############################################################################
 
-import re
 import uuid
 
 import rospy
 import rosgraph
 import unique_id
+import rocon_console.console as console
 import rocon_interaction_msgs.msg as interaction_msgs
 import rocon_interaction_msgs.srv as interaction_srvs
+import rocon_python_comms
 import rocon_uri
 import socket
 import std_msgs.msg as std_msgs
 
-from .remocon_monitor import RemoconMonitor
+from .exceptions import RappNotRunningError, FailedToStartRappError, FailedToStopRappError
 from .interactions_table import InteractionsTable
-from . import interactions
-from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
-from .rapp_handler import RappHandler, FailedToStartRappError, FailedToStopRappError
-
+from .pairings import RuntimePairingSignature
+from .rapp_handler import RappHandler
+from .remocon_monitor import RemoconMonitor
+from .ros_parameters import Parameters
+from . import utils
 
 ##############################################################################
 # Interactions
@@ -50,54 +52,57 @@ class InteractionsManager(object):
       Manages connectivity information provided by services and provides this
       for human interactive (aka remocon) connections.
     '''
-    __slots__ = [
+    __slots__ = [  # todo - shift these slots to sphinx ivar, vartype docs
+        'parameters',
+        'publishers',
+        'services',
         '_interactions_table',  # Dictionary of string : interaction_msgs.RemoconApp[]
-        '_parameters',
         '_rapp_handler',        # Interface for handling interactions-rapps pairing
-        '_publishers',
-        '_services',
         'spin',
-        '_pair',                # interaction_msgs/Pair showing rapp and remocon that are pairing
         '_watch_loop_period',
-        '_remocon_monitors'    # list of currently connected remocons.
+        '_remocon_monitors',    # list of currently connected remocons.
+        'runtime_pairing_signatures'
     ]
 
     ##########################################################################
-    # Initialisation
+    # Initialisation & Execution
     ##########################################################################
 
     def __init__(self):
         self._watch_loop_period = 1.0
-        self._remocon_monitors = {}                 # topic_name : RemoconMonitor
-        self._parameters = self._setup_parameters()  # important to come first since we use self._parameters['pairing'] everywhere
-        self._publishers = self._setup_publishers()  # important to come early, so we can publish is_pairing below
-        self._rapp_handler = None
-        if self._parameters['pairing'] or self._parameters['rapp_manager']:
-            self._rapp_handler = RappHandler(self._rapp_running_state_changed_callback)
-        if self._parameters['pairing']:
-            self._pair = interaction_msgs.Pair()
-            self._publishers['pairing'].publish(self._pair)
-        self._interactions_table = InteractionsTable(filter_pairing_interactions=not self._parameters['pairing'])
-        self._services = self._setup_services()
+        self._remocon_monitors = {}                  # topic_name : RemoconMonitor
+        self.parameters = Parameters()              # important to come first since we use self.parameters.pairing everywhere
 
-        # Load pre-configured interactions
-        for resource_name in self._parameters['interactions']:
-            try:
-                msg_interactions = interactions.load_msgs_from_yaml_resource(resource_name)
-                msg_interactions = self._bind_dynamic_symbols(msg_interactions)
-                (new_interactions, invalid_interactions) = self._interactions_table.load(msg_interactions)
-                for i in new_interactions:
-                    rospy.loginfo("Interactions : loading %s [%s-%s-%s]" %
-                                  (i.display_name, i.name, i.role, i.namespace))
-                for i in invalid_interactions:
-                    rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" %
-                                  (i.display_name, i.name, i.role, i.namespace))
-            except YamlResourceNotFoundException as e:
-                rospy.logerr("Interactions : failed to load resource %s [%s]" %
-                             (resource_name, str(e)))
-            except MalformedInteractionsYaml as e:
-                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" %
-                             (resource_name, str(e)))
+        # ros communications
+        self.services = rocon_python_comms.utils.Services(
+            [
+                ('~get_roles', interaction_srvs.GetRoles, self._ros_service_get_roles),
+                ('~get_interaction', interaction_srvs.GetInteraction, self._ros_service_get_interaction),
+                ('~get_interactions', interaction_srvs.GetInteractions, self._ros_service_get_interactions),
+                ('~set_interactions', interaction_srvs.SetInteractions, self._ros_service_set_interactions),
+                ('~request_interaction', interaction_srvs.RequestInteraction, self._ros_service_request_interaction)
+            ]
+        )
+        latched = True
+        queue_size_five = 5
+        self.publishers = rocon_python_comms.utils.Publishers(
+            [
+                ('~parameters', std_msgs.String, latched, queue_size_five),
+                ('~interactive_clients', interaction_msgs.InteractiveClients, latched, queue_size_five),
+                ('~pairing_events', std_msgs.Bool, not latched, queue_size_five),
+                ('~pairings', std_msgs.String, latched, queue_size_five)  # for debugging, show all pairings
+            ]
+        )
+        # small pause (convenience only) to let connections to come up
+        rospy.rostime.wallsleep(0.5)
+        self.publishers.parameters.publish(std_msgs.String("%s" % self.parameters))
+
+        self._rapp_handler = RappHandler(self._rapp_changed_state_callback) if self.parameters.pairing else None
+        self._interactions_table = InteractionsTable(filter_pairing_interactions=not self.parameters.pairing)
+        self._interactions_table.load_from_resources(self.parameters.interactions)
+
+        self.runtime_pairing_signatures = []
+        self._ros_publish_pairings()
 
     def spin(self):
         '''
@@ -136,103 +141,51 @@ class InteractionsManager(object):
                 rospy.logerr("Interactions : socket error trying to retrieve information from the local master.")
             rospy.rostime.wallsleep(self._watch_loop_period)
 
-    def _remocon_status_update_callback(self, new_interactions, finished_interactions):
+    ##########################################################################
+    # Callbacks
+    ##########################################################################
+
+    def _remocon_status_update_callback(self, remocon_unique_name, new_interactions, finished_interactions):
         """
         Called whenever there is a status update on a remocon signifying when an interaction has been started
         or finished. This gets triggered by the RemoconMonitor instances.
 
-        :param new_interactions int32[]: list of hashes for newly started interactions on this remocon.
-        :param lost_interactions int32[]: list of hashes for newly started interactions on this remocon.
+        :param str remocon_unique_name: unique identifier for this remocon
+        :param int32[] new_interactions: list of hashes for newly started interactions on this remocon.
+        :param int32[] lost_interactions: list of hashes for newly started interactions on this remocon.
         """
         # could also possibly use the remocon id here
-        if self._parameters['pairing']:
-            if self.is_pairing():
-                for interaction_hash in finished_interactions:
-                    interaction = self._interactions_table.find(interaction_hash)
-                    if interaction.is_paired_type():
-                        try:
-                            self._rapp_handler.stop()
-                            self._pair = interaction_msgs.Pair()
-                            self._publishers['pairing'].publish(self._pair)
-                        except FailedToStopRappError as e:
-                            rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
+        if self.parameters.pairing:
+            to_be_removed_signature = None
+            for signature in self.runtime_pairing_signatures:
+                if signature.interaction.hash in finished_interactions \
+                        and signature.remocon_name == remocon_unique_name:
+                    to_be_removed_signature = signature
+                    break
+            if to_be_removed_signature is not None:
+                self.runtime_pairing_signatures.remove(to_be_removed_signature)
+                self._ros_publish_pairings()
+                if not self.runtime_pairing_signatures:
+                    try:
+                        self._rapp_handler.stop()
+                    except FailedToStopRappError as e:
+                        rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
         self._ros_publish_interactive_clients()
 
-    def _rapp_running_state_changed_callback(self, stopped=False):
+    def _rapp_changed_state_callback(self, rapp, stopped=False):
         """
-        Called if a rapp starts/stops and is used to signal (to remocons et.al.) that
-        the interaction list changed. It also republishes the pairing state.
+        Called if a rapp toggles from start-stop or viceversa. If it's stopping, then
+        remocons should use this to drop their current interactions. And whether starting
+        or stopping, they should use this as a trigger to refresh their lists if they have
+        pairing interactions to consider.
 
+        :param rapp: the rapp (dict form - see :func:`.rapp_handler.rapp_msg_to_dict`) that started or stopped.
         :param stopped:
         """
-        # interactions publisher update
-        self._publishers['interactions_update'].publish(std_msgs.Empty())
-
-        # TODO : we should check here if the Rapp is a requirement for any of the interactions...
-
+        self.publishers.pairing_events.publish(std_msgs.Bool(not stopped))
         if stopped:
-            self._pair.rapp = ""
-            self._publishers['pairing'].publish(self._pair)
-
-    def _setup_publishers(self):
-        """
-          These are all public topics. Typically that will drop them into the /concert
-          namespace.
-        """
-        publishers = {}
-        publishers['interactive_clients'] = rospy.Publisher('~interactive_clients',
-                                                            interaction_msgs.InteractiveClients,
-                                                            latch=True,
-                                                            queue_size=5
-                                                            )
-        if self._parameters['pairing']:
-            publishers['pairing'] = rospy.Publisher('~pairing',
-                                                    interaction_msgs.Pair,
-                                                    latch=True,
-                                                    queue_size=5
-                                                    )
-
-        publishers['interactions_update'] = rospy.Publisher('~interactions_update',
-                                                            std_msgs.Empty,
-                                                            latch=False,
-                                                            queue_size=1
-                                                            )
-        return publishers
-
-    def _setup_services(self):
-        '''
-          These are all public services. Typically that will drop them into the /concert
-          namespace.
-        '''
-        services = {}
-        services['get_roles'] = rospy.Service('~get_roles',
-                                              interaction_srvs.GetRoles,
-                                              self._ros_service_get_roles)
-        services['get_interactions'] = rospy.Service('~get_interactions',
-                                                     interaction_srvs.GetInteractions,
-                                                     self._ros_service_get_interactions)
-        services['get_interaction'] = rospy.Service('~get_interaction',
-                                                    interaction_srvs.GetInteraction,
-                                                    self._ros_service_get_interaction)
-        services['set_interactions'] = rospy.Service('~set_interactions',
-                                                     interaction_srvs.SetInteractions,
-                                                     self._ros_service_set_interactions)
-        services['request_interaction'] = rospy.Service('~request_interaction',
-                                                        interaction_srvs.RequestInteraction,
-                                                        self._ros_service_request_interaction)
-        return services
-
-    def _setup_parameters(self):
-        param = {}
-        param['rosbridge_address'] = rospy.get_param('~rosbridge_address', "")
-        if param['rosbridge_address'] == "":
-            param['rosbridge_address'] = 'localhost'
-        param['rosbridge_port'] = rospy.get_param('~rosbridge_port', 9090)
-        param['webserver_address'] = rospy.get_param('~webserver_address', 'localhost')
-        param['interactions'] = rospy.get_param('~interactions', [])
-        param['rapp_manager'] = rospy.get_param('~rapp_manager', False)
-        param['pairing'] = rospy.get_param('~pairing', False)
-        return param
+            self.runtime_pairing_signatures = []
+            self._ros_publish_pairings()
 
     ##########################################################################
     # Ros Api Functions
@@ -254,11 +207,20 @@ class InteractionsManager(object):
                     interactive_clients.running_clients.append(interactive_client)
                 else:
                     interactive_clients.idle_clients.append(interactive_client)
-        self._publishers['interactive_clients'].publish(interactive_clients)
+        self.publishers.interactive_clients.publish(interactive_clients)
+
+    def _ros_publish_pairings(self):
+        """
+        For debugging purposes only we publish the currently running pairing interactions.
+        """
+        s = console.bold + "\nRuntime Pairings\n" + console.reset
+        for signature in self.runtime_pairing_signatures:
+            s += "  %s\n" % signature
+        self.publishers.pairings.publish(std_msgs.String("%s" % s))
 
     def _ros_service_get_interaction(self, request):
         '''
-          Handle incoming requests for a single app.
+          Handle incoming requests for a single interaction's details.
         '''
         response = interaction_srvs.GetInteractionResponse()
         interaction = self._interactions_table.find(request.hash)
@@ -315,24 +277,31 @@ class InteractionsManager(object):
 
     def _running_requirements_are_satisfied(self, interaction):
         """
-        Right now we only have a single running requirement. If the interaction is a pairing interaction
-        check that the required running rapp is running (if it doesn't control the rapp lifecycle) or
-        that another rapp is not running (if it does control the rapp lifecycle). This is used when we filter
-        the list to provide to the user as well as when we are requested to start an interaction.
+        Right now we only have running constraints for paired interactions.
 
-        :param rocon_interaction_msgs.Interaction interaction: full info on the interaction we are checking
+        - fail if a rapp is running with a different signature (remappings and parameters considered).
+        - fail is no rapp is running and this interaction doesn't control the rapp lifecycle
+
+        This is used when we filter the list to provide to the user as well as when we are requested
+        to start an interaction.
+
+        :param interaction: all the details on the interaction we are checking
+        :type interaction: rocon_interactions.interactions.Interaction
+        :return: true if satisfied, false otherwise
+        :rtype: bool
         """
+        satisfied = True
         if interaction.pairing.rapp:
-            if interaction.pairing.control_rapp_lifecycle:
-                if self._rapp_handler.is_running:
-                    if not self._rapp_handler.is_running_rapp(interaction.pairing.rapp, interaction.pairing.remappings, interaction.pairing.parameters):
-                        rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [pairing dependency different to currently running rapp]" % interaction.display_name)
-                        return False
-            else:
-                if not self._rapp_handler.is_running_rapp(interaction.pairing.rapp, interaction.pairing.remappings, interaction.pairing.parameters):
-                    rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [weak pairing dependency different to currently running rapp]" % interaction.display_name)
-                    return False
-        return True
+            try:
+                satisfied = self._rapp_handler.matches_running_rapp(interaction.pairing.rapp, interaction.pairing.remappings, interaction.pairing.parameters)
+                if not satisfied:
+                    rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [running rapp different to this interaction's pairing rapp signature]" % interaction.display_name)
+            except RappNotRunningError:
+                # only controlling interactions can move the rapp to start
+                satisfied = interaction.pairing.control_rapp_lifecycle
+                if not satisfied:
+                    rospy.logdebug("Interactions : '%s' failed to meet runtime requirements [rapp is not running and this pairing interaction is not the controlling type]" % interaction.display_name)
+        return satisfied
 
     def _ros_service_get_roles(self, request):
         uri = request.uri if request.uri != '' else 'rocon:/'
@@ -358,10 +327,9 @@ class InteractionsManager(object):
           @type concert_srvs.SetInteractionsRequest
         '''
         if request.load:
-            interactions = self._bind_dynamic_symbols(request.interactions)
-            (new_interactions, invalid_interactions) = self._interactions_table.load(interactions)
+            (new_interactions, invalid_interactions) = self._interactions_table.load(request.interactions)
             for i in new_interactions:
-                rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
+                rospy.loginfo("Interactions : loading '%s' [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:
                 rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" % (i.display_name,
                                                                                i.name,
@@ -382,7 +350,7 @@ class InteractionsManager(object):
         # for interaction in self._interactions_table.interactions:
         #     rospy.logwarn("Interactions:   [%s][%s][%s]" % (interaction.name, interaction.hash, interaction.max))
         if interaction is None:
-            return _request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE)
+            return utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE)
         if interaction.max != interaction_msgs.Interaction.UNLIMITED_INTERACTIONS:
             count = 0
             for remocon_monitor in self._remocon_monitors.values():
@@ -394,107 +362,27 @@ class InteractionsManager(object):
                     #    count += 1
             if count > interaction.max:
                 rospy.loginfo("Interactions : rejected interaction request [interaction quota exceeded]")
-                return _request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED)
-        if self._parameters['pairing']:
-            if interaction.is_paired_type():
-                # abort if already pairing
-                if self.is_pairing():
-                    rospy.loginfo("Interactions : rejected interaction request [already pairing]")
-                    return _request_interaction_response(interaction_msgs.ErrorCodes.ALREADY_PAIRING)
+                return utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED)
+        if self.parameters.pairing and interaction.is_paired_type():
+            if not self._running_requirements_are_satisfied(interaction):
+                if self._rapp_handler.is_running:
+                    response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.DIFFERENT_RAPP_IS_RUNNING)
+                else:
+                    response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.REQUIRED_RAPP_IS_NOT_RUNNING)
+                rospy.logwarn("Interactions : request interaction for '%s' refused [%s]" % (interaction.display_name, response.message))
+                return response
+            if not self._rapp_handler.is_running and interaction.pairing.control_rapp_lifecycle:
                 try:
                     self._rapp_handler.start(interaction.pairing.rapp, interaction.pairing.remappings)
-                    self._pair = interaction_msgs.Pair(rapp=interaction.pairing.rapp, remocon=request.remocon)
-                    self._publishers['pairing'].publish(self._pair)
                 except FailedToStartRappError as e:
                     rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")
-                    response = _request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
+                    response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response
                     return response
-        if not self._running_requirements_are_satisfied(interaction):
-            rospy.logwarn("Interactions : request interaction for '%s' refused [runtime requirements not met]" % interaction.display_name)
-            return _request_interaction_response(interaction_msgs.ErrorCodes.MSG_INTERACTION_RUNTIME_REQUIREMENTS_FAILED)
+            # else rapp is running and nothing to do from here, remocon has all the work to do!
+            # just list it in our pairs.
+            self.runtime_pairing_signatures.append(RuntimePairingSignature(interaction, request.remocon))
+            self._ros_publish_pairings()
 
         # if we get here, we've succeeded.
-        return _request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)
-
-    ##########################################################################
-    # Utility functions
-    ##########################################################################
-
-    def _bind_dynamic_symbols(self, interactions):
-        '''
-          Provide some intelligence to the interactions specification by binding designated
-          symbols at runtime.
-
-          - interaction.name - __WEBSERVER_ADDRESS__
-          - interaction.compatibility - __ROSDISTRO__ (depracated - use | in the compatibility variable itself)
-          - interaction.parameters - __ROSBRIDGE_ADDRESS__
-          - interaction.parameters - __ROSBRIDGE_PORT__
-
-          :param interaction: parse this interaction scanning and replacing symbols.
-          :type interaction: request_interactions_msgs.Interaction[]
-
-          :returns: the updated interaction list
-          :rtype: request_interactions_msgs.Interaction[]
-        '''
-
-        # Binding runtime CONSTANTS
-        for interaction in interactions:
-            interaction.name = interaction.name.replace('__WEBSERVER_ADDRESS__', self._parameters['webserver_address'])
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
-                                                                    self._parameters['rosbridge_address'])
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__',
-                                                                    str(self._parameters['rosbridge_port']))
-            #interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%',
-            #                                                              rocon_python_utils.ros.get_rosdistro())
-
-        # Binding ros param values
-        pattern = '\ __(.*?)__[,|\}]' # searchs for pattern '<space>__PARAMNAME__,'
-        for interaction in interactions:
-            for p in re.findall(pattern, interaction.parameters):
-                if p.startswith('/'):
-                    rparam = rospy.get_param(p)
-                elif p.startswith('~'):
-                    msg = '%s is invalid format for rosparam binding. See https://github.com/robotics-in-concert/rocon_tools/issues/81'%p
-                    raise MalformedInteractionsYaml(str(msg))
-                else:
-                    # See https://github.com/robotics-in-concert/rocon_tools/issues/81 for the rule
-                    ns = interaction.namespace
-                    if not ns:
-                        rparam = rospy.get_param('~'+p)
-                    else:
-                        rparam = rospy.get_param(ns+'/'+p)
-                match = '__' + p + '__'
-                interaction.parameters = interaction.parameters.replace(match, str(rparam))
-        return interactions
-
-    def is_pairing(self):
-        """
-        Whether this interactions manager is currently managing a pairing interaction
-        or not.
-
-        :returns: whether there is an active pairing or not
-        :rtype bool:
-        """
-        # just check if either string is non-empty
-        return self._pair.rapp or self._pair.remocon
-
-##############################################################################
-# Utility methods/factories
-##############################################################################
-
-request_interaction_error_messages = {
-                                interaction_msgs.ErrorCodes.SUCCESS: 'Success',
-                                interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE: interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE,
-                                interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED: interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED,
-                                interaction_msgs.ErrorCodes.ALREADY_PAIRING: interaction_msgs.ErrorCodes.MSG_START_PAIRED_RAPP_FAILED,
-                                interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED: interaction_msgs.ErrorCodes.MSG_START_PAIRED_RAPP_FAILED,
-                                }
-
-
-def _request_interaction_response(code):
-    response = interaction_srvs.RequestInteractionResponse()
-    response.error_code = code
-    response.message = request_interaction_error_messages[code]
-    response.result = True if code == interaction_msgs.ErrorCodes.SUCCESS else False
-    return response
+        return utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)

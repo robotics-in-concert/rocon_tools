@@ -22,11 +22,14 @@ some set of interactions.
 # Imports
 ##############################################################################
 
+import re
 import rocon_console.console as console
 import rocon_uri
+import rospy
 
 from . import interactions
-from .exceptions import InvalidInteraction
+from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResourceNotFoundException
+from .ros_parameters import Bindings
 
 ##############################################################################
 # Classes
@@ -39,22 +42,25 @@ class InteractionsTable(object):
       manipulate it.
 
       .. include:: weblinks.rst
-    '''
-    __slots__ = [
-        'interactions',  # rocon_interactions.interactions.Interaction[]
-        'filter_pairing_interactions'  # do not load any paired interactions
-    ]
 
-    def __init__(self, filter_pairing_interactions=False):
+      :ivar interactions: list of objects that form the elements of the table
+      :vartype interactions: rocon_interactions.interactions.Interaction[]
+      :ivar filter_pairing_interactions: flag for indicating whether pairing interactions should be filtered when loading.
+      :vartype filter_pairing_interactions: bool
+      :ivar bindings: special symbols that can be substituted into the interactions specification
+      :vartype rocon_interactions.ros_parameters.Bindings
+    '''
+    def __init__(self,
+                 filter_pairing_interactions=False
+                 ):
         """
         Constructs an empty interactions table.
 
         :param bool filter_pairing_interactions: do not load any paired interactions
         """
         self.interactions = []
-        """List of :class:`.Interaction` objects that will form the elements of the table."""
         self.filter_pairing_interactions = filter_pairing_interactions
-        """Flag for indicating whether pairing interactions should be filtered when loading."""
+        self.bindings = Bindings()
 
     def roles(self):
         '''
@@ -119,9 +125,32 @@ class InteractionsTable(object):
                                  if rocon_uri.is_compatible(i.compatibility, compatibility_uri)]
         return filtered_interactions
 
+    def load_from_resources(self, interactions_resource_list):
+        """
+        :param [str] interactiosn_resource_list: list of ros `resource names`_
+
+        .. _resource names: http://wiki.ros.org/Names#Package_Resource_Names
+        """
+        for resource_name in interactions_resource_list:
+            try:
+                msg_interactions = interactions.load_msgs_from_yaml_resource(resource_name)
+                (new_interactions, invalid_interactions) = self.load(msg_interactions)
+                for i in new_interactions:
+                    rospy.loginfo("Interactions : loading %s [%s-%s-%s]" %
+                                  (i.display_name, i.name, i.role, i.namespace))
+                for i in invalid_interactions:
+                    rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" %
+                                  (i.display_name, i.name, i.role, i.namespace))
+            except YamlResourceNotFoundException as e:
+                rospy.logerr("Interactions : failed to load resource %s [%s]" %
+                             (resource_name, str(e)))
+            except MalformedInteractionsYaml as e:
+                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" %
+                             (resource_name, str(e)))
+
     def load(self, msgs):
         '''
-          Load some interactions into the interaction table. This involves some initialisation
+          Load some interactions into the table. This involves some initialisation
           and validation steps.
 
           :param msgs: a list of interaction specifications to populate the table with.
@@ -129,6 +158,7 @@ class InteractionsTable(object):
           :returns: list of all additions and any that were flagged as invalid
           :rtype: (:class:`.Interaction` [], rocon_interaction_msgs.Interaction_ []) : (new, invalid)
         '''
+        msgs = self._bind_dynamic_symbols(msgs)
         new = []
         invalid = []
         for msg in msgs:
@@ -177,3 +207,51 @@ class InteractionsTable(object):
         interaction = next((interaction for interaction in self.interactions
                             if interaction.hash == interaction_hash), None)
         return interaction
+
+    def _bind_dynamic_symbols(self, interaction_msgs):
+        '''
+          Provide some intelligence to the interactions specification by binding designated
+          symbols at runtime.
+
+          - interaction.name - __WEBSERVER_ADDRESS__
+          - interaction.compatibility - __ROSDISTRO__ (depracated - use | in the compatibility variable itself)
+          - interaction.parameters - __ROSBRIDGE_ADDRESS__
+          - interaction.parameters - __ROSBRIDGE_PORT__
+
+          :param interaction_msgs: parse this interaction scanning and replacing symbols.
+          :type interaction_msgs: rocon_interactions_msgs.Interaction[]
+
+          :returns: the updated interaction list
+          :rtype: rocon_interactions_msgs.Interaction[]
+        '''
+
+        # Binding runtime CONSTANTS
+        for interaction in interaction_msgs:
+            interaction.name = interaction.name.replace('__WEBSERVER_ADDRESS__', self.bindings.webserver_address)
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
+                                                                    self.bindings.rosbridge_address)
+            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__',
+                                                                    str(self.bindings.rosbridge_port))
+            # interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%',
+            #                                                              rocon_python_utils.ros.get_rosdistro())
+
+        # search for patterns of the form '<space>__PARAMNAME__,'
+        # and if found, look to see if there is a rosparam matching that pattern that we can substitute
+        pattern = '\ __(.*?)__[,|\}]'
+        for interaction in interaction_msgs:
+            for p in re.findall(pattern, interaction.parameters):
+                if p.startswith('/'):
+                    rparam = rospy.get_param(p)
+                elif p.startswith('~'):
+                    msg = '%s is invalid format for rosparam binding. See https://github.com/robotics-in-concert/rocon_tools/issues/81' % p
+                    raise MalformedInteractionsYaml(str(msg))
+                else:
+                    # See https://github.com/robotics-in-concert/rocon_tools/issues/81 for the rule
+                    ns = interaction.namespace
+                    if not ns:
+                        rparam = rospy.get_param('~' + p)
+                    else:
+                        rparam = rospy.get_param(ns + '/' + p)
+                match = '__' + p + '__'
+                interaction.parameters = interaction.parameters.replace(match, str(rparam))
+        return interaction_msgs

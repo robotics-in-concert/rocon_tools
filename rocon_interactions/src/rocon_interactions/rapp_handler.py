@@ -26,12 +26,10 @@ import rocon_app_manager_msgs.msg as rocon_app_manager_msgs
 import rocon_app_manager_msgs.srv as rocon_app_manager_srvs
 import rocon_python_comms
 import threading
-from .exceptions import(
-                        FailedToStartRappError,
+from .exceptions import(FailedToStartRappError,
                         FailedToStopRappError,
-                        FailedToListRappsError,
+                        RappNotRunningError
                         )
-from .rapp_watcher import RappWatcher
 
 ##############################################################################
 # Utilities
@@ -39,6 +37,11 @@ from .rapp_watcher import RappWatcher
 
 
 def rapp_msg_to_dict(rapp):
+    """
+    Convert rapp message to a dictionary. This is not really necessary and
+    we'd be better off flinging around the actual msg or a wrapper around
+    the msg.
+    """
     dict_rapp = {}
     dict_rapp["status"] = rapp.status
     dict_rapp["name"] = rapp.name
@@ -114,22 +117,25 @@ class RappHandler(object):
     def running_rapp(self):
         return self._running_rapp
 
-    def is_running_rapp(self, rapp_name, remappings, parameters):
+    def matches_running_rapp(self, rapp_name, remappings, parameters):
         '''
         Compare the running rapp with an interaction's specification for a paired rapp.
+
+        .. todo:: currently it checks against the rapp name only, expand this to consider remappings and parameters
 
         :param str rapp_name: ros package resource name for this interaction's rapp rapp
         :param rocon_std_msgs/Remapping[] remappings: rapp remapping rules for this interaction
         :param rocon_std_msgs/KeyValue[] parameters: rapp parameter rules for this interaction
         :returns: whether the incoming interaction specification matches the running rapp (used for filtering)
         :rtype; bool
+
+        :raises: :exc:`rocon_interactions.exceptions.RappNotRunningError` if the rapp wasn't running
         '''
-        # todo : expand on this to check for exact same signature across name, remappings and parameters
         try:
             if self._running_rapp['name'] == rapp_name:
                 return True
         except TypeError:  # NoneType
-            return False
+            raise RappNotRunningError
         return False
 
     def is_available_rapp(self, rapp_name):
@@ -234,4 +240,4 @@ class RappHandler(object):
                 state_changed = True
                 stopped = True  # signal the higher level disable pairing mode via this
         if state_changed:
-            self.rapp_running_state_changed_callback(stopped)
+            self.rapp_running_state_changed_callback(self._running_rapp, stopped)

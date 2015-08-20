@@ -37,7 +37,7 @@
         remap_to: /conversation/chatter
 
 # An interaction which is only triggered by the remocon side.
-- name: 
+- name:
   role: Pairing
   compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Chirp

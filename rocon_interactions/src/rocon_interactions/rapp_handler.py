@@ -189,7 +189,8 @@ class RappHandler(object):
             # msg is rocon_app_manager_msgs/RappList
             msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)(rospy.Duration(3.0))
             if msg is None:
-                rospy.logwarn("Interactions : unable to connect with the rocon app manager (wrong remappings?).")
+                rapp_list_subname = rospy.resolve_name('~rapp_list')
+                rospy.logwarn("Interactions : unable to connect with the rocon app manager : {0} not found.".format(rapp_list_subname))
             else:
                 self._available_rapps = rapp_list_msg_to_dict(msg.available_rapps)
                 rospy.loginfo("Interactions : discovered rapp support for pairing modes:")

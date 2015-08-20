@@ -59,9 +59,6 @@ class SubscriberProxy():
         '''
         :param str topic: the topic name to subscriber to
         :param str msg_type: any ros message type (e.g. std_msgs/String)
-        :param rospy.Duration timeout: timeout on the wait operation (None = /infty)
-        :returns: msg type data or None
-        :rtype: same as the msg type specified in the arg or None
         '''
         self._subscriber = rospy.Subscriber(topic, msg_type, self._callback)
         self._data = None
@@ -71,15 +68,17 @@ class SubscriberProxy():
           Returns immediately with the latest data or blocks indefinitely until
           the next data arrives.
 
-          :param rospy.Duration timeout: time to wait for data, polling at 10Hz.
-          :returns: latest data or None
+        :param rospy.Duration timeout: time to wait for data, polling at 10Hz (None = /infty)
+        :returns: msg type data or None
+        :rtype: same as the msg type specified in the arg or None
+        :returns: latest data or None
         '''
-        if timeout:
+        if timeout is not None:
             # everything in floating point calculations
             timeout_time = time.time() + timeout.to_sec()
-        while not rospy.is_shutdown() and self._data == None:
+        while not rospy.is_shutdown() and self._data is None:
             rospy.rostime.wallsleep(0.1)
-            if timeout:
+            if timeout is not None:
                 if time.time() > timeout_time:
                     return None
         return self._data

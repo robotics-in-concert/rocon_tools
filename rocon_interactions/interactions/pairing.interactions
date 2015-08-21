@@ -7,7 +7,7 @@
   role: Pairing
   compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Paired Qt Listener
-  description: A pyqt listener for testing pairing.
+  description: A pyqt listener for testing two-sided pairing.
   max: -1
   remappings:
     - remap_from: chatter
@@ -24,7 +24,7 @@
   role: Pairing
   compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Conditionally Paired Qt Listener
-  description: A pyqt listener for working with talker rapps, but only if they happen to be running.
+  description: A pyqt listener paired with a talker, but only if talker is already running.
   max: -1
   remappings:
     - remap_from: chatter
@@ -36,15 +36,26 @@
       - remap_from: chatter
         remap_to: /conversation/chatter
 
-# An interaction which is only triggered by the remocon side.
+# A temporary one sided interaction
 - name:
   role: Pairing
   compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
   display_name: Chirp
-  description: A very strange moo sound.....
+  description: A very strange moo sound...temporary one sided pair that shuts itself down
   max: -1
   pairing:
     rapp: rocon_apps/chirp
+    control_rapp_lifecycle: true
+
+# A continuously running one sided interaction
+- name:
+  role: Pairing
+  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+  display_name: Lonely Talker
+  description: A one-sided pair that starts the robot talking to itself.
+  max: -1
+  pairing:
+    rapp: rocon_apps/talker
     control_rapp_lifecycle: true
 
 # A non-pairing rapp for comparison    

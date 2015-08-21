@@ -42,7 +42,7 @@ def publish_resolved_names(publisher, ros_communication_handles):
 
 
 class Services(object):
-    def __init__(self, services, introspection_topic_name="~services"):
+    def __init__(self, services, introspection_topic_name="services"):
         """
         Converts the incoming list of service name, service type, callback function triples into proper variables of this class.
 
@@ -51,13 +51,13 @@ class Services(object):
         :param str introspection_topic_name: where to put the introspection topic that shows the resolved names at runtime
         """
         self.__dict__ = {namespace.basename(service_name): rospy.Service(service_name, service_type, callback) for (service_name, service_type, callback) in services}
-        publisher = rospy.Publisher(introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
+        publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
 
 
 class ServiceProxies(object):
-    def __init__(self, service_proxies, introspection_topic_name="~service_proxies"):
+    def __init__(self, service_proxies, introspection_topic_name="service_proxies"):
         """
         Converts the incoming list of service name, service type pairs into proper variables of this class.
 
@@ -65,13 +65,13 @@ class ServiceProxies(object):
         :type services: list of (str, str) tuples representing (service_name, service_type) pairs.
         """
         self.__dict__ = {namespace.basename(service_name): rospy.ServiceProxy(service_name, service_type) for (service_name, service_type) in service_proxies}
-        publisher = rospy.Publisher(introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
+        publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
 
 
 class Publishers(object):
-    def __init__(self, publishers, introspection_topic_name="~publishers"):
+    def __init__(self, publishers, introspection_topic_name="publishers"):
         """
         Converts the incoming list of publisher name, type, latched, queue_size specifications into proper variables of this class.
 
@@ -79,13 +79,13 @@ class Publishers(object):
         :type publishers: list of (str, str, bool, int) tuples representing (topic_name, publisher_type, latched, queue_size) specifications.
         """
         self.__dict__ = {namespace.basename(topic_name): rospy.Publisher(topic_name, publisher_type, latch=latched, queue_size=queue_size) for (topic_name, publisher_type, latched, queue_size) in publishers}
-        publisher = rospy.Publisher(introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
+        publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
 
 
 class Subscribers(object):
-    def __init__(self, subscribers, introspection_topic_name="~subscribers"):
+    def __init__(self, subscribers, introspection_topic_name="subscribers"):
         """
         Converts the incoming list of publisher name, service type pairs into proper variables of this class.
 
@@ -93,7 +93,7 @@ class Subscribers(object):
         :type subscribers: list of (str, str, bool, int) tuples representing (topic_name, subscriber_type, latched, queue_size) specifications.
         """
         self.__dict__ = {namespace.basename(topic_name): rospy.Subscriber(topic_name, subscriber_type, callback) for (topic_name, subscriber_type, callback) in subscribers}
-        publisher = rospy.Publisher(introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
+        publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
 

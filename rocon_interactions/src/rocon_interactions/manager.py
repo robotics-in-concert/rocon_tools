@@ -89,8 +89,8 @@ class InteractionsManager(object):
             [
                 ('~parameters', std_msgs.String, latched, queue_size_five),
                 ('~interactive_clients', interaction_msgs.InteractiveClients, latched, queue_size_five),
-                ('~pairing_events', std_msgs.Bool, not latched, queue_size_five),
-                ('~pairings', std_msgs.String, latched, queue_size_five)  # for debugging, show all pairings
+                ('~pairing_status', interaction_msgs.PairingStatus, latched, queue_size_five),
+                ('~introspection/pairings', std_msgs.String, latched, queue_size_five)  # for debugging, show all pairings
             ]
         )
         # small pause (convenience only) to let connections to come up
@@ -182,7 +182,17 @@ class InteractionsManager(object):
         :param rapp: the rapp (dict form - see :func:`.rapp_handler.rapp_msg_to_dict`) that started or stopped.
         :param stopped:
         """
-        self.publishers.pairing_events.publish(std_msgs.Bool(not stopped))
+        msg = interaction_msgs.PairingStatus()
+        msg.is_managing_paired_interactions = not stopped
+        if stopped:
+            msg.is_managing_one_sided_interaction = False
+        else:
+            for signature in self.runtime_pairing_signatures:
+                if signature.interaction.is_one_sided_paired_type():
+                    msg.is_managing_one_sided_interaction = True
+                    msg.active_one_sided_interaction = signature.interaction.hash
+                    break
+        self.publishers.pairing_status.publish(msg)
         if stopped:
             self.runtime_pairing_signatures = []
             self._ros_publish_pairings()

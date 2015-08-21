@@ -186,6 +186,17 @@ class Interaction(object):
         """
         return True if self.msg.pairing.rapp else False
 
+    def is_one_sided_paired_type(self):
+        """
+        Classify whether this interaction is a one sided pairing,
+        i.e. it is simply a rapp launcher.
+
+        :returns: whether it is a one sided pairing interaction or not
+        :rtype: bool
+        """
+        return True if self.msg.pairing.rapp and not self.name else False
+
+
     ##############################################################################
     # Conveniences
     ##############################################################################

@@ -81,19 +81,20 @@ def test_web_urls():
     print("%s" % interactions_table)
     assert 'Web URLs' in interactions_table.roles()
 
-def test_web_apps():
-    print(console.bold + "\n****************************************************************************************" + console.reset)
-    print(console.bold + "* Web App Interactions" + console.reset)
-    print(console.bold + "****************************************************************************************" + console.reset)
-    print("")
+# This needs to move to a rostest to make use of the ros param server to do dynamic bindings
+# def test_web_apps():
+#     print(console.bold + "\n****************************************************************************************" + console.reset)
+#     print(console.bold + "* Web App Interactions" + console.reset)
+#     print(console.bold + "****************************************************************************************" + console.reset)
+#     print("")
+# 
+#     interactions_table = rocon_interactions.InteractionsTable()
+#     msg_interactions = load_interactions('rocon_interactions/web_apps')
+#     assert msg_interactions is not None, 'malformed yaml [rocon_interactions/web_apps]'
+#     interactions_table.load(msg_interactions)
+#     print("%s" % interactions_table)
+#     assert 'Web Apps' in interactions_table.roles()
 
-    interactions_table = rocon_interactions.InteractionsTable()
-    msg_interactions = load_interactions('rocon_interactions/web_apps')
-    assert msg_interactions is not None, 'malformed yaml [rocon_interactions/web_apps]'
-    interactions_table.load(msg_interactions)
-    print("%s" % interactions_table)
-    assert 'Web Apps' in interactions_table.roles()
-  
 def test_removal():
     print(console.bold + "\n****************************************************************************************" + console.reset)
     print(console.bold + "* Removal" + console.reset)

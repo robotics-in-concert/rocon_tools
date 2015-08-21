@@ -29,7 +29,6 @@ import rospy
 
 from . import interactions
 from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResourceNotFoundException
-from .ros_parameters import Bindings
 
 ##############################################################################
 # Classes
@@ -47,8 +46,6 @@ class InteractionsTable(object):
       :vartype interactions: rocon_interactions.interactions.Interaction[]
       :ivar filter_pairing_interactions: flag for indicating whether pairing interactions should be filtered when loading.
       :vartype filter_pairing_interactions: bool
-      :ivar bindings: special symbols that can be substituted into the interactions specification
-      :vartype rocon_interactions.ros_parameters.Bindings
     '''
     def __init__(self,
                  filter_pairing_interactions=False
@@ -60,7 +57,6 @@ class InteractionsTable(object):
         """
         self.interactions = []
         self.filter_pairing_interactions = filter_pairing_interactions
-        self.bindings = Bindings()
 
     def roles(self):
         '''
@@ -211,10 +207,9 @@ class InteractionsTable(object):
     def _bind_dynamic_symbols(self, interaction_msgs):
         '''
           Provide some intelligence to the interactions specification by binding designated
-          symbols at runtime.
+          symbols at runtime. Commonly used bindings and their usage points include:
 
           - interaction.name - __WEBSERVER_ADDRESS__
-          - interaction.compatibility - __ROSDISTRO__ (depracated - use | in the compatibility variable itself)
           - interaction.parameters - __ROSBRIDGE_ADDRESS__
           - interaction.parameters - __ROSBRIDGE_PORT__
 
@@ -224,34 +219,34 @@ class InteractionsTable(object):
           :returns: the updated interaction list
           :rtype: rocon_interactions_msgs.Interaction[]
         '''
-
-        # Binding runtime CONSTANTS
-        for interaction in interaction_msgs:
-            interaction.name = interaction.name.replace('__WEBSERVER_ADDRESS__', self.bindings.webserver_address)
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_ADDRESS__',
-                                                                    self.bindings.rosbridge_address)
-            interaction.parameters = interaction.parameters.replace('__ROSBRIDGE_PORT__',
-                                                                    str(self.bindings.rosbridge_port))
-            # interaction.compatibility = interaction.compatibility.replace('%ROSDISTRO%',
-            #                                                              rocon_python_utils.ros.get_rosdistro())
-
         # search for patterns of the form '<space>__PARAMNAME__,'
         # and if found, look to see if there is a rosparam matching that pattern that we can substitute
         pattern = '\ __(.*?)__[,|\}]'
         for interaction in interaction_msgs:
             for p in re.findall(pattern, interaction.parameters):
+                rparam = None
                 if p.startswith('/'):
-                    rparam = rospy.get_param(p)
+                    try:
+                        rparam = rospy.get_param(p)
+                    except KeyError:
+                        pass  # we show a warning below
                 elif p.startswith('~'):
                     msg = '%s is invalid format for rosparam binding. See https://github.com/robotics-in-concert/rocon_tools/issues/81' % p
                     raise MalformedInteractionsYaml(str(msg))
                 else:
                     # See https://github.com/robotics-in-concert/rocon_tools/issues/81 for the rule
-                    ns = interaction.namespace
-                    if not ns:
-                        rparam = rospy.get_param('~' + p)
-                    else:
-                        rparam = rospy.get_param(ns + '/' + p)
+                    if interaction.namespace:
+                        try:
+                            rparam = rospy.get_param(interaction.namespace)
+                        except KeyError:
+                            pass  # fallback and try again in the private namespace
+                    if rparam is None:
+                        try:
+                            rparam = rospy.get_param('~' + p)
+                        except KeyError:
+                            pass  # we show a warning below
+                if rparam is None:
+                    rospy.logwarn("Interactions : no dynamic binding found for '%s'" % p)
                 match = '__' + p + '__'
                 interaction.parameters = interaction.parameters.replace(match, str(rparam))
         return interaction_msgs

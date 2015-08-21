@@ -26,7 +26,7 @@ import std_msgs.msg as std_msgs
 from . import namespace
 
 ##############################################################################
-# Classes
+# Mass Ros Communication Factories
 ##############################################################################
 
 
@@ -96,3 +96,11 @@ class Subscribers(object):
         publisher = rospy.Publisher(introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
+
+##############################################################################
+# Parameters
+##############################################################################
+
+# Use a class decorator to extend a user's Parameter class
+# http://python-3-patterns-idioms-test.readthedocs.org/en/latest/PythonDecorators.html
+# http://stackoverflow.com/questions/9443725/add-method-to-a-class-dynamically-with-decorator

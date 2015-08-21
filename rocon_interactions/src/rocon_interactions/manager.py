@@ -72,6 +72,7 @@ class InteractionsManager(object):
         self._watch_loop_period = 1.0
         self._remocon_monitors = {}                  # topic_name : RemoconMonitor
         self.parameters = Parameters()              # important to come first since we use self.parameters.pairing everywhere
+        self.runtime_pairing_signatures = []
 
         # ros communications
         self.services = rocon_python_comms.utils.Services(
@@ -101,7 +102,6 @@ class InteractionsManager(object):
         self._interactions_table = InteractionsTable(filter_pairing_interactions=not self.parameters.pairing)
         self._interactions_table.load_from_resources(self.parameters.interactions)
 
-        self.runtime_pairing_signatures = []
         self._ros_publish_pairings()
 
     def spin(self):

@@ -46,6 +46,8 @@ class Services(object):
         """
         Converts the incoming list of service name, service type, callback function triples into proper variables of this class.
 
+        Note: '~/introspection/dude' will become just 'dude'
+
         :param services: incoming list of service specifications
         :type services: list of (str, str, function) tuples representing (service_name, service_type, callback) pairs.
         :param str introspection_topic_name: where to put the introspection topic that shows the resolved names at runtime
@@ -61,6 +63,8 @@ class ServiceProxies(object):
         """
         Converts the incoming list of service name, service type pairs into proper variables of this class.
 
+        Note: '~/introspection/dude' will become just 'dude'
+
         :param services: incoming list of service proxy specifications
         :type services: list of (str, str) tuples representing (service_name, service_type) pairs.
         """
@@ -75,6 +79,8 @@ class Publishers(object):
         """
         Converts the incoming list of publisher name, type, latched, queue_size specifications into proper variables of this class.
 
+        Note: '~/introspection/dude' will become just 'dude'
+
         :param publishers: incoming list of service specifications
         :type publishers: list of (str, str, bool, int) tuples representing (topic_name, publisher_type, latched, queue_size) specifications.
         """
@@ -88,6 +94,8 @@ class Subscribers(object):
     def __init__(self, subscribers, introspection_topic_name="subscribers"):
         """
         Converts the incoming list of publisher name, service type pairs into proper variables of this class.
+
+        Note: '~/introspection/dude' will become just 'dude'
 
         :param subscribers: incoming list of service specifications
         :type subscribers: list of (str, str, bool, int) tuples representing (topic_name, subscriber_type, latched, queue_size) specifications.

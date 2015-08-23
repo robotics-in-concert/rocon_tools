@@ -33,6 +33,8 @@ from .exceptions import NotFoundException, MultipleFoundException
 ##############################################################################
 
 
+# for dirname use rosgraph.names.namespace()
+
 def basename(name):
     """
     Generate the basename from a ros name, e.g.

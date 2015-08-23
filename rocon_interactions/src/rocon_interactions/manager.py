@@ -35,7 +35,9 @@ import socket
 import std_msgs.msg as std_msgs
 
 from .exceptions import RappNotRunningError, FailedToStartRappError, FailedToStopRappError
+from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
 from .interactions_table import InteractionsTable
+from .pairings_table import PairingsTable
 from .pairings import RuntimePairingSignature
 from .rapp_handler import RappHandler
 from .remocon_monitor import RemoconMonitor
@@ -52,17 +54,6 @@ class InteractionsManager(object):
       Manages connectivity information provided by services and provides this
       for human interactive (aka remocon) connections.
     '''
-    __slots__ = [  # todo - shift these slots to sphinx ivar, vartype docs
-        'parameters',
-        'publishers',
-        'services',
-        '_interactions_table',  # Dictionary of string : interaction_msgs.RemoconApp[]
-        '_rapp_handler',        # Interface for handling interactions-rapps pairing
-        'spin',
-        '_watch_loop_period',
-        '_remocon_monitors',    # list of currently connected remocons.
-        'runtime_pairing_signatures'
-    ]
 
     ##########################################################################
     # Initialisation & Execution
@@ -70,9 +61,9 @@ class InteractionsManager(object):
 
     def __init__(self):
         self._watch_loop_period = 1.0
-        self._remocon_monitors = {}                  # topic_name : RemoconMonitor
-        self.parameters = Parameters()              # important to come first since we use self.parameters.pairing everywhere
-        self.runtime_pairing_signatures = []
+        self._remocon_monitors = {}     # topic_name : RemoconMonitor
+        self.parameters = Parameters()  # important to come first since we use self.parameters.pairing everywhere
+        # self.runtime_pairing_signatures = []
 
         # ros communications
         self.services = rocon_python_comms.utils.Services(
@@ -80,6 +71,7 @@ class InteractionsManager(object):
                 ('~get_roles', interaction_srvs.GetRoles, self._ros_service_get_roles),
                 ('~get_interaction', interaction_srvs.GetInteraction, self._ros_service_get_interaction),
                 ('~get_interactions', interaction_srvs.GetInteractions, self._ros_service_get_interactions),
+                ('~get_pairings', interaction_srvs.GetPairings, self._ros_service_get_pairings),
                 ('~set_interactions', interaction_srvs.SetInteractions, self._ros_service_set_interactions),
                 ('~request_interaction', interaction_srvs.RequestInteraction, self._ros_service_request_interaction)
             ]
@@ -90,19 +82,35 @@ class InteractionsManager(object):
             [
                 ('~parameters', std_msgs.String, latched, queue_size_five),
                 ('~interactive_clients', interaction_msgs.InteractiveClients, latched, queue_size_five),
-                ('~pairing_status', interaction_msgs.PairingStatus, latched, queue_size_five),
-                ('~introspection/pairings', std_msgs.String, latched, queue_size_five)  # for debugging, show all pairings
+                # ('~pairing_status', interaction_msgs.PairingStatus, latched, queue_size_five),
+                # ('~introspection/pairings', std_msgs.String, latched, queue_size_five)  # for debugging, show all pairings
             ]
         )
         # small pause (convenience only) to let connections to come up
         rospy.rostime.wallsleep(0.5)
         self.publishers.parameters.publish(std_msgs.String("%s" % self.parameters))
-
         self._rapp_handler = RappHandler(self._rapp_changed_state_callback) if self.parameters.pairing else None
-        self._interactions_table = InteractionsTable(filter_pairing_interactions=not self.parameters.pairing)
-        self._interactions_table.load_from_resources(self.parameters.interactions)
+        self.interactions_table = InteractionsTable(filter_pairing_interactions=not self.parameters.pairing)
+        self.pairings_table = PairingsTable()
+        all_pairings = []
+        all_interactions = []
+        for resource_name in self.parameters.interactions:
+            try:
+                (pairings, interactions) = utils.load_msgs_from_yaml_resource(resource_name)
+            except YamlResourceNotFoundException as e:
+                rospy.logerr("Interactions : failed to load resource %s [%s]" %
+                             (resource_name, str(e)))
+            except MalformedInteractionsYaml as e:
+                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" %
+                             (resource_name, str(e)))
+            all_interactions.extend(interactions)
+            all_pairings.extend(pairings)
+        # TODO check that each pairing is available on the rapp handler
+        self.pairings_table.load(pairings)
+        # TODO check that each interaction has a valid pairing
+        self.interactions_table.load(interactions)
 
-        self._ros_publish_pairings()
+        # self._ros_publish_pairings()
 
     def spin(self):
         '''
@@ -211,7 +219,7 @@ class InteractionsManager(object):
                 interactive_client.platform_info = remocon.status.platform_info
                 interactive_client.running_interactions = []
                 for interaction_hash in remocon.status.running_interactions:
-                    interaction = self._interactions_table.find(interaction_hash)
+                    interaction = self.interactions_table.find(interaction_hash)
                     interactive_client.running_interactions.append(interaction.display_name if interaction is not None else "unknown")
                 if interactive_client.running_interactions:
                     interactive_clients.running_clients.append(interactive_client)
@@ -233,7 +241,7 @@ class InteractionsManager(object):
           Handle incoming requests for a single interaction's details.
         '''
         response = interaction_srvs.GetInteractionResponse()
-        interaction = self._interactions_table.find(request.hash)
+        interaction = self.interactions_table.find(request.hash)
         if interaction is None:
             response.interaction = interaction_msgs.Interaction()
             response.result = False
@@ -257,13 +265,13 @@ class InteractionsManager(object):
         # Filter by role, rocon_uri
         ################################################
         if request.roles:  # works for None or empty list
-            unavailable_roles = [x for x in request.roles if x not in self._interactions_table.roles()]
+            unavailable_roles = [x for x in request.roles if x not in self.interactions_table.roles()]
             for role in unavailable_roles:
                 rospy.logerr("Interactions : received request for interactions of an unregistered role [%s]" % role)
 
         uri = request.uri if request.uri != '' else 'rocon:/'
         try:
-            filtered_interactions = self._interactions_table.filter(request.roles, uri)
+            filtered_interactions = self.interactions_table.filter(request.roles, uri)
         except rocon_uri.RoconURIValueError as e:
             rospy.logerr("Interactions : received request for interactions to be filtered by an invalid rocon uri"
                          " [%s][%s]" % (uri, str(e)))
@@ -283,6 +291,19 @@ class InteractionsManager(object):
         ################################################
         for i in filtered_interactions:
             response.interactions.append(i.msg)
+        return response
+
+    def _ros_service_get_pairings(self, request):
+        '''
+          Handle incoming requests to provide the pairings list.
+
+          @param request
+          @type concert_srvs.GetPairingsRequest
+        '''
+        response = interaction_srvs.GetPairingsResponse()
+        response.pairings = []
+        for p in self.pairings_table.pairings:
+            response.pairings.append(p.msg)
         return response
 
     def _running_requirements_are_satisfied(self, interaction):
@@ -316,7 +337,7 @@ class InteractionsManager(object):
     def _ros_service_get_roles(self, request):
         uri = request.uri if request.uri != '' else 'rocon:/'
         try:
-            filtered_interactions = self._interactions_table.filter([], uri)
+            filtered_interactions = self.interactions_table.filter([], uri)
         except rocon_uri.RoconURIValueError as e:
             rospy.logerr("Interactions : received request for roles to be filtered by an invalid rocon uri"
                          " [%s][%s]" % (rocon_uri, str(e)))
@@ -337,7 +358,7 @@ class InteractionsManager(object):
           @type concert_srvs.SetInteractionsRequest
         '''
         if request.load:
-            (new_interactions, invalid_interactions) = self._interactions_table.load(request.interactions)
+            (new_interactions, invalid_interactions) = self.interactions_table.load(request.interactions)
             for i in new_interactions:
                 rospy.loginfo("Interactions : loading '%s' [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
             for i in invalid_interactions:
@@ -347,7 +368,7 @@ class InteractionsManager(object):
                                                                                i.namespace)
                               )
         else:
-            removed_interactions = self._interactions_table.unload(request.interactions)
+            removed_interactions = self.interactions_table.unload(request.interactions)
             for i in removed_interactions:
                 rospy.loginfo("Interactions : unloading %s [%s-%s-%s]" % (i.display_name, i.name, i.role, i.namespace))
         # send response
@@ -356,8 +377,8 @@ class InteractionsManager(object):
         return response
 
     def _ros_service_request_interaction(self, request):
-        interaction = self._interactions_table.find(request.hash)
-        # for interaction in self._interactions_table.interactions:
+        interaction = self.interactions_table.find(request.hash)
+        # for interaction in self.interactions_table.interactions:
         #     rospy.logwarn("Interactions:   [%s][%s][%s]" % (interaction.name, interaction.hash, interaction.max))
         if interaction is None:
             return utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE)

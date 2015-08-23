@@ -28,7 +28,7 @@ import rocon_uri
 import rospy
 
 from . import interactions
-from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResourceNotFoundException
+from .exceptions import InvalidInteraction, MalformedInteractionsYaml
 
 ##############################################################################
 # Classes
@@ -58,15 +58,15 @@ class InteractionsTable(object):
         self.interactions = []
         self.filter_pairing_interactions = filter_pairing_interactions
 
-    def roles(self):
+    def groups(self):
         '''
-          List all roles for the currently stored interactions.
+          List all groups for the currently stored interactions.
 
-          :returns: a list of all roles
+          :returns: a list of all groups
           :rtype: str[]
         '''
         # uniquify the list
-        return list(set([i.role for i in self.interactions]))
+        return list(set([i.group for i in self.interactions]))
 
     def __len__(self):
         return len(self.interactions)
@@ -76,36 +76,36 @@ class InteractionsTable(object):
         Convenient string representation of the table.
         """
         s = ''
-        role_view = self.generate_role_view()
-        for role, interactions in role_view.iteritems():
-            s += console.bold + role + console.reset + '\n'
+        group_view = self.generate_group_view()
+        for group, interactions in group_view.iteritems():
+            s += console.bold + "Interactions - " + group + console.reset + '\n'
             for interaction in interactions:
                 s += "\n".join("  " + i for i in str(interaction).splitlines()) + '\n'
         return s
 
-    def generate_role_view(self):
+    def generate_group_view(self):
         '''
           Creates a temporary copy of the interactions and sorts them into a dictionary
-          view classified by role.
+          view classified by group.
 
-          :returns: A role based view of the interactions
-          :rtype: dict { role(str) : :class:`.interactions.Interaction`[] }
+          :returns: A group based view of the interactions
+          :rtype: dict { group(str) : :class:`.interactions.Interaction`[] }
         '''
         # there's got to be a faster way of doing this.
         interactions = list(self.interactions)
-        role_view = {}
+        group_view = {}
         for interaction in interactions:
-            if interaction.role not in role_view.keys():
-                role_view[interaction.role] = []
-            role_view[interaction.role].append(interaction)
-        return role_view
+            if interaction.group not in group_view.keys():
+                group_view[interaction.group] = []
+            group_view[interaction.group].append(interaction)
+        return group_view
 
-    def filter(self, roles=None, compatibility_uri='rocon:/'):
+    def filter(self, groups=None, compatibility_uri='rocon:/'):
         '''
-          Filter the interactions in the table according to role and/or compatibility uri.
+          Filter the interactions in the table according to group and/or compatibility uri.
 
-          :param roles: a list of roles to filter against, use all roles if None
-          :type roles: str []
+          :param groups: a list of groups to filter against, use all groups if None
+          :type groups: str []
           :param str compatibility_uri: compatibility rocon_uri_, eliminates interactions that don't match this uri.
 
           :returns interactions: subset of all interactions that survived the filter
@@ -113,36 +113,13 @@ class InteractionsTable(object):
 
           :raises: rocon_uri.RoconURIValueError if provided compatibility_uri is invalid.
         '''
-        if roles:   # works for classifying non-empty list vs either of None or empty list
-            role_filtered_interactions = [i for i in self.interactions if i.role in roles]
+        if groups:   # works for classifying non-empty list vs either of None or empty list
+            group_filtered_interactions = [i for i in self.interactions if i.group in groups]
         else:
-            role_filtered_interactions = list(self.interactions)
-        filtered_interactions = [i for i in role_filtered_interactions
+            group_filtered_interactions = list(self.interactions)
+        filtered_interactions = [i for i in group_filtered_interactions
                                  if rocon_uri.is_compatible(i.compatibility, compatibility_uri)]
         return filtered_interactions
-
-    def load_from_resources(self, interactions_resource_list):
-        """
-        :param [str] interactiosn_resource_list: list of ros `resource names`_
-
-        .. _resource names: http://wiki.ros.org/Names#Package_Resource_Names
-        """
-        for resource_name in interactions_resource_list:
-            try:
-                msg_interactions = interactions.load_msgs_from_yaml_resource(resource_name)
-                (new_interactions, invalid_interactions) = self.load(msg_interactions)
-                for i in new_interactions:
-                    rospy.loginfo("Interactions : loading %s [%s-%s-%s]" %
-                                  (i.display_name, i.name, i.role, i.namespace))
-                for i in invalid_interactions:
-                    rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" %
-                                  (i.display_name, i.name, i.role, i.namespace))
-            except YamlResourceNotFoundException as e:
-                rospy.logerr("Interactions : failed to load resource %s [%s]" %
-                             (resource_name, str(e)))
-            except MalformedInteractionsYaml as e:
-                rospy.logerr("Interactions : pre-configured interactions yaml malformed [%s][%s]" %
-                             (resource_name, str(e)))
 
     def load(self, msgs):
         '''
@@ -184,7 +161,7 @@ class InteractionsTable(object):
         '''
         removed = []
         for msg in msgs:
-            msg_hash = interactions.generate_hash(msg.display_name, msg.role, msg.namespace)
+            msg_hash = interactions.generate_hash(msg.display_name, msg.group, msg.namespace)
             found = self.find(msg_hash)
             if found is not None:
                 removed.append(msg)

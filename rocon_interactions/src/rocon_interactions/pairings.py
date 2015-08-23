@@ -28,6 +28,47 @@ import rocon_console.console as console
 ##############################################################################
 
 
+class Pairing(object):
+    """
+    Represents a pairing, i.e. a launchable rapp configuration on the rocon
+    app manager.
+    """
+    def __init__(self, msg):
+        self.__dict__ = msg.__dict__
+        self.msg = msg
+        if not self.icon:
+            # todo load default from rapp
+            pass
+        if not self.description:
+            # todo load default from rapp
+            pass
+
+    def __str__(self):
+        '''
+          Format the interaction into a human-readable string.
+        '''
+        s = ''
+        s += console.green + "%s" % self.name + console.reset + '\n'
+        s += console.cyan + "  Rapp" + console.reset + "             : " + console.yellow + "%s" % str(self.rapp) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Icon" + console.reset + "             : " + console.yellow + "%s" % str(self.icon.resource_name) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Description" + console.reset + "      : " + console.yellow + "%s" % self.description + console.reset + '\n'  # noqa
+        already_prefixed = False
+        for remapping in self.remappings:
+            if not already_prefixed:
+                s += console.cyan + "    Remappings" + console.reset + " : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                already_prefixed = True
+            else:
+                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+        already_prefixed = False
+        for pair in self.parameters:
+            if not already_prefixed:
+                s += console.cyan + "    Parameters" + console.reset + " : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
+                already_prefixed = True
+            else:
+                s += "               : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
+        return s
+
+
 class RuntimePairingSignature(object):
     """
     Signature identifying a runtime pairing interaction.

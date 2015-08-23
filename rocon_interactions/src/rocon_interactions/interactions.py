@@ -22,107 +22,13 @@ an interaction is.
 # Imports
 ##############################################################################
 
-import yaml
-import zlib  # crc32
-import os
-
-import genpy
 import rospkg
 import rocon_console.console as console
 import rocon_python_utils
-import rocon_interaction_msgs.msg as interaction_msgs
 
-from .exceptions import InvalidInteraction, MalformedInteractionsYaml, YamlResourceNotFoundException
+from .exceptions import InvalidInteraction
 from . import web_interactions
-
-##############################################################################
-# Utility Methods
-##############################################################################
-
-
-def generate_hash(display_name, role, namespace):
-    '''
-      Compute a unique hash for this interaction corresponding to the
-      display_name-role-namespace triple. We use zlib's crc32 here instead of unique_id because
-      of it's brevity which is important when trying to id an interaction by its hash
-      from an nfc tag.
-
-      Might be worth checking http://docs.python.org/2.7/library/zlib.html#zlib.crc32 if
-      this doesn't produce the same hash on all platforms.
-
-      :param str display_name: the display name of the interaction
-      :param str role: the role the interaction is embedded in
-      :param str namespace: the namespace in which to embed this interaction
-
-      :returns: the hash
-      :rtype: int32
-    '''
-    return zlib.crc32(display_name + "-" + role + "-" + namespace)
-
-
-def load_msgs_from_yaml_file(file_path):
-    """
-      Load interactions from a yaml resource.
-
-      :param str file_path: file path of a yaml formatted interactions file (ext=.interactions).
-
-      :returns: a list of ros msg interaction specifications
-      :rtype: rocon_interaction_msgs.Interaction_ []
-
-      :raises: :exc:`.YamlResourceNotFoundException` if yaml is not found.
-      :raises: :exc:`.MalformedInteractionsYaml` if yaml is malformed.
-
-      .. include:: weblinks.rst
-    """
-    interactions = []
-    try:
-        yaml_filename = file_path
-        if not os.path.isfile(yaml_filename):
-            raise YamlResourceNotFoundException(str(yaml_filename) + " NOT FOUND")
-    except rospkg.ResourceNotFound as e:  # resource not found.
-        raise YamlResourceNotFoundException(str(e))
-    with open(yaml_filename) as f:
-        # load the interactions from yaml into a python object
-        interaction_yaml_objects = yaml.load(f)
-        # now drop it into message format
-        for interaction_yaml_object in interaction_yaml_objects:
-            # convert the parameters from a freeform yaml variable to a yaml string suitable for
-            # shipping off in ros msgs (where parameters is a string variable)
-            if 'parameters' in interaction_yaml_object:  # it's an optional key
-                # chomp trailing newlines
-                interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()
-            interaction = interaction_msgs.Interaction()
-            try:
-                genpy.message.fill_message_args(interaction, interaction_yaml_object)
-            except genpy.MessageException as e:
-                raise MalformedInteractionsYaml(
-                    "malformed yaml preventing converting of yaml to interaction msg type [%s]" % str(e))
-            interactions.append(interaction)
-    return interactions
-
-
-def load_msgs_from_yaml_resource(resource_name):
-    """
-      Load interactions from a yaml resource.
-
-      :param str resource_name: pkg/filename of a yaml formatted interactions file (ext=.interactions).
-
-      :returns: a list of ros msg interaction specifications
-      :rtype: rocon_interaction_msgs.Interaction_ []
-
-      :raises: :exc:`.YamlResourceNotFoundException` if yaml is not found.
-      :raises: :exc:`.MalformedInteractionsYaml` if yaml is malformed.
-
-      .. include:: weblinks.rst
-    """
-    interactions = []
-    try:
-        yaml_filename = rocon_python_utils.ros.find_resource_from_string(resource_name, extension='interactions')
-        interactions = load_msgs_from_yaml_file(yaml_filename)
-        return interactions
-    except rospkg.ResourceNotFound as e:  # resource not found.
-        raise YamlResourceNotFoundException(str(e))
-
+from . import utils
 
 ##############################################################################
 # Classes
@@ -130,7 +36,6 @@ def load_msgs_from_yaml_resource(resource_name):
 
 
 class Interaction(object):
-
     '''
       This class defines an interaction. It does so by wrapping the base
       rocon_interaction_msgs.Interaction_ msg structure with
@@ -147,7 +52,7 @@ class Interaction(object):
           Validate the incoming fields supplied by the interaction msg
           and populate remaining fields with proper defaults (e.g. calculate the
           unique hash for this interaction). The hash is calculated based on the
-          incoming display_name-role-namespace triple.
+          incoming name-group-namespace triple.
 
           :param msg: underlying data structure with fields minimally filled via :func:`.load_msgs_from_yaml_resource`.
           :type msg: rocon_interaction_msgs.Interaction_
@@ -159,11 +64,11 @@ class Interaction(object):
         self.msg = msg
         """Underlying data structure (rocon_interaction_msgs.Interaction_)"""
         if self.msg.max < -1:
-            raise InvalidInteraction("maximum instance configuration cannot be negative [%s]" % self.msg.display_name)
+            raise InvalidInteraction("maximum instance configuration cannot be negative [%s]" % self.msg.name)
         if self.msg.max == 0:
             self.msg.max = 1
-        if self.msg.role == '':
-            raise InvalidInteraction("role not configured [%s]" % self.msg.display_name)
+        if self.msg.group == '':
+            raise InvalidInteraction("group not configured [%s]" % self.msg.name)
         if self.msg.icon.resource_name == "":
             self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
         if not self.msg.icon.data:
@@ -174,7 +79,7 @@ class Interaction(object):
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
             self.msg.namespace = '/'
-        self.msg.hash = generate_hash(self.msg.display_name, self.msg.role, self.msg.namespace)
+        self.msg.hash = utils.generate_hash(self.msg.name, self.msg.group, self.msg.namespace)
         # some convenient aliases - these should be properties!
 
     def is_paired_type(self):
@@ -184,32 +89,21 @@ class Interaction(object):
         :returns: whether it is a pairing interaction or not
         :rtype: bool
         """
-        return True if self.msg.pairing.rapp else False
-
-    def is_one_sided_paired_type(self):
-        """
-        Classify whether this interaction is a one sided pairing,
-        i.e. it is simply a rapp launcher.
-
-        :returns: whether it is a one sided pairing interaction or not
-        :rtype: bool
-        """
-        return True if self.msg.pairing.rapp and not self.name else False
-
+        return True if self.msg.required_pairings else False
 
     ##############################################################################
     # Conveniences
     ##############################################################################
 
     @property
-    def name(self):
+    def command(self):
         """Executable name for this interaction, can be a roslaunch, rosrunnable, global executable, web url or web app [int]."""
-        return self.msg.name
+        return self.msg.command
 
     @property
-    def role(self):
+    def group(self):
         """The group under which this interaction should be embedded [int]."""
-        return self.msg.role
+        return self.msg.group
 
     @property
     def compatibility(self):
@@ -217,9 +111,9 @@ class Interaction(object):
         return self.msg.compatibility
 
     @property
-    def display_name(self):
-        """A human friendly name that also uniquely helps uniquely identify this interaction (you can have more than one configured ``name`` instance) [int]."""
-        return self.msg.display_name
+    def name(self):
+        """A human friendly name that also uniquely helps uniquely identify this interaction (you can have more than one configured ``command`` instance) [int]."""
+        return self.msg.name
 
     @property
     def description(self):
@@ -251,8 +145,16 @@ class Interaction(object):
         return self.msg.hash
 
     @property
-    def pairing(self):
-        return self.msg.pairing
+    def bringup_pairing(self):
+        return self.msg.bringup_pairing
+
+    @property
+    def teardown_pairing(self):
+        return self.msg.teardown_pairing
+
+    @property
+    def required_pairings(self):
+        return self.msg.required_pairings
 
     def __eq__(self, other):
         if type(other) is type(self):
@@ -267,44 +169,31 @@ class Interaction(object):
         '''
           Format the interaction into a human-readable string.
         '''
-        web_interaction = web_interactions.parse(self.msg.name)
-        name = self.msg.name if web_interaction is None else web_interaction.url
+        web_interaction = web_interactions.parse(self.msg.command)
+        command = self.msg.command if web_interaction is None else web_interaction.url
         s = ''
-        s += console.green + "%s" % self.msg.display_name + console.reset + '\n'
-        s += console.cyan + "  Name" + console.reset + "         : " + console.yellow + "%s" % name + console.reset + '\n'  # noqa
-        s += console.cyan + "  Description" + console.reset + "  : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa
-        s += console.cyan + "  Icon" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa
-        s += console.cyan + "  Rocon URI" + console.reset + "    : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa
-        s += console.cyan + "  Namespace" + console.reset + "    : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'  # noqa
+        s += console.green + "%s" % self.msg.name + console.reset + '\n'
+        s += console.cyan + "  Command" + console.reset + "          : " + console.yellow + "%s" % command + console.reset + '\n'  # noqa
+        s += console.cyan + "  Description" + console.reset + "      : " + console.yellow + "%s" % self.msg.description + console.reset + '\n'  # noqa
+        s += console.cyan + "  Icon" + console.reset + "             : " + console.yellow + "%s" % str(self.msg.icon.resource_name) + console.reset + '\n'  # noqa
+        s += console.cyan + "  Rocon URI" + console.reset + "        : " + console.yellow + "%s" % self.msg.compatibility + console.reset + '\n'  # noqa
+        s += console.cyan + "  Namespace" + console.reset + "        : " + console.yellow + "%s" % self.msg.namespace + console.reset + '\n'  # noqa
         if self.msg.max == -1:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "infinity" + console.reset + '\n'  # noqa
+            s += console.cyan + "  Max" + console.reset + "              : " + console.yellow + "infinity" + console.reset + '\n'  # noqa
         else:
-            s += console.cyan + "  Max" + console.reset + "          : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'  # noqa
+            s += console.cyan + "  Max" + console.reset + "              : " + console.yellow + "%s" % self.msg.max + console.reset + '\n'  # noqa
         already_prefixed = False
         for remapping in self.msg.remappings:
             if not already_prefixed:
-                s += console.cyan + "  Remappings" + console.reset + "   : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                s += console.cyan + "  Remappings" + console.reset + "       : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
                 already_prefixed = True
             else:
-                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                s += "                   : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
         if self.msg.parameters != '':
-            s += console.cyan + "  Parameters" + console.reset + "   : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
-        s += console.cyan + "  Hash" + console.reset + "         : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
-        if self.msg.pairing.rapp:
-            s += console.cyan + "  Pairing" + console.reset + "      : " + console.yellow + "%s" % str(self.msg.pairing.rapp) + console.reset + '\n'  # noqa
-            s += console.cyan + "    Control" + console.reset + "    : " + console.yellow + "%s" % ('y' if self.msg.pairing.control_rapp_lifecycle else 'n') + console.reset + '\n'  # noqa
-            already_prefixed = False
-            for remapping in self.msg.pairing.remappings:
-                if not already_prefixed:
-                    s += console.cyan + "    Remappings" + console.reset + " : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
-                    already_prefixed = True
-                else:
-                    s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
-            already_prefixed = False
-            for pair in self.msg.pairing.parameters:
-                if not already_prefixed:
-                    s += console.cyan + "    Parameters" + console.reset + " : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
-                    already_prefixed = True
-                else:
-                    s += "               : " + console.yellow + "%s-%s" % (pair.key, pair.value) + console.reset + '\n'  # noqa
+            s += console.cyan + "  Parameters" + console.reset + "       : " + console.yellow + "%s" % self.msg.parameters + console.reset + '\n'  # noqa
+        if self.msg.required_pairings:
+            s += console.cyan + "  Bringup Pairing " + console.reset + " : " + console.yellow + "%s" % self.msg.bringup_pairing + console.reset + '\n'  # noqa
+            s += console.cyan + "  Teardown Pairing " + console.reset + ": " + console.yellow + "%s" % self.msg.teardown_pairing + console.reset + '\n'  # noqa
+            s += console.cyan + "  Required Pairings" + console.reset + ": " + console.yellow + "%s" % self.msg.required_pairings + console.reset + '\n'  # noqa
+        s += console.cyan + "  Hash" + console.reset + "             : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
         return s

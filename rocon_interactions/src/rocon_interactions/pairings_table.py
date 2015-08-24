@@ -23,7 +23,6 @@ some set of pairings.
 ##############################################################################
 
 import rocon_console.console as console
-import rospy
 
 from . import pairings
 from .exceptions import InvalidInteraction
@@ -108,5 +107,8 @@ class PairingsTable(object):
           :returns: pairing if found, None otherwise.
           :rtype: :class:`.Pairing`
         '''
-        pairing = next((p for p in self.pairings if p.hash == name), None)
+        pairing = next((p for p in self.pairings if p.name == name), None)
         return pairing
+
+    def is_available_pairing(self, pairing_name):
+        return pairing_name in [p.name for p in self.pairings]

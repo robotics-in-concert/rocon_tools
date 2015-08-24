@@ -120,6 +120,10 @@ class Interaction(object):
         return self.msg.description
 
     @property
+    def icon(self):
+        return self.msg.icon
+
+    @property
     def namespace(self):
         """Default namespace under which ros services and topics should be embedded for this interaction [int]."""
         return self.msg.namespace

@@ -10,6 +10,7 @@ pairings:
             remap_to: /conversation/chatter
     - name: Babbler
       rapp: rocon_apps/talker
+      description: Talker remapped to a babbler.
       remappings:
           - remap_from: chatter
             remap_to: /conversation/babbler

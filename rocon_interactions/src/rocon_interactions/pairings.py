@@ -34,7 +34,6 @@ class Pairing(object):
     app manager.
     """
     def __init__(self, msg):
-        self.__dict__ = msg.__dict__
         self.msg = msg
         if not self.icon:
             # todo load default from rapp
@@ -42,6 +41,34 @@ class Pairing(object):
         if not self.description:
             # todo load default from rapp
             pass
+
+    ##############################################################################
+    # Conveniences
+    ##############################################################################
+
+    @property
+    def name(self):
+        return self.msg.name
+
+    @property
+    def rapp(self):
+        return self.msg.rapp
+
+    @property
+    def description(self):
+        return self.msg.description
+
+    @property
+    def icon(self):
+        return self.msg.icon
+
+    @property
+    def remappings(self):
+        return self.msg.remappings
+
+    @property
+    def parameters(self):
+        return self.msg.parameters
 
     def __str__(self):
         '''
@@ -55,7 +82,7 @@ class Pairing(object):
         already_prefixed = False
         for remapping in self.remappings:
             if not already_prefixed:
-                s += console.cyan + "    Remappings" + console.reset + " : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                s += console.cyan + "    Remappings" + console.reset + "     : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
                 already_prefixed = True
             else:
                 s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa

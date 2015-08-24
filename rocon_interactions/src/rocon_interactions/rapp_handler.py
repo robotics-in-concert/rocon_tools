@@ -98,8 +98,10 @@ class RappHandler(object):
                 ('~stop_rapp', rocon_app_manager_srvs.StopRapp),
             ]
         )
-        self._initialising_thread = threading.Thread(target=self.initialise)
-        self._initialising_thread.start()
+        # self._initialising_thread = threading.Thread(target=self.initialise)
+        # self._initialising_thread.start()
+        # this is blocking until it gets data
+        self.initialise()
 
     @property
     def available_rapps(self):
@@ -139,7 +141,13 @@ class RappHandler(object):
         return False
 
     def is_available_rapp(self, rapp_name):
-        return True if rapp_name in self._available_rapps().keys() else False
+        return True if rapp_name in self._available_rapps.keys() else False
+
+    def get_rapp(self, rapp_name):
+        try:
+            return self._available_rapps[rapp_name]
+        except KeyError:
+            return None
 
     def start(self, rapp, remappings):
         """
@@ -185,12 +193,13 @@ class RappHandler(object):
         Loops around (indefinitely) until it makes a connection with the rapp manager and retrieves the rapp list.
         """
         # get the rapp list - just loop around until catch it once - it is not dynamically changing
+        rospy.loginfo("Interactions : calling the rapp manager to get the rapp list.")
         while not rospy.is_shutdown():
             # msg is rocon_app_manager_msgs/RappList
             msg = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)(rospy.Duration(3.0))
             if msg is None:
                 rapp_list_subname = rospy.resolve_name('~rapp_list')
-                rospy.logwarn("Interactions : unable to connect with the rocon app manager : {0} not found.".format(rapp_list_subname))
+                rospy.logwarn("Interactions : unable to connect with the rapp manager : {0} not found.".format(rapp_list_subname))
             else:
                 self._available_rapps = rapp_list_msg_to_dict(msg.available_rapps)
                 rospy.loginfo("Interactions : discovered rapp support for pairing modes:")

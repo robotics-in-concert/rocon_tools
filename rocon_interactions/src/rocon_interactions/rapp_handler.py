@@ -25,7 +25,6 @@ import rospy
 import rocon_app_manager_msgs.msg as rocon_app_manager_msgs
 import rocon_app_manager_msgs.srv as rocon_app_manager_srvs
 import rocon_python_comms
-import threading
 from .exceptions import(FailedToStartRappError,
                         FailedToStopRappError,
                         RappNotRunningError

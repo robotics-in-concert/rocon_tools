@@ -38,6 +38,7 @@ from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
 _interaction_error_messages = {
     interaction_msgs.ErrorCodes.SUCCESS: 'Success',
     interaction_msgs.ErrorCodes.INTERACTION_UNAVAILABLE: interaction_msgs.ErrorCodes.MSG_INTERACTION_UNAVAILABLE,
+    interaction_msgs.ErrorCodes.PAIRING_UNAVAILABLE: interaction_msgs.ErrorCodes.MSG_PAIRING_UNAVAILABLE,
     interaction_msgs.ErrorCodes.INTERACTION_QUOTA_REACHED: interaction_msgs.ErrorCodes.MSG_INTERACTION_QUOTA_REACHED,
     interaction_msgs.ErrorCodes.ALREADY_PAIRING: interaction_msgs.ErrorCodes.MSG_ALREADY_PAIRING,
     interaction_msgs.ErrorCodes.START_PAIRING_FAILED: interaction_msgs.ErrorCodes.MSG_START_PAIRING_FAILED,
@@ -57,9 +58,8 @@ def generate_request_interaction_response(code):
     :rtype: interaction_srvs.RequestInteractionResponse
     """
     response = interaction_srvs.RequestInteractionResponse()
-    response.error_code = code
+    response.result = code
     response.message = _interaction_error_messages[code]
-    response.result = True if code == interaction_msgs.ErrorCodes.SUCCESS else False
     return response
 
 ##############################################################################

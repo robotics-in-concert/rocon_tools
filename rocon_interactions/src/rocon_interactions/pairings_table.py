@@ -58,6 +58,12 @@ class PairingsTable(object):
             s += "\n".join("  " + i for i in str(pairing).splitlines()) + '\n'
         return s
 
+    def sorted(self):
+        """
+        Return the pairing list sorted by name.
+        """
+        return sorted(self.pairings, key=lambda pairing: pairing.name)
+
     def load(self, msgs):
         '''
           Load some pairings into the table. This involves some initialisation

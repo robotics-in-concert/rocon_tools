@@ -25,7 +25,7 @@ interactions:
       group: Pairing
       compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
       description: A pyqt listener for testing pairing.
-      max: -1
+      max: 1
       remappings:
           - remap_from: chatter
             remap_to: /conversation/chatter
@@ -41,12 +41,12 @@ interactions:
       description: A pyqt listener for testing pairing.
       max: -1
       remappings:
-          - remap_from: babbler
+          - remap_from: chatter
             remap_to: /conversation/babbler
       required_pairings:
           - Babbler
     
-    # A non-pairing rapp for comparison    
+    # Other rapps for comparison
     - name: Rocon Master Info
       command: rocon_master_info
       group: Pairing

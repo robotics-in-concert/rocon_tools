@@ -105,13 +105,14 @@ class RuntimePairingSignature(object):
     :ivar remocon_name: name of the remocon that initiated the pairing interaction
     :vartype remocon_name: str
     """
-    def __init__(self, interaction, remocon_name):
+    def __init__(self, interaction, pairing, remocon_name):
         self.interaction = interaction
+        self.pairing = pairing
         self.remocon_name = remocon_name
 
     def __str__(self):
         s = ""
-        s += console.green + "%s" % self.interaction.display_name + console.reset + "-"
-        s += console.cyan + "%s" % self.interaction.pairing.rapp + console.reset + "-"
+        s += console.green + "%s" % self.interaction.name + console.reset + "-"
+        s += console.cyan + "%s" % self.pairing.rapp + console.reset + "-"
         s += console.yellow + "%s" % self.remocon_name + console.reset
         return s

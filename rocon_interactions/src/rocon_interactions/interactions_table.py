@@ -83,6 +83,12 @@ class InteractionsTable(object):
                 s += "\n".join("  " + i for i in str(interaction).splitlines()) + '\n'
         return s
 
+    def sorted(self):
+        """
+        Return the interactions list sorted by name.
+        """
+        return sorted(self.interactions, key=lambda interaction: interaction.name)
+
     def generate_group_view(self):
         '''
           Creates a temporary copy of the interactions and sorts them into a dictionary

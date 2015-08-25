@@ -34,7 +34,7 @@ import socket
 import std_msgs.msg as std_msgs
 import uuid
 
-from .exceptions import RappNotRunningError, FailedToStartRappError, FailedToStopRappError
+from .exceptions import FailedToStartRappError, FailedToStopRappError
 from .exceptions import MalformedInteractionsYaml, YamlResourceNotFoundException
 from .interactions_table import InteractionsTable
 from .pairings_table import PairingsTable
@@ -127,7 +127,19 @@ class InteractionsManager(object):
                 available_interactions.append(i)
         self.interactions_table.load(available_interactions)
 
-        # ros communications
+        #############################################
+        # Status Logging
+        #############################################
+        rospy.loginfo("Interactions : loaded pairings")
+        for pairing in self.pairings_table.sorted():
+            rospy.loginfo("Interactions :     '%s'" % pairing.name)
+        rospy.loginfo("Interactions : loaded interactions")
+        for interaction in self.interactions_table.sorted():
+            rospy.loginfo("Interactions :     '%s'" % interaction.name)
+
+        #############################################
+        # Ros Communications
+        #############################################
         self.services = rocon_python_comms.utils.Services(
             [
                 ('~get_interaction', interaction_srvs.GetInteraction, self._ros_service_get_interaction),
@@ -152,6 +164,16 @@ class InteractionsManager(object):
         rospy.rostime.wallsleep(0.5)
         self.publishers.parameters.publish(std_msgs.String("%s" % self.parameters))
         self.publishers.pairing_status.publish(interaction_msgs.PairingStatus())
+
+        #############################################
+        # Auto Executions
+        #############################################
+        if self.parameters.pairing and self.parameters.auto_start_pairing is not None:
+            response = self._ros_service_start_pairing(interaction_srvs.StartPairingRequest(name=self.parameters.auto_start_pairing))
+            if response.result != interaction_msgs.ErrorCodes.SUCCESS:
+                rospy.logwarn("Interactions : could not auto-start pairing '%s' [%s]" % (self.parameters.auto_start_pairing, response.message))
+            else:
+                rospy.loginfo("Interactions : auto-started the '%s' pairing" % self.parameters.auto_start_pairing)
 
     def spin(self):
         '''
@@ -424,13 +446,11 @@ class InteractionsManager(object):
         return utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.SUCCESS)
 
     def _ros_service_start_pairing(self, request):
-        print("Got a request to start pairing [%s]" % request.name)
         if not self.parameters.pairing:
             return interaction_srvs.StartPairingResponse(interaction_msgs.ErrorCodes.NOT_PAIRING, interaction_msgs.ErrorCodes.MSG_NOT_PAIRING)
         if self._rapp_handler.is_running:
             return interaction_srvs.StartPairingResponse(interaction_msgs.ErrorCodes.ALREADY_PAIRING, interaction_msgs.ErrorCodes.MSG_ALREADY_PAIRING)
         try:
-            print("Looking for pairing: %s" % request.name)
             pairing = self.pairings_table.find(request.name)
             self.active_pairing = pairing
             self._rapp_handler.start(pairing.rapp, pairing.remappings)

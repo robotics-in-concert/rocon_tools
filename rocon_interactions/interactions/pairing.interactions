@@ -45,11 +45,3 @@ interactions:
             remap_to: /conversation/babbler
       required_pairings:
           - Babbler
-    
-    # Other rapps for comparison
-    - name: Rocon Master Info
-      command: rocon_master_info
-      group: Pairing
-      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
-      description: Generic information about this master.
-      max: -1

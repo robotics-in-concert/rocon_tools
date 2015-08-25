@@ -66,7 +66,7 @@ class InteractionsTable(object):
           :rtype: str[]
         '''
         # uniquify the list
-        return list(set([i.group for i in self.interactions]))
+        return sorted(list(set([i.group for i in self.interactions])))
 
     def __len__(self):
         return len(self.interactions)

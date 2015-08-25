@@ -2,11 +2,12 @@
 # Web Apps
 ###############################################################################
 
-#- name: web_app(http://chimek.yujinrobot.com/rosjs/listener.html)
-- name: web_app(http://__WEBSERVER_ADDRESS__/rocon_tools/js/current/listener.html)
-  role: 'Web Apps'
+interactions:
+- name: Listener
+  group: 'Web Apps'
+  # command: web_app(http://chimek.yujinrobot.com/rosjs/listener.html)
+  command: web_app(http://__WEBSERVER_ADDRESS__/rocon_tools/js/current/listener.html)
   compatibility: rocon:/*/*/hydro|indigo/chrome|firefox
-  display_name: Listener
   description: Simple listener using rosjs in a web app.
   icon:
     resource_name: rocon_bubble_icons/rocon.png

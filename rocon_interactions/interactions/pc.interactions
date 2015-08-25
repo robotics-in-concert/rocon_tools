@@ -2,27 +2,28 @@
 # PC
 ###############################################################################
 
-- name: rocon_master_info
-  role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
-  display_name: Rocon Master Info (Direct Executable)
-  description: Generic information about this master.
-  max: -1
-
-- name: rqt_graph/rqt_graph
-  role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
-  display_name: Rqt Graph (Ros Runnable)
-  description: Graph of all topics and services in the concert workspace.
-  max: -1
-  icon:
-    resource_name: rocon_bubble_icons/rqt.png
-
-- name: rocon_interactions/rviz.launch
-  role: 'PC'
-  compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
-  display_name: Rviz Markers (Launcher)
-  description: Rviz with a view exactly configured for the rocon_interactions tutorial.
-  max: -1
-  icon:
-    resource_name: rocon_bubble_icons/rviz.png
+interactions:
+    - name: Rocon Master Info
+      group: 'PC'
+      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+      command: rocon_master_info
+      description: Generic information about this master (global executable).
+      max: -1
+    
+    - name: Rqt Graph
+      group: 'PC'
+      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+      command: rqt_graph/rqt_graph
+      description: Graph of all topics and services (rosrunnable).
+      max: -1
+      icon:
+        resource_name: rocon_bubble_icons/rqt.png
+    
+    - name: Rviz Markers
+      group: 'PC'
+      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+      command: rocon_interactions/rviz.launch
+      description: Rviz with a customised view from a launch file (roslaunch).
+      max: -1
+      icon:
+        resource_name: rocon_bubble_icons/rviz.png

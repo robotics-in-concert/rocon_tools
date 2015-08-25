@@ -16,6 +16,6 @@ import rocon_interactions
 
 if __name__ == '__main__':
 
-    rospy.init_node('rocon_interactions', log_level=rospy.DEBUG)
+    rospy.init_node('rocon_interactions', log_level=rospy.INFO)
     interactions_manager = rocon_interactions.InteractionsManager()
     interactions_manager.spin()

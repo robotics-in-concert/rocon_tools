@@ -144,6 +144,7 @@ class InteractionsManager(object):
             [
                 ('~get_interaction', interaction_srvs.GetInteraction, self._ros_service_get_interaction),
                 ('~get_interactions', interaction_srvs.GetInteractions, self._ros_service_get_interactions),
+                ('~set_interactions', interaction_srvs.SetInteractions, self._ros_service_set_interactions),
                 ('~get_pairings', interaction_srvs.GetPairings, self._ros_service_get_pairings),
                 ('~request_interaction', interaction_srvs.RequestInteraction, self._ros_service_request_interaction),
                 ('~start_pairing', interaction_srvs.StartPairing, self._ros_service_start_pairing),
@@ -306,6 +307,40 @@ class InteractionsManager(object):
         else:
             response.interaction = interaction.msg
             response.result = True
+        return response
+
+    def _ros_service_set_interactions(self, request):
+        '''
+          Add or remove interactions from the interactions table.
+          Note: uniquely identifying apps by name (not very sane).
+
+          @param request list of roles-apps to set
+          @type concert_srvs.SetInteractionsRequest
+        '''
+        if request.load:
+            (new_pairings, invalid_pairings) = self.pairings_table.load(request.pairings)
+            (new_interactions, invalid_interactions) = self.interactions_table.load(request.interactions)
+            for p in new_pairings:
+                rospy.loginfo("Interactions : loading %s [%s]" % (p.name, p.rapp))
+            for p in invalid_pairings:
+                rospy.logwarn("Interactions : failed to load %s [%s]" (p.name, p.rapp))
+            for i in new_interactions:
+                rospy.loginfo("Interactions : loading %s [%s-%s-%s]" % (i.name, i.command, i.group, i.namespace))
+            for i in invalid_interactions:
+                rospy.logwarn("Interactions : failed to load %s [%s-%s-%s]" (i.name,
+                                                                             i.command,
+                                                                             i.group,
+                                                                             i.namespace))
+        else:
+            removed_pairings = self._pairings_table.unload(request.pairings)
+            removed_interactions = self._interactions_table.unload(request.interactions)
+            for p in removed_pairings:
+                rospy.loginfo("Interactions : unloading %s [%s]" % (p.name, p.rapp))
+            for i in removed_interactions:
+                rospy.loginfo("Interactions : unloading %s [%s-%s-%s]" % (i.name, i.command, i.group, i.namespace))
+        # send response
+        response = interaction_srvs.SetInteractionsResponse()
+        response.result = True
         return response
 
     def _ros_service_get_interactions(self, request):

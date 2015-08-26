@@ -41,24 +41,31 @@ class TestLoader(unittest.TestCase):
             rospy.wait_for_service('~get_interactions', 3.0)
         except (rospy.ROSException, rospy.ServiceException) as e:
             self.fail("Failed to find %s" % rospy.resolve_name('~get_interactions'))
+        get_pairings = rospy.ServiceProxy('~get_pairings', interaction_srvs.GetPairings)
         get_interactions = rospy.ServiceProxy('~get_interactions', interaction_srvs.GetInteractions)
-        request = interaction_srvs.GetInteractionsRequest(roles=[], uri=rocon_uri.default_uri_string)
+        pairings_request = interaction_srvs.GetPairingsRequest()
+        interactions_request = interaction_srvs.GetInteractionsRequest(groups=[], uri=rocon_uri.default_uri_string)
         interactions_table = None
         timeout_time = time.time() + 5.0
         while not rospy.is_shutdown() and time.time() < timeout_time:
-            response = get_interactions(request)
-            if response.interactions:
+            pairings_response = get_pairings(pairings_request)
+            interactions_response = get_interactions(interactions_request)
+            if interactions_response.interactions and pairings_response.pairings:
+                pairings_table = rocon_interactions.PairingsTable()
                 interactions_table = rocon_interactions.InteractionsTable()
-                interactions_table.load(response.interactions)
+                pairings_table.load(pairings_response.pairings)
+                interactions_table.load(interactions_response.interactions)
                 #print("Length: %s" % len(interactions_table))
-                if len(interactions_table) == 3:
+                if len(interactions_table) == 2 and len(pairings_table) == 2:
                     break
             else:
                 rospy.rostime.wallsleep(0.1)
-        print("%s" % interactions_table)
-        roles = interactions_table.roles()
-        self.assertEqual(roles, ['PC'], 'roles of the interaction table did not return as expected [%s][%s]' % (roles, ['Rqt', 'PyQt']))
-        self.assertEqual(len(interactions_table), 3, 'number of interactions incorrect [%s][%s]' % (len(interactions_table), 3))
+        print("\n%s" % interactions_table)
+        print("\n%s" % pairings_table)
+        groups = interactions_table.groups()
+        self.assertEqual(groups, ['Pairing'], 'groups of the interaction table did not return as expected [%s][%s]' % (groups, ['Rqt', 'PyQt']))
+        self.assertEqual(len(interactions_table), 2, 'number of interactions incorrect [%s][%s]' % (len(interactions_table), 2))
+        self.assertEqual(len(pairings_table), 2, 'number of pairings incorrect [%s][%s]' % (len(pairings_table), 2))
 
     def tearDown(self):
         pass

@@ -23,9 +23,5 @@
       <rosparam param="interactions">[rocon_interactions/pc, rocon_interactions/web]</rosparam>
     </node>
   </group>
-
-  <!-- publish some markers for viewing in an rviz interaction -->
-  <node pkg="rocon_interactions" type="tutorial_markers.py" name="tutorial_markers"/>
-
 </launch>
 

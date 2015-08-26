@@ -81,7 +81,7 @@ class Terminal(object):
         for pid in roslaunch_pids:
             console.pretty_println("Terminating roslaunch [pid: %d]" % pid, console.bold)
             rocon_python_utils.system.wait_pid(pid)
-            #console.pretty_println("Terminated roslaunch [pid: %d]" % pid, console.bold)
+            # console.pretty_println("Terminated roslaunch [pid: %d]" % pid, console.bold)
         time.sleep(1)
         if hold:
             try:
@@ -96,7 +96,7 @@ class Terminal(object):
                 console.warning("Kill signal failed to reach the terminal - typically this means the terminal has already shut down.")
             except TypeError as e:
                 console.error("Invalid pid value [%s][%s]" % (str(process.pid), str(e)))
-            #process.terminate()
+            # process.terminate()
 
     def _prepare_meta_roslauncher(self, roslaunch_configuration):
         """
@@ -110,7 +110,7 @@ class Terminal(object):
         :rtype: :class:`tempfile.NamedTemporaryFile`
         """
         ros_launch_file = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
-        #print("Launching %s" % temp.name)
+        # print("Launching %s" % temp.name)
         launch_text = '<launch>\n'
         if roslaunch_configuration.screen():
             launch_text += '  <param name="rocon/screen" value="true"/>\n'
@@ -125,12 +125,12 @@ class Terminal(object):
         if roslaunch_configuration.namespace:
             launch_text += '  </group>\n'
         launch_text += '</launch>\n'
-        #print launch_text
+        # print launch_text
         ros_launch_file.write(launch_text)
         ros_launch_file.close()  # unlink it later
         return ros_launch_file
 
-    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None, env = {}):
+    def spawn_roslaunch_window(self, roslaunch_configuration, postexec_fn=None, env={}):
         """
         :param roslaunch_configuration: required roslaunch info
         :type roslaunch_configuration: :class:`.RosLaunchConfiguration`
@@ -142,11 +142,11 @@ class Terminal(object):
         if self.__class__ is Terminal:
             console.logerror("Do not use 'Terminal' directly, it is an abstract base class")
             sys.exit(1)
-        if 'prepare_command' not in vars(self.__class__):
-            console.logerror("The method _prepare_command must be implemented in children of rocon_launch.terminals.Terminal")
+        if 'prepare_roslaunch_command' not in vars(self.__class__):
+            console.logerror("The method _prepare_roslaunch_command must be implemented in children of rocon_launch.terminals.Terminal")
             sys.exit(1)
         meta_roslauncher = self._prepare_meta_roslauncher(roslaunch_configuration)
-        cmd = self.prepare_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
+        cmd = self.prepare_roslaunch_command(roslaunch_configuration, meta_roslauncher.name)  # must be implemented in children
         # ROS_NAMESPACE is typically set since we often call this from inside a node
         # itself. Got to get rid of this otherwise it pushes things down
         roslaunch_env = os.environ.copy()
@@ -154,11 +154,31 @@ class Terminal(object):
             for key in env.keys():
                 roslaunch_env[key] = env[key]
         try:
-            roslaunch_env['ROS_MASTER_URI'] = roslaunch_env['ROS_MASTER_URI'].replace(str(urlparse(roslaunch_env['ROS_MASTER_URI']).port),str(roslaunch_configuration.port))
+            roslaunch_env['ROS_MASTER_URI'] = roslaunch_env['ROS_MASTER_URI'].replace(str(urlparse(roslaunch_env['ROS_MASTER_URI']).port), str(roslaunch_configuration.port))
             del roslaunch_env['ROS_NAMESPACE']
         except KeyError:
             pass
         return (rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn, env=roslaunch_env), meta_roslauncher)
+
+    def spawn_executable_window(self, title, command, postexec_fn=None, env={}):
+        if self.__class__ is Terminal:
+            console.logerror("Do not use 'Terminal' directly, it is an abstract base class")
+            sys.exit(1)
+        if 'prepare_roslaunch_command' not in vars(self.__class__):
+            console.logerror("The method _prepare_roslaunch_command must be implemented in children of rocon_launch.terminals.Terminal")
+            sys.exit(1)
+        cmd = self.prepare_command(title, command)  # must be implemented in children
+        our_env = os.environ.copy()
+        if len(env) != 0:
+            for key in env.keys():
+                our_env[key] = env[key]
+        # ROS_NAMESPACE is typically set since we often call this from inside a node
+        # itself. Got to get rid of this otherwise it pushes things down
+        try:
+            del our_env['ROS_NAMESPACE']
+        except KeyError:
+            pass
+        return rocon_python_utils.system.Popen(cmd, postexec_fn=postexec_fn, env=our_env)
 
 ##############################################################################
 # Active
@@ -174,7 +194,16 @@ class Active(Terminal):
         """Dude"""
         super(Active, self).__init__(active)
 
-    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
+    def prepare_command(self, title, cmd):
+        """
+        Prepare a regular command to run inside the terminal window.
+
+        :param str title: label to put above on the terminal window
+        :param str[] cmd: command to run
+        """
+        return cmd
+
+    def prepare_roslaunch_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
         Prepare the custom command for a roslaunch window.
 
@@ -201,7 +230,25 @@ class Konsole(Terminal):
     def __init__(self):
         super(Konsole, self).__init__(konsole)
 
-    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
+    def prepare_command(self, title, cmd):
+        """
+        Prepare a regular command to run inside the terminal window.
+
+        :param str title: label to put above on the terminal window
+        :param str[] cmd: command to run
+        """
+        cmd = [self.name,
+               '-p',
+               'tabtitle=%s' % title,
+               '--nofork',
+               '--hold',
+               '-e',
+               "/bin/bash",
+               "-c",
+               " ".join(cmd)]
+        return cmd
+
+    def prepare_roslaunch_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
         Prepare the custom command for a roslaunch window.
 
@@ -235,7 +282,22 @@ class GnomeTerminal(Terminal):
     def __init__(self):
         super(GnomeTerminal, self).__init__(gnome_terminal)
 
-    def prepare_command(self, roslaunch_configuration, meta_roslauncher_filename):
+    def prepare_command(self, title, cmd):
+        """
+        Prepare a regular command to run inside the terminal window.
+
+        :param str title: label to put above on the terminal window
+        :param str[] cmd: command to run
+        """
+        cmd = [self.name,
+               '--title=%s' % title,
+               '--disable-factory',
+               "-e",
+               "/bin/bash -c '%s --disable-title';/bin/bash" % " ".join(cmd)
+               ]
+        return cmd
+
+    def prepare_roslaunch_command(self, roslaunch_configuration, meta_roslauncher_filename):
         """
         Prepare the custom command for a roslaunch window.
 
@@ -248,8 +310,7 @@ class GnomeTerminal(Terminal):
                '--disable-factory',
                "-e",
                "/bin/bash -c 'roslaunch %s --disable-title %s';/bin/bash" %
-                   (roslaunch_configuration.options,
-                    meta_roslauncher_filename)
+                    (roslaunch_configuration.options, meta_roslauncher_filename)
                ]
         return cmd
 

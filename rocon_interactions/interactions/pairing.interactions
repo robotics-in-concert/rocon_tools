@@ -33,6 +33,17 @@ interactions:
       teardown_pairing: true
       required_pairings:
           - Talker
+
+    - name: Rostopic Listener
+      command: "terminal/rostopic echo /conversation/chatter"
+      group: Pairing
+      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+      description: A rostopic echo listener for testing pairing.
+      max: 1
+      bringup_pairing: true
+      teardown_pairing: true
+      required_pairings:
+          - Talker
     
     - name: Babbler Listener
       command: rocon_qt_listener/qt_listener.py
@@ -45,3 +56,5 @@ interactions:
             remap_to: /conversation/babbler
       required_pairings:
           - Babbler
+
+    

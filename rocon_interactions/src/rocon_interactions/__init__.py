@@ -24,5 +24,6 @@ from .pairings import Pairing
 from .pairings_table import PairingsTable
 from .interactions import Interaction
 from exceptions import *
+from . import utils
 
 import web_interactions

@@ -141,17 +141,13 @@ class InteractionsTable(object):
         new = []
         invalid = []
         for msg in msgs:
-            # paired check
-            if self.filter_pairing_interactions and msg.pairing.rapp:
+            try:
+                interaction = interactions.Interaction(msg)
+                self.interactions.append(interaction)
+                self.interactions = list(set(self.interactions))  # uniquify the list, just in case
+                new.append(interaction)
+            except InvalidInteraction:
                 invalid.append(msg)
-            else:
-                try:
-                    interaction = interactions.Interaction(msg)
-                    self.interactions.append(interaction)
-                    self.interactions = list(set(self.interactions))  # uniquify the list, just in case
-                    new.append(interaction)
-                except InvalidInteraction:
-                    invalid.append(msg)
         return new, invalid
 
     def unload(self, msgs):

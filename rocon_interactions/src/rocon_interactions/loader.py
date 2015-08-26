@@ -36,6 +36,7 @@ import rocon_interaction_msgs.srv as interaction_srvs
 import rocon_python_comms
 
 from . import interactions
+from . import utils
 
 ##############################################################################
 # Loader
@@ -99,7 +100,7 @@ class InteractionsLoader(object):
     def load_from_resource(self, interactions_yaml_resource, namespace='/', load=True):
         '''
         Parse a set of configurations specified in a yaml file found from resource (package/file name pair)
-        and send the command toload/unload these on the interactions manager.
+        and send the command to load/unload these on the interactions manager.
         For convenience, it also allows the setting of a namespace for the whole group
         which will only get applied if an interaction has no setting in the yaml.
 
@@ -113,7 +114,7 @@ class InteractionsLoader(object):
         request.load = load
 
         # This can raise YamlResourceNotFoundException, MalformedInteractionsYaml
-        request.interactions = interactions.load_msgs_from_yaml_resource(interactions_yaml_resource)
+        (request.pairings, request.interactions) = utils.load_msgs_from_yaml_resource(interactions_yaml_resource)
 
         for i in request.interactions:
             if i.namespace == '':

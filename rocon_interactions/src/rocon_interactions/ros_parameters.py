@@ -33,10 +33,19 @@ class Parameters:
         # see sphinx docs above for more detailed explanations of each parameter
         self.interactions = rospy.get_param('~interactions', [])
         self.pairing = rospy.get_param('~pairing', False)
+        self.auto_start_pairing = rospy.get_param('~auto_start_pairing', None)
+        # processing
+        self.auto_start_pairing = self.auto_start_pairing if self.auto_start_pairing else None  # empty string -> None
 
     def __str__(self):
         s = console.bold + "\nParameters:\n" + console.reset
-        for key in sorted(self.__dict__):
-            s += console.cyan + "    %s: " % key + console.yellow + "%s\n" % (self.__dict__[key] if self.__dict__[key] is not None else '-')
-        s += console.reset
+#         for key in sorted(self.__dict__):
+#             s += console.cyan + "    %s: " % key + console.yellow + "%s\n" % (self.__dict__[key] if self.__dict__[key] is not None else '-')
+#         s += console.reset
+        s += console.green + "    Configurations" + console.reset + "\n"
+        for configuration in self.interactions:
+            s += "      - " + console.yellow + "%s" % configuration + console.reset + "\n"
+        if self.pairing:
+            s += console.green + "    Pairing" + console.reset + "\n"
+            s += console.cyan + "      autostart_pairing" + console.reset + ": " + console.yellow + (self.auto_start_pairing if self.auto_start_pairing is not None else '-') + console.reset + "\n"
         return s

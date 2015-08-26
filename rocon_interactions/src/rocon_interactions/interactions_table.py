@@ -28,6 +28,7 @@ import rocon_uri
 import rospy
 
 from . import interactions
+from . import utils
 from .exceptions import InvalidInteraction, MalformedInteractionsYaml
 
 ##############################################################################
@@ -163,7 +164,7 @@ class InteractionsTable(object):
         '''
         removed = []
         for msg in msgs:
-            msg_hash = interactions.generate_hash(msg.display_name, msg.group, msg.namespace)
+            msg_hash = utils.generate_hash(msg.name, msg.group, msg.namespace)
             found = self.find(msg_hash)
             if found is not None:
                 removed.append(msg)

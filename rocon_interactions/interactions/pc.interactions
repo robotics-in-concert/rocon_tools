@@ -23,7 +23,17 @@ interactions:
       group: 'PC'
       compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
       command: rocon_interactions/rviz.launch
-      description: Rviz with a customised view from a launch file (roslaunch).
+      description: Rviz with a customised view from a launch file (via roslaunch).
       max: -1
       icon:
         resource_name: rocon_bubble_icons/rviz.png
+
+    - name: RosRun Rviz Markers
+      group: 'PC'
+      compatibility: rocon:/pc/*/hydro|indigo/precise|quantal|raring|saucy|trusty
+      command: rviz/rviz -d $(find rocon_interactions)/rviz/markers.rviz
+      description: Rviz with a customised view directly (via rosrun).
+      max: -1
+      icon:
+        resource_name: rocon_bubble_icons/rviz.png
+      

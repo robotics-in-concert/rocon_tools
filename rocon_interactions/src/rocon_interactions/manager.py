@@ -155,7 +155,7 @@ class InteractionsManager(object):
         queue_size_five = 5
         self.publishers = rocon_python_comms.utils.Publishers(
             [
-                ('~parameters', std_msgs.String, latched, queue_size_five),
+                ('~introspection/parameters', std_msgs.String, latched, queue_size_five),
                 ('~interactive_clients', interaction_msgs.InteractiveClients, latched, queue_size_five),
                 ('~pairing_status', interaction_msgs.PairingStatus, latched, queue_size_five),
                 ('~introspection/paired_interactions', std_msgs.String, latched, queue_size_five)

@@ -63,16 +63,50 @@ def find_resource_from_string(resource, rospack=None, extension=None):
 
       :raises: :exc:`.rospkg.ResourceNotFound` raised if the resource is not found or has an inappropriate extension.
     '''
+    unused_package, filename = find_resource_pair_from_string(resource, rospack, extension)
+    return filename
+
+
+def find_resource_pair_from_string(resource, rospack=None, extension=None):
+    '''
+          Convenience wrapper around roslib to find a resource (file) inside
+      a package. This function passes off the work to find_resource
+      once the input string is split.
+
+      Pass it a shared rospack (:class:`.rospkg.RosPack`) object to accelerate
+      the crawling across the ROS_PACKAGE_PATH when you are calling this
+      function for many resources consecutively.
+
+      .. code-block:: python
+
+           rospack = rospkg.RosPack()
+           for ros_resource_name in ['rocon_interactions/pc.interactions', 'rocon_interactions/demo.interactions']
+               filename = find_resource_from_string(ros_resource_name, rospack)
+               # do something
+
+      :param str resource: ros resource name (in the form package/filename)
+      :param rospack: a caching utility to help accelerate catkin filesystem lookups
+      :type rospack: :class:`.rospkg.RosPack`
+      :param str extension: file name extension to look for/expect
+
+      :returns: (package, full pathname) to the resource
+      :rtype: (str, str)
+
+      :raises: :exc:`.rospkg.ResourceNotFound` raised if the resource is not found or has an inappropriate extension.
+    '''
     if extension is not None:
         filename_extension = os.path.splitext(resource)[-1]
         if filename_extension == '':  # no ext given
             resource += ".%s" % extension
         elif filename_extension != "." + extension and filename_extension != extension:
             raise rospkg.ResourceNotFound("resource with invalid filename extension specified [%s][%s]" % (resource, extension))
-    package, filename = roslib.names.package_resource_name(resource)
+    try:
+        package, filename = roslib.names.package_resource_name(resource)
+    except ValueError:
+        raise rospkg.ResourceNotFound("resource with invalid ros name specified [%s][%s]" % (resource, extension))
     if not package:
         raise rospkg.ResourceNotFound("resource could not be split with a valid leading package name [%s]" % (resource))
-    return find_resource(package, filename, rospack)
+    return (package, find_resource(package, filename, rospack))
 
 
 def find_resource(package, filename, rospack=None):

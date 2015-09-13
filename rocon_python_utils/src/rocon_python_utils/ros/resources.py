@@ -101,15 +101,15 @@ def find_resource_pair_from_string(resource, rospack=None, extension=None):
         elif filename_extension != "." + extension and filename_extension != extension:
             raise rospkg.ResourceNotFound("resource with invalid filename extension specified [%s][%s]" % (resource, extension))
     try:
-        package, filename = _package_resource_name(resource)
-    except ValueError:
+        package, filename = package_resource_name(resource)
+    except rospkg.ResourceNotFound:
         raise rospkg.ResourceNotFound("resource with invalid ros name specified [%s][%s]" % (resource, extension))
     if not package:
         raise rospkg.ResourceNotFound("resource could not be split with a valid leading package name [%s]" % (resource))
     return (package, find_resource(package, filename, rospack))
 
 
-def _package_resource_name(name):
+def package_resource_name(name):
     """
     Split a name into its package and resource name parts, e.g.
 
@@ -125,12 +125,12 @@ def _package_resource_name(name):
     @type  name: str
     @return: package name, resource name
     @rtype: str
-    @raise ValueError: if name is invalid (cannot split into two arguments)
+    @raise rospkg.ResourceNotFound: if name is invalid (cannot split into two arguments)
     """
     if roslib.names.PRN_SEPARATOR in name:
         val = tuple(name.split(roslib.names.PRN_SEPARATOR, 1))
         if len(val) <= 1:
-            raise ValueError("invalid name [%s]" % name)
+            raise rospkg.ResourceNotFound("invalid name [%s]" % name)
         else:
             return val
     else:

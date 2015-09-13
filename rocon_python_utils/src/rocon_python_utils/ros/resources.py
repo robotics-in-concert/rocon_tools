@@ -69,7 +69,7 @@ def find_resource_from_string(resource, rospack=None, extension=None):
 
 def find_resource_pair_from_string(resource, rospack=None, extension=None):
     '''
-          Convenience wrapper around roslib to find a resource (file) inside
+      Convenience wrapper around roslib to find a resource (file) inside
       a package. This function passes off the work to find_resource
       once the input string is split.
 
@@ -101,12 +101,40 @@ def find_resource_pair_from_string(resource, rospack=None, extension=None):
         elif filename_extension != "." + extension and filename_extension != extension:
             raise rospkg.ResourceNotFound("resource with invalid filename extension specified [%s][%s]" % (resource, extension))
     try:
-        package, filename = roslib.names.package_resource_name(resource)
+        package, filename = _package_resource_name(resource)
     except ValueError:
         raise rospkg.ResourceNotFound("resource with invalid ros name specified [%s][%s]" % (resource, extension))
     if not package:
         raise rospkg.ResourceNotFound("resource could not be split with a valid leading package name [%s]" % (resource))
     return (package, find_resource(package, filename, rospack))
+
+
+def _package_resource_name(name):
+    """
+    Split a name into its package and resource name parts, e.g.
+
+     - 'std_msgs/String -> std_msgs, String'
+     - 'gopher_gazebo/gocart.xacro -> gopher_gazebo, gocart.xacro'
+    -  'gopher_gazebo/urfd/gocart.xacro -> gopher_gazebo, urdf/gocart.xacro'
+
+    This emulates what the original roslib.names.package_resource_name() function did, but also caters
+    for the third example above where its a full relative path inside the package so as to disambiguate
+    against multiple matches.
+
+    @param name: package resource name, e.g. 'std_msgs/String'
+    @type  name: str
+    @return: package name, resource name
+    @rtype: str
+    @raise ValueError: if name is invalid (cannot split into two arguments)
+    """
+    if roslib.names.PRN_SEPARATOR in name:
+        val = tuple(name.split(roslib.names.PRN_SEPARATOR, 1))
+        if len(val) <= 1:
+            raise ValueError("invalid name [%s]" % name)
+        else:
+            return val
+    else:
+        return '', name
 
 
 def find_resource(package, filename, rospack=None):
@@ -122,6 +150,11 @@ def find_resource(package, filename, rospack=None):
 
       :raises: :exc:`.rospkg.ResourceNotFound` : raised if there is nothing found or multiple objects found.
     '''
+    # try an explicit lookup first by concatenating package and filename paths, it's faster and avoids ambiguities
+    resolved_path = _find_resource_explicitly(package, filename)
+    if resolved_path is not None:
+        return resolved_path
+    # must be a 'convenient' resource path.
     try:
         resolved = roslib.packages.find_resource(package, filename, rospack=rospack)
         if not resolved:
@@ -134,6 +167,27 @@ def find_resource(package, filename, rospack=None):
         raise rospkg.ResourceNotFound("[%s] is not a package or launch file name [%s]" % (package, package + '/' + filename))
     return None
 
+
+def _find_resource_explicitly(package, filename, rospack=None):
+    """
+    When find resource starts, it will try and link up the package and filename explictly via
+    an os.path.join and see if that works as it is faster and can avoid ambiguities.
+
+    :param str package:
+    :param str filename: either a ros resource name part, or relative to the package root
+    :param rospkg.RosPack rospack: the package finder
+    :returns: the absolute path or None
+    :rtype: str or None
+    """
+    if rospack is None:
+        rospack = rospkg.RosPack()
+    # lookup package as it *must* exist
+    pkg_path = rospack.get_path(package)
+    explicit_filename_path = os.path.join(pkg_path, filename)
+    if os.path.isfile(explicit_filename_path):
+        return explicit_filename_path
+    else:
+        return None
 
 def resource_index_from_package_exports(export_tag, package_paths=None, package_whitelist=None, package_blacklist=[]):
     '''

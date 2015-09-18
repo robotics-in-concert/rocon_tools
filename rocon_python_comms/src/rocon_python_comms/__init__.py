@@ -21,6 +21,7 @@ ros python communications.
 from .connections import *
 from .exceptions import *
 from .nodes import find_node
+from .publishers import Publisher
 from .service_pair_client import ServicePairClient
 from .service_pair_server import ServicePairServer
 from .services import find_service, service_is_available

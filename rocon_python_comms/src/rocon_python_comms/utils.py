@@ -103,15 +103,24 @@ class Publishers(object):
                [
                    ('~foo', std_msgs.String, True, 5),
                    ('/foo/bar', std_msgs.String, False, 5),
+                   ('foobar', '/foo/bar', std_msgs.String, False, 5),
                ]
            )
 
-        Note: '~/introspection/dude' will become just 'dude'
+        Note: '~/introspection/dude' will become just 'dude' unless you prepend a field for the name
+        as in the third example above.
 
         :param publishers: incoming list of service specifications
         :type publishers: list of (str, str, bool, int) tuples representing (topic_name, publisher_type, latched, queue_size) specifications.
         """
-        self.__dict__ = {namespace.basename(topic_name): rospy.Publisher(topic_name, publisher_type, latch=latched, queue_size=queue_size) for (topic_name, publisher_type, latched, queue_size) in publishers}
+        publisher_details = []
+        for info in publishers:
+            if len(info) == 4:
+                publisher_details.append((namespace.basename(info[0]), info[0], info[1], info[2], info[3]))
+            else:
+                # naively assume the user got it right and added exactly 5 fields
+                publisher_details.append(info)
+        self.__dict__ = {name: rospy.Publisher(topic_name, publisher_type, latch=latched, queue_size=queue_size) for (name, topic_name, publisher_type, latched, queue_size) in publisher_details}
         publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher

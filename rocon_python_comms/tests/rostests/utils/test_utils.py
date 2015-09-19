@@ -70,10 +70,12 @@ class TestUtils(unittest.TestCase):
             [
                 ('~foo', std_msgs.String, True, 5),
                 ('/foo/bar', std_msgs.String, False, 5),
+                ('dude', '/dude/joe', std_msgs.String, False, 5),
             ]
         )
         assert('foo' in publishers.__dict__.keys())
         assert('bar' in publishers.__dict__.keys())
+        assert('dude' in publishers.__dict__.keys())
 
     def test_subscribers(self):
         print("")

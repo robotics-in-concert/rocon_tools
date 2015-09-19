@@ -46,6 +46,15 @@ class Services(object):
         """
         Converts the incoming list of service name, service type, callback function triples into proper variables of this class.
 
+        .. code-block:: python
+
+           services = rocon_python_comms.utils.Services(
+               [
+                   ('~dude', std_srvs.Empty, service_callback),
+                   ('/dude/bob', std_srvs.Empty, service_callback),
+               ]
+           )
+
         Note: '~/introspection/dude' will become just 'dude'
 
         :param services: incoming list of service specifications
@@ -63,6 +72,15 @@ class ServiceProxies(object):
         """
         Converts the incoming list of service name, service type pairs into proper variables of this class.
 
+        .. code-block:: python
+
+           service_proxies = rocon_python_comms.utils.ServiceProxies(
+               [
+                   ('~dude', std_srvs.Empty),
+                   ('/dude/bob', std_srvs.Empty),
+               ]
+           )
+
         Note: '~/introspection/dude' will become just 'dude'
 
         :param services: incoming list of service proxy specifications
@@ -79,6 +97,15 @@ class Publishers(object):
         """
         Converts the incoming list of publisher name, type, latched, queue_size specifications into proper variables of this class.
 
+        .. code-block:: python
+
+           publishers = rocon_python_comms.utils.Publishers(
+               [
+                   ('~foo', std_msgs.String, True, 5),
+                   ('/foo/bar', std_msgs.String, False, 5),
+               ]
+           )
+
         Note: '~/introspection/dude' will become just 'dude'
 
         :param publishers: incoming list of service specifications
@@ -94,6 +121,15 @@ class Subscribers(object):
     def __init__(self, subscribers, introspection_topic_name="subscribers"):
         """
         Converts the incoming list of publisher name, service type pairs into proper variables of this class.
+
+        .. code-block:: python
+
+           subscribers = rocon_python_comms.utils.Subscribers(
+               [
+                   ('~dudette', std_msgs.String, subscriber_callback),
+                   ('/dudette/jane', std_msgs.String, subscriber_callback),
+               ]
+           )
 
         Note: '~/introspection/dude' will become just 'dude'
 

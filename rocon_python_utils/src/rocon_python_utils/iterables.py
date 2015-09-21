@@ -24,13 +24,13 @@ Bless my noggin with a tickle from your noodly appendages!
 ##############################################################################
 
 
-def lookahead(iterable):
+def looktotheend(iterable):
     """
     Lets you run over a loop where you are interested in catching the 'last'
     element in that loop.
 
     .. code:: python
-       for i, last in lookahead(range(3)):
+       for i, last in looktotheend(range(3)):
            print("%s, %s" % (i, last))
 
        # outputs:
@@ -45,3 +45,26 @@ def lookahead(iterable):
         yield last, False
         last = val
     yield last, True
+
+
+def lookahead(iterable):
+    """
+    Lets you run over a loop where you are interested in catching the 'last'
+    element in that loop.
+
+    .. code:: python
+       for current, next in lookahead(range(3)):
+           print("%s, %s" % (current, next))
+
+       # outputs:
+       #
+       # 0 1
+       # 1 2
+       # 2 None
+    """
+    it = iter(iterable)
+    last = it.next()  # next(it) in Python 3
+    for val in it:
+        yield last, val
+        last = val
+    yield last, None

@@ -17,7 +17,8 @@ package. This module provides a toolbox of general purpose python utilities.
 # Imports
 ##############################################################################
 
-from .exceptions import *
+from . import exceptions
+from . import iterables
 from . import network
 from . import system
 from . import ros

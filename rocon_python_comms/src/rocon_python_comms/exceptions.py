@@ -41,6 +41,13 @@ class TimedOutException(IOError):
     pass
 
 
+class ROSNotFoundException(IOError):
+    """
+      Raised when ros couldn't be found.
+    """
+    pass
+
+
 class NotFoundException(IOError):
     """
       Raised when a requested entity cannot be found, or didn't return the correct result.

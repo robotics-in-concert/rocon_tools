@@ -20,6 +20,7 @@ ros python communications.
 
 from .connections import *
 from .exceptions import *
+from . import master
 from .nodes import find_node
 from .publishers import Publisher
 from .service_pair_client import ServicePairClient

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.0 (2015-10-10)
+------------------
+* overhauled for better pairing management
+* user side can now be dependent on a paired rapp
+
 0.2.0 (2015-08-18)
 ------------------
 * required dependency on a running rapp for interactions

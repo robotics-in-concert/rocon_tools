@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.3.0 (2015-10-10)
+------------------
+* lots of minor api added
+
 0.2.0 (2015-08-18)
 ------------------
 * one shot and indefinite waiting for service pair clients

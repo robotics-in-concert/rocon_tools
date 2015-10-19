@@ -148,13 +148,15 @@ class RappHandler(object):
         except KeyError:
             return None
 
-    def start(self, rapp, remappings):
+    def start(self, rapp, remappings, parameters=[]):
         """
         Start the rapp with the specified remappings.
 
         :param str rapp: ros package resource name of the rapp to start (e.g. rocon_apps/teleop)
         :param remappings: remappings to apply to the rapp when starting.
         :type remappings: [rocon_std_msgs.Remapping]
+        :param parameters: paramters to apply to the rapp when starting.
+        :type remappings: [rocon_std_msgs.KeyValue]
 
         .. include:: weblinks.rst
 
@@ -163,7 +165,7 @@ class RappHandler(object):
         if not self.initialised:
             raise FailedToStartRappError("rapp manager's location unknown")
         try:
-            unused_response = self.service_proxies.start_rapp(rocon_app_manager_srvs.StartRappRequest(name=rapp, remappings=remappings))
+            unused_response = self.service_proxies.start_rapp(rocon_app_manager_srvs.StartRappRequest(name=rapp, remappings=remappings, parameters=parameters))
             # todo check this response and process it
         except (rospy.service.ServiceException,
                 rospy.exceptions.ROSInterruptException) as e:

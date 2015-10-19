@@ -463,7 +463,7 @@ class InteractionsManager(object):
                     response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.PAIRING_UNAVAILABLE)
                     return response
                 try:
-                    self._rapp_handler.start(pairing.rapp, pairing.remappings)
+                    self._rapp_handler.start(pairing.rapp, pairing.remappings, pairing.parameters)
                     self.active_pairing = pairing
                 except FailedToStartRappError as e:
                     rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")
@@ -488,7 +488,7 @@ class InteractionsManager(object):
         try:
             pairing = self.pairings_table.find(request.name)
             self.active_pairing = pairing
-            self._rapp_handler.start(pairing.rapp, pairing.remappings)
+            self._rapp_handler.start(pairing.rapp, pairing.remappings, pairing.parameters)
             return interaction_srvs.StartPairingResponse(interaction_msgs.ErrorCodes.SUCCESS, "firing up.")
         except FailedToStartRappError as e:
             rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")

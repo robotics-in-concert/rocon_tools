@@ -8,6 +8,9 @@ pairings:
       remappings:
           - remap_from: chatter
             remap_to: /conversation/chatter
+      parameters:
+          - key: message
+            value: "gday dude"
     - name: Babbler
       rapp: rocon_apps/talker
       description: Talker remapped to a babbler.

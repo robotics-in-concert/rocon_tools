@@ -129,7 +129,9 @@ class Publishers(object):
 class Subscribers(object):
     def __init__(self, subscribers, introspection_topic_name="subscribers"):
         """
-        Converts the incoming list of publisher name, service type pairs into proper variables of this class.
+        Converts the incoming list of subscriber name, msg type, callback triples into proper
+        variables of this class. Optionally you can prefix an arg that forces the name of
+        the variable created.
 
         .. code-block:: python
 
@@ -137,15 +139,24 @@ class Subscribers(object):
                [
                    ('~dudette', std_msgs.String, subscriber_callback),
                    ('/dudette/jane', std_msgs.String, subscriber_callback),
+                   ('jane', /dudette/jane', std_msgs.String, subscriber_callback),
                ]
            )
 
-        Note: '~/introspection/dude' will become just 'dude'
+        Note: '~/introspection/dude' will become just 'dude' unless you prepend a field for the name
+        as in the third example above.
 
         :param subscribers: incoming list of service specifications
         :type subscribers: list of (str, str, bool, int) tuples representing (topic_name, subscriber_type, latched, queue_size) specifications.
         """
-        self.__dict__ = {namespace.basename(topic_name): rospy.Subscriber(topic_name, subscriber_type, callback) for (topic_name, subscriber_type, callback) in subscribers}
+        subscriber_details = []
+        for info in subscribers:
+            if len(info) == 3:
+                subscriber_details.append((namespace.basename(info[0]), info[0], info[1], info[2]))
+            else:
+                # naively assume the user got it right and added exactly 4 fields
+                subscriber_details.append(info)
+        self.__dict__ = {name: rospy.Subscriber(topic_name, subscriber_type, callback) for (name, topic_name, subscriber_type, callback) in subscriber_details}
         publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher

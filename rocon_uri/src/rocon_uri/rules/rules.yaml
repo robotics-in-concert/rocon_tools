@@ -58,6 +58,8 @@
       - raring
       - saucy
       - trusty
+      - utopic
+      - vivid
   - osx
   - freebsd
   - android:

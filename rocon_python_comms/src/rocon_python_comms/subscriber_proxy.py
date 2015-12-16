@@ -65,8 +65,8 @@ class SubscriberProxy():
 
     def __call__(self, timeout=None):
         '''
-          Returns immediately with the latest data or blocks indefinitely until
-          the next data arrives.
+          Returns immediately with the latest data or blocks to a timeout/indefinitely
+          until the next data arrives.
 
         :param rospy.Duration timeout: time to wait for data, polling at 10Hz (None = /infty)
         :returns: msg type data or None

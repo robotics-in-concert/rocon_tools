@@ -60,8 +60,8 @@ class SubscriberProxy():
         :param str topic: the topic name to subscriber to
         :param str msg_type: any ros message type (e.g. std_msgs/String)
         '''
-        self._subscriber = rospy.Subscriber(topic, msg_type, self._callback)
         self._data = None
+        self._subscriber = rospy.Subscriber(topic, msg_type, self._callback)
 
     def __call__(self, timeout=None):
         '''

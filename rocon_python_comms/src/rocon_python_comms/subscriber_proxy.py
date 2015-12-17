@@ -24,6 +24,7 @@ in the same style as you would a ros service (request-response).
 
 import time
 import rospy
+import threading
 
 ##############################################################################
 # Subscriber Proxy
@@ -61,6 +62,7 @@ class SubscriberProxy():
         :param str msg_type: any ros message type (e.g. std_msgs/String)
         '''
         self._data = None
+        self._lock = threading.Lock()
         self._subscriber = rospy.Subscriber(topic, msg_type, self._callback)
 
     def __call__(self, timeout=None):
@@ -76,12 +78,14 @@ class SubscriberProxy():
         if timeout is not None:
             # everything in floating point calculations
             timeout_time = time.time() + timeout.to_sec()
-        while not rospy.is_shutdown() and self._data is None:
+        with self._lock:
+            data = self._data
+        while not rospy.is_shutdown() and data is None:
             rospy.rostime.wallsleep(0.1)
             if timeout is not None:
                 if time.time() > timeout_time:
                     return None
-        return self._data
+        return data
 
     def wait_for_next(self, timeout=None):
         '''
@@ -109,7 +113,8 @@ class SubscriberProxy():
         raise rospy.exceptions.ROSInterruptException
 
     def _callback(self, data):
-        self._data = data
+        with self._lock:
+            self._data = data
 
     def unregister(self):
         '''

@@ -81,6 +81,24 @@ class TestConnectionCacheNode(unittest.TestCase):
             print "NOT FOUND IN LIST : {0}".format(topicq_clist)
         return test
 
+    def add_two_ints_detected(self, svcq_clist, conn_type, node_name):
+        """
+        detect the chatter publisher in a connection list
+        """
+        test = False
+        for i, conn in enumerate(svcq_clist):  # lop through all connections in the list
+            test = (conn.name == '/add_two_ints'
+                    and conn.type == conn_type
+                    and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
+                    and conn.type_info == ''
+                    and conn.xmlrpc_uri == '')
+            if test:  # break right away if found
+                break
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node} type_info:{type_info} xmlrpc_uri:{xmlrpc_uri}".format(name='/add_two_ints', type=conn_type, node=node_name, type_info='', xmlrpc_uri='')
+            print "NOT FOUND IN LIST : {0}".format(svcq_clist)
+        return test
+
     def test_detect_publisher_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
@@ -170,8 +188,48 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert lost_subscriber_detected['list'] and lost_subscriber_detected['diff']
 
     def test_detect_service(self):
-        # TODO
-        pass
+        # Start a dummy node
+        server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
+        launch = roslaunch.scriptapi.ROSLaunch()
+        launch.start()
+        process = launch.launch(server_node)
+
+        added_service_detected = {'list': False, 'diff': False}
+
+        # Loop a bit so we can detect the service
+        with timeout(5) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not added_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                    added_service_detected['list'] = True
+
+                if not added_service_detected['diff'] and self.conn_diff_msgq and self.add_two_ints_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                    added_service_detected['diff'] = True
+
+                if added_service_detected['list'] and added_service_detected['diff']:
+                    break
+                time.sleep(0.2)
+
+        assert added_service_detected['list'] and added_service_detected['diff']
+        process.stop()
+
+        lost_service_detected = {'list': False, 'diff': False}
+
+        # Loop a bit so we can detect the topic is gone
+        with timeout(5) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not lost_service_detected['list'] and self.conn_list_msgq and not self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we DONT find it
+                    lost_service_detected['list'] = True
+
+                if not lost_service_detected['diff'] and self.conn_diff_msgq and self.add_two_ints_detected(self.conn_diff_msgq[-1].lost, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                    lost_service_detected['diff'] = True
+
+                if lost_service_detected['list'] and lost_service_detected['diff']:
+                    break
+                time.sleep(0.2)
+
+        assert lost_service_detected['list'] and lost_service_detected['diff']
 
     # TODO : detect actions server and client
 

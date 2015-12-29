@@ -105,26 +105,50 @@ class TestConnectionCacheNode(unittest.TestCase):
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()
         process = launch.launch(talker_node)
+        try:
+            added_publisher_detected = {'list': False, 'diff': False}
 
-        added_publisher_detected = {'list': False, 'diff': False}
+            # Loop a bit so we can detect the topic
+            with timeout(5) as t:
+                while not t.timed_out:
+                    # Here we only check the last message received
+                    if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
+                        added_publisher_detected['list'] = True
 
-        # Loop a bit so we can detect the topic
-        with timeout(5) as t:
-            while not t.timed_out:
-                # Here we only check the last message received
-                if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
-                    added_publisher_detected['list'] = True
+                    if not added_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
+                        added_publisher_detected['diff'] = True
 
-                if not added_publisher_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
-                    added_publisher_detected['diff'] = True
+                    if added_publisher_detected['list'] and added_publisher_detected['diff']:
+                        break
+                    time.sleep(0.2)
 
-                if added_publisher_detected['list'] and added_publisher_detected['diff']:
-                    break
-                time.sleep(0.2)
+            assert added_publisher_detected['list'] and added_publisher_detected['diff']
 
-        assert added_publisher_detected['list'] and added_publisher_detected['diff']
-        process.stop()
 
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+
+            # Start a dummy node to trigger a change
+            server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
+            distraction_process = launch.launch(server_node)
+            try:
+                still_publisher_detected = {'list': False}
+
+                # Loop a bit so we can detect the topic
+                with timeout(5) as t:
+                    while not t.timed_out:
+                        # Here we only check the last message received
+                        if not still_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
+                            still_publisher_detected['list'] = True
+                            break
+                        time.sleep(0.2)
+
+                assert still_publisher_detected['list']
+            finally:
+                distraction_process.stop()
+
+        finally:
+            process.stop()
         lost_publisher_detected = {'list': False, 'diff': False}
 
         # Loop a bit so we can detect the topic is gone
@@ -149,25 +173,49 @@ class TestConnectionCacheNode(unittest.TestCase):
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()
         process = launch.launch(listener_node)
+        try:
+            added_subscriber_detected = {'list': False, 'diff': False}
 
-        added_subscriber_detected = {'list': False, 'diff': False}
+            # Loop a bit so we can detect the topic
+            with timeout(5) as t:
+                while not t.timed_out:
+                    # Here we only check the last message received
+                    if not added_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                        added_subscriber_detected['list'] = True
 
-        # Loop a bit so we can detect the topic
-        with timeout(5) as t:
-            while not t.timed_out:
-                # Here we only check the last message received
-                if not added_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
-                    added_subscriber_detected['list'] = True
+                    if not added_subscriber_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                        added_subscriber_detected['diff'] = True
 
-                if not added_subscriber_detected['diff'] and self.conn_diff_msgq and self.chatter_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
-                    added_subscriber_detected['diff'] = True
+                    if added_subscriber_detected['list'] and added_subscriber_detected['diff']:
+                        break
+                    time.sleep(0.2)
 
-                if added_subscriber_detected['list'] and added_subscriber_detected['diff']:
-                    break
-                time.sleep(0.2)
+            assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
 
-        assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
-        process.stop()
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+
+            # Start a dummy node to trigger a change
+            server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
+            distraction_process = launch.launch(server_node)
+            try:
+                still_subscriber_detected = {'list': False}
+
+                # Loop a bit so we can detect the topic
+                with timeout(5) as t:
+                    while not t.timed_out:
+                        # Here we only check the last message received
+                        if not still_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                            still_subscriber_detected['list'] = True
+                            break
+                        time.sleep(0.2)
+
+                assert still_subscriber_detected['list']
+            finally:
+                distraction_process.stop()
+        finally:
+            process.stop()
 
         lost_subscriber_detected = {'list': False, 'diff': False}
 
@@ -193,29 +241,52 @@ class TestConnectionCacheNode(unittest.TestCase):
         launch = roslaunch.scriptapi.ROSLaunch()
         launch.start()
         process = launch.launch(server_node)
+        try:
+            added_service_detected = {'list': False, 'diff': False}
 
-        added_service_detected = {'list': False, 'diff': False}
+            # Loop a bit so we can detect the service
+            with timeout(5) as t:
+                while not t.timed_out:
+                    # Here we only check the last message received
+                    if not added_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                        added_service_detected['list'] = True
 
-        # Loop a bit so we can detect the service
-        with timeout(5) as t:
-            while not t.timed_out:
-                # Here we only check the last message received
-                if not added_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
-                    added_service_detected['list'] = True
+                    if not added_service_detected['diff'] and self.conn_diff_msgq and self.add_two_ints_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                        added_service_detected['diff'] = True
 
-                if not added_service_detected['diff'] and self.conn_diff_msgq and self.add_two_ints_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
-                    added_service_detected['diff'] = True
+                    if added_service_detected['list'] and added_service_detected['diff']:
+                        break
+                    time.sleep(0.2)
 
-                if added_service_detected['list'] and added_service_detected['diff']:
-                    break
-                time.sleep(0.2)
+            assert added_service_detected['list'] and added_service_detected['diff']
 
-        assert added_service_detected['list'] and added_service_detected['diff']
-        process.stop()
+            still_service_detected = {'list': False}
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+
+            # Start a dummy node
+            talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
+            distraction_process = launch.launch(talker_node)
+            try:
+                # Loop a bit so we can detect the service
+                with timeout(5) as t:
+                    while not t.timed_out:
+                        # Here we only check the last message received
+                        if not still_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
+                            still_service_detected['list'] = True
+                            break
+                        time.sleep(0.2)
+
+                assert still_service_detected['list']
+            finally:
+                distraction_process.stop()
+        finally:
+            process.stop()
 
         lost_service_detected = {'list': False, 'diff': False}
 
-        # Loop a bit so we can detect the topic is gone
+        # Loop a bit so we can detect the service is gone
         with timeout(5) as t:
             while not t.timed_out:
                 # Here we only check the last message received

@@ -43,6 +43,10 @@ class TestConnectionCacheNode(unittest.TestCase):
         self.spin_freq = data.spin_freq
 
     def setUp(self):
+        # initialize the launch environment first
+        self.launch = roslaunch.scriptapi.ROSLaunch()
+        self.launch.start()
+
         #Init the test node
         rospy.init_node('test_node')
 
@@ -57,6 +61,13 @@ class TestConnectionCacheNode(unittest.TestCase):
         self.set_spin = rospy.Publisher('/connection_cache/spin', rocon_std_msgs.ConnectionCacheSpin)
         self.get_spin = rospy.Subscriber('/connection_cache/spin', rocon_std_msgs.ConnectionCacheSpin, self._spin_cb)
 
+        # connecting to the master via proxy object
+        self._master = rospy.get_master()
+
+        self.proxy = rocon_python_comms.ConnectionCacheProxy(
+                list_sub='/connection_cache/list',
+                diff_sub='/connection_cache/diff'
+        )
         # no need to spin
         pass
 
@@ -99,12 +110,41 @@ class TestConnectionCacheNode(unittest.TestCase):
             print "NOT FOUND IN LIST : {0}".format(svcq_clist)
         return test
 
+    def assertSystemState(self, proxySS):
+        masterSS = self._master.getSystemState()[2]
+
+        # masterSS set included in proxySS set
+        for idx, t in enumerate(masterSS):  # connection type
+            print "MASTER SYSTEM STATE CONNECTION TYPE {0}".format(t)
+            print " -> PROXY SYSTEM STATE CONNECTION TYPE {0}".format(proxySS[idx])
+            proxySS_names = [c[0] for c in proxySS[idx]]
+            for c in t:  # connection list [name, [nodes]]
+                print "MASTER SYSTEM STATE CONNECTION {0}".format(c)
+                print " -> CHECK {0} in PROXY NAMES {1}".format(c[0], proxySS_names)
+                assert c[0] in proxySS_names
+                proxySS_conn_nodes = [fpc for pc in proxySS[idx] if c[0] == pc[0] for fpc in pc[1]]
+                for n in c[1]:
+                    print " -> CHECK {0} in PROXY NODES {1}".format(n, proxySS_conn_nodes)
+                    assert n in proxySS_conn_nodes
+
+        # proxySS set included in masterSS set
+        for idx, t in enumerate(proxySS):  # connection type
+            print "PROXY SYSTEM STATE CONNECTION TYPE {0}".format(t)
+            print " -> MASTER SYSTEM STATE CONNECTION TYPE {0}".format(masterSS[idx])
+            masterSS_names = [c[0] for c in masterSS[idx]]
+            for c in t:  # connection list [name, [nodes]]
+                print "PROXY SYSTEM STATE CONNECTION {0}".format(c)
+                print " -> CHECK {0} in MASTER NAMES {1}".format(c[0], masterSS_names)
+                assert c[0] in masterSS_names
+                masterSS_conn_nodes = [fmc for mc in masterSS[idx] if c[0] == mc[0] for fmc in mc[1]]
+                for n in c[1]:
+                    print " -> CHECK {0} in MASTER NODES {1}".format(n, masterSS_conn_nodes)
+                    assert n in masterSS_conn_nodes
+
     def test_detect_publisher_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-        launch = roslaunch.scriptapi.ROSLaunch()
-        launch.start()
-        process = launch.launch(talker_node)
+        process = self.launch.launch(talker_node)
         try:
             added_publisher_detected = {'list': False, 'diff': False}
 
@@ -124,12 +164,16 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             assert added_publisher_detected['list'] and added_publisher_detected['diff']
 
+            time.sleep(0.2)
+            # asserting in proxy as well
+            self.assertSystemState(self.proxy.getSystemState())
+
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = launch.launch(server_node)
+            distraction_process = self.launch.launch(server_node)
             try:
                 still_publisher_detected = {'list': False}
 
@@ -143,6 +187,9 @@ class TestConnectionCacheNode(unittest.TestCase):
                         time.sleep(0.2)
 
                 assert still_publisher_detected['list']
+                time.sleep(0.2)
+                # asserting in proxy as well
+                self.assertSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -170,13 +217,14 @@ class TestConnectionCacheNode(unittest.TestCase):
                 time.sleep(0.2)
 
         assert lost_publisher_detected['list'] and lost_publisher_detected['diff']
+        time.sleep(0.2)
+        # asserting in proxy as well
+        self.assertSystemState(self.proxy.getSystemState())
 
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
         listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
-        launch = roslaunch.scriptapi.ROSLaunch()
-        launch.start()
-        process = launch.launch(listener_node)
+        process = self.launch.launch(listener_node)
         try:
             added_subscriber_detected = {'list': False, 'diff': False}
 
@@ -195,13 +243,16 @@ class TestConnectionCacheNode(unittest.TestCase):
                     time.sleep(0.2)
 
             assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
+            # asserting in proxy as well
+            time.sleep(0.2)
+            self.assertSystemState(self.proxy.getSystemState())
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = launch.launch(server_node)
+            distraction_process = self.launch.launch(server_node)
             try:
                 still_subscriber_detected = {'list': False}
 
@@ -215,6 +266,9 @@ class TestConnectionCacheNode(unittest.TestCase):
                         time.sleep(0.2)
 
                 assert still_subscriber_detected['list']
+                time.sleep(0.2)
+                # asserting in proxy as well
+                self.assertSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -242,13 +296,14 @@ class TestConnectionCacheNode(unittest.TestCase):
                 time.sleep(0.2)
 
         assert lost_subscriber_detected['list'] and lost_subscriber_detected['diff']
+        time.sleep(0.2)
+        # asserting in proxy as well
+        self.assertSystemState(self.proxy.getSystemState())
 
     def test_detect_service_added_lost(self):
         # Start a dummy node
         server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-        launch = roslaunch.scriptapi.ROSLaunch()
-        launch.start()
-        process = launch.launch(server_node)
+        process = self.launch.launch(server_node)
         try:
             added_service_detected = {'list': False, 'diff': False}
 
@@ -267,6 +322,9 @@ class TestConnectionCacheNode(unittest.TestCase):
                     time.sleep(0.2)
 
             assert added_service_detected['list'] and added_service_detected['diff']
+            time.sleep(0.2)
+            # asserting in proxy as well
+            self.assertSystemState(self.proxy.getSystemState())
 
             still_service_detected = {'list': False}
 
@@ -275,7 +333,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             # Start a dummy node
             talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-            distraction_process = launch.launch(talker_node)
+            distraction_process = self.launch.launch(talker_node)
             try:
                 # Loop a bit so we can detect the service
                 with timeout(5) as t:
@@ -287,6 +345,9 @@ class TestConnectionCacheNode(unittest.TestCase):
                         time.sleep(0.2)
 
                 assert still_service_detected['list']
+                time.sleep(0.2)
+                # asserting in proxy as well
+                self.assertSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -314,6 +375,9 @@ class TestConnectionCacheNode(unittest.TestCase):
                 time.sleep(0.2)
 
         assert lost_service_detected['list'] and lost_service_detected['diff']
+        time.sleep(0.2)
+        # asserting in proxy as well
+        self.assertSystemState(self.proxy.getSystemState())
 
     # TODO : detect actions server and client
 

@@ -124,7 +124,6 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             assert added_publisher_detected['list'] and added_publisher_detected['diff']
 
-
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
@@ -147,8 +146,13 @@ class TestConnectionCacheNode(unittest.TestCase):
             finally:
                 distraction_process.stop()
 
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+
         finally:
             process.stop()
+
         lost_publisher_detected = {'list': False, 'diff': False}
 
         # Loop a bit so we can detect the topic is gone
@@ -192,7 +196,6 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
 
-
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
@@ -214,6 +217,11 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_subscriber_detected['list']
             finally:
                 distraction_process.stop()
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+
         finally:
             process.stop()
 
@@ -235,7 +243,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
         assert lost_subscriber_detected['list'] and lost_subscriber_detected['diff']
 
-    def test_detect_service(self):
+    def test_detect_service_added_lost(self):
         # Start a dummy node
         server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
         launch = roslaunch.scriptapi.ROSLaunch()
@@ -281,6 +289,11 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_service_detected['list']
             finally:
                 distraction_process.stop()
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+
         finally:
             process.stop()
 
@@ -334,7 +347,8 @@ class TestConnectionCacheNode(unittest.TestCase):
         # check that we dont get any update
         added_subscriber_diff_detected = False
 
-        # wait - only as long as a tick - until rate has been published as changed. during this time we shouldnt detect the subscriber
+        # wait - only as long as a tick - until rate has been published as changed.
+        # during this time we shouldnt detect the subscriber
         counter = 0
         while (counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq) and self.spin_freq == mem_spin_freq:
             counter += 1

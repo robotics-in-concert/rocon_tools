@@ -73,13 +73,15 @@ if __name__ == '__main__':
                         for c in lost_conns[ct]:
                             rocon_python_comms.create_connection(c)
                             diff_msg.lost.append(c.msg)
-                        for c in conn_cache.connections[ct]:
-                            rocon_python_comms.create_connection(c)
-                            list_msg.connections.append(c.msg)
+                    # we always need all connections types in the full list
+                    for c in conn_cache.connections[ct]:
+                        rocon_python_comms.create_connection(c)
+                        list_msg.connections.append(c.msg)
 
                 if changed:
-                    print "NEW : {0}".format(new_conns)
-                    print "LOST : {0}".format(lost_conns)
+                    rospy.loginfo("COMPLETE LIST : {0}".format(conn_cache.connections))
+                    rospy.loginfo("NEW : {0}".format(new_conns))
+                    rospy.loginfo("LOST : {0}".format(lost_conns))
 
                     conn_diff.publish(diff_msg)  # new_conns, old_conns
                     conn_list.publish(list_msg)  # conn_cache.connections

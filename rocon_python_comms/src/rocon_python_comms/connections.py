@@ -647,14 +647,24 @@ class ConnectionCacheProxy(object):
         for c in data.lost:
             if c.type == c.PUBLISHER:
                 self._system_state.publishers[c.name].remove(c.node)
+                if not self._system_state.publishers[c.name]:
+                    self._system_state.publishers.pop(c.name, None)
             elif c.type == c.SUBSCRIBER:
                 self._system_state.subscribers[c.name].remove(c.node)
+                if not self._system_state.subscribers[c.name]:
+                    self._system_state.subscribers.pop(c.name, None)
             elif c.type == c.SERVICE:
                 self._system_state.services[c.name].remove(c.node)
+                if not self._system_state.services[c.name]:
+                    self._system_state.services.pop(c.name, None)
             elif c.type == c.ACTION_SERVER:
                 self._system_state.action_servers[c.name].remove(c.node)
+                if not self._system_state.action_servers[c.name]:
+                    self._system_state.action_servers.pop(c.name, None)
             elif c.type == c.ACTION_CLIENT:
                 self._system_state.action_clients[c.name].remove(c.node)
+                if not self._system_state.action_clients[c.name]:
+                    self._system_state.action_clients.pop(c.name, None)
         self._system_state_lock.release()
         rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
         rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))

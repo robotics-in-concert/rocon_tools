@@ -196,12 +196,14 @@ class TestConnectionCacheNode(unittest.TestCase):
                 print " -> CHECK {0} in PROXY NAMES {1}".format(c[0], proxySS_names)
                 same = same and c[0] in proxySS_names
                 if not same:
+                    print("ERROR : {0} not in {1}".format(c[0], proxySS_names))
                     break
                 proxySS_conn_nodes = [fpc for pc in proxySS[idx] if c[0] == pc[0] for fpc in pc[1]]
                 for n in c[1]:
                     print " -> CHECK {0} in PROXY NODES {1}".format(n, proxySS_conn_nodes)
                     same = same and n in proxySS_conn_nodes
                     if not same:
+                        print("ERROR : {0} not in {1}".format(n, proxySS_conn_nodes))
                         break
 
         # proxySS set included in masterSS set
@@ -214,12 +216,14 @@ class TestConnectionCacheNode(unittest.TestCase):
                 print " -> CHECK {0} in MASTER NAMES {1}".format(c[0], masterSS_names)
                 same = same and c[0] in masterSS_names
                 if not same:
+                    print("ERROR : {0} not in {1}".format(c[0], masterSS_names))
                     break
                 masterSS_conn_nodes = [fmc for mc in masterSS[idx] if c[0] == mc[0] for fmc in mc[1]]
                 for n in c[1]:
                     print " -> CHECK {0} in MASTER NODES {1}".format(n, masterSS_conn_nodes)
                     same = same and n in masterSS_conn_nodes
                     if not same:
+                        print("ERROR : {0} not in {1}".format(n, masterSS_conn_nodes))
                         break
         return same
 
@@ -567,7 +571,6 @@ class TestConnectionCacheNodeDiff(TestConnectionCacheNode):
 
     def tearDown(self):
         super(TestConnectionCacheNodeDiff, self).tearDown()
-
 
 
 if __name__ == '__main__':

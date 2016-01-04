@@ -563,9 +563,9 @@ class ConnectionCacheNode(object):
                             list_msg.connections.append(c.msg)
 
                     if changed:
-                        rospy.loginfo("COMPLETE LIST : {0}".format(self.conn_cache.connections))
-                        rospy.loginfo("NEW : {0}".format(new_conns))
-                        rospy.loginfo("LOST : {0}".format(lost_conns))
+                        # rospy.loginfo("COMPLETE LIST : {0}".format(self.conn_cache.connections))
+                        # rospy.loginfo("NEW : {0}".format(new_conns))
+                        # rospy.loginfo("LOST : {0}".format(lost_conns))
 
                         self.conn_diff.publish(diff_msg)  # new_conns, old_conns
                         self.conn_list.publish(list_msg)  # conn_cache.connections
@@ -616,9 +616,9 @@ class ConnectionCacheProxy(object):
                 self._system_state.action_clients.setdefault(c.name, set())
                 self._system_state.action_clients[c.name].add(c.node)
         self._system_state_lock.release()
-        rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
-        rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
-        rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
+        # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
+        # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
+        # rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
 
         if self.diff_opt:
             # hooking up to the diff and unhooking from the list
@@ -666,9 +666,9 @@ class ConnectionCacheProxy(object):
                 if not self._system_state.action_clients[c.name]:
                     self._system_state.action_clients.pop(c.name, None)
         self._system_state_lock.release()
-        rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
-        rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
-        rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
+        # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
+        # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
+        # rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
         pass
 
     def getSystemState(self):

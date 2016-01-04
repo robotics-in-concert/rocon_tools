@@ -18,7 +18,8 @@ ros python communications.
 # Imports
 ##############################################################################
 
-from .connections import *
+from .connections import Connection, ConnectionCache, ConnectionCacheNode, ConnectionCacheProxy, UnknownSystemState
+from .connections import SUBSCRIBER, PUBLISHER, SERVICE, ACTION_CLIENT, ACTION_SERVER
 from .exceptions import *
 from . import master
 from .nodes import find_node

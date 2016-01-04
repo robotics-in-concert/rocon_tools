@@ -9,6 +9,7 @@ import pprint
 import subprocess
 import unittest
 import time
+from functools import partial
 
 import pyros_setup
 
@@ -90,7 +91,7 @@ class TestConnectionCacheNode(unittest.TestCase):
     def _spin_cb(self, data):
         self.spin_freq = data.spin_freq
 
-    def setUp(self):
+    def setUp(self, cacheproxy=rocon_python_comms.ConnectionCacheProxy):
         # We prepare our data structure for checking messages
         self.conn_list_msgq = deque()
         self.conn_diff_msgq = deque()
@@ -105,7 +106,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         # connecting to the master via proxy object
         self._master = rospy.get_master()
 
-        self.proxy = rocon_python_comms.ConnectionCacheProxy(
+        self.proxy = cacheproxy(
                 list_sub='/connection_cache/list',
                 diff_sub='/connection_cache/diff'
         )
@@ -298,7 +299,8 @@ class TestConnectionCacheNode(unittest.TestCase):
                     break
                 time.sleep(0.2)
 
-        assert lost_publisher_detected['list'] and lost_publisher_detected['diff']
+        assert lost_publisher_detected['list']
+        assert lost_publisher_detected['diff']
         time.sleep(0.2)
         # asserting in proxy as well
         assert self.equalMasterSystemState(self.proxy.getSystemState())
@@ -556,6 +558,16 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert added_subscriber_diff_detected
 
         process.stop()
+
+
+class TestConnectionCacheNodeDiff(TestConnectionCacheNode):
+
+    def setUp(self, cacheproxy=rocon_python_comms.ConnectionCacheProxy):
+        super(TestConnectionCacheNodeDiff, self).setUp(partial(rocon_python_comms.ConnectionCacheProxy, diff_opt=True))
+
+    def tearDown(self):
+        super(TestConnectionCacheNodeDiff, self).tearDown()
+
 
 
 if __name__ == '__main__':

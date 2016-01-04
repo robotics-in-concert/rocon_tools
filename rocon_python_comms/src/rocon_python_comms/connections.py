@@ -587,7 +587,8 @@ class UnknownSystemState(Exception):
 
 
 class ConnectionCacheProxy(object):
-    def __init__(self, list_sub=None, diff_sub=None):
+    def __init__(self, list_sub=None, diff_opt=False, diff_sub=None):
+        self.diff_opt = diff_opt
         self.diff_sub = diff_sub or '~connections_diff'
         self._system_state_lock = threading.Lock()  # writer lock
         self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services action_servers action_clients")
@@ -595,7 +596,6 @@ class ConnectionCacheProxy(object):
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
 
     def _list_cb(self, data):
-        # building a custom system_state ( like the one provided by ROS master)
         self._system_state_lock.acquire()
         # we got a new full list : reset the local value for _system_state
         self._system_state = self.SystemState({}, {}, {}, {}, {})
@@ -620,12 +620,45 @@ class ConnectionCacheProxy(object):
         rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
         rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
 
-        # hooking up to the diff and unhooking from the list
-        #self.conn_diff = rospy.Subscriber(self.diff_sub, rocon_std_msgs.ConnectionsDiff, self._diff_cb)
-        #self.conn_list.unregister()
+        if self.diff_opt:
+            # hooking up to the diff and unhooking from the list
+            self.conn_diff = rospy.Subscriber(self.diff_sub, rocon_std_msgs.ConnectionsDiff, self._diff_cb)
+            self.conn_list.unregister()
 
-    def _diff_cb(self, data):
-        # TODO : implement and test
+    def _diff_cb(self, data):  # This should only run when we want to have the diff message optimization
+        # modifying the system_state ( like the one provided by ROS master)
+        self._system_state_lock.acquire()
+        for c in data.added:
+            if c.type == c.PUBLISHER:
+                self._system_state.publishers.setdefault(c.name, set())
+                self._system_state.publishers[c.name].add(c.node)
+            elif c.type == c.SUBSCRIBER:
+                self._system_state.subscribers.setdefault(c.name, set())
+                self._system_state.subscribers[c.name].add(c.node)
+            elif c.type == c.SERVICE:
+                self._system_state.services.setdefault(c.name, set())
+                self._system_state.services[c.name].add(c.node)
+            elif c.type == c.ACTION_SERVER:
+                self._system_state.action_servers.setdefault(c.name, set())
+                self._system_state.action_servers[c.name].add(c.node)
+            elif c.type == c.ACTION_CLIENT:
+                self._system_state.action_clients.setdefault(c.name, set())
+                self._system_state.action_clients[c.name].add(c.node)
+        for c in data.lost:
+            if c.type == c.PUBLISHER:
+                self._system_state.publishers[c.name].remove(c.node)
+            elif c.type == c.SUBSCRIBER:
+                self._system_state.subscribers[c.name].remove(c.node)
+            elif c.type == c.SERVICE:
+                self._system_state.services[c.name].remove(c.node)
+            elif c.type == c.ACTION_SERVER:
+                self._system_state.action_servers[c.name].remove(c.node)
+            elif c.type == c.ACTION_CLIENT:
+                self._system_state.action_clients[c.name].remove(c.node)
+        self._system_state_lock.release()
+        rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
+        rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
+        rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
         pass
 
     def getSystemState(self):

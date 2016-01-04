@@ -113,7 +113,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
         # Verify that the Proxy except properly, because the cache node is not started
         with self.assertRaises(rocon_python_comms.UnknownSystemState):
-            self.proxy.getSystemState()
+            self.proxy.getSystemState(silent_fallback=False)
 
         cache_node = roslaunch.core.Node('rocon_python_comms', 'connection_cache.py', name='connection_cache')
         self.cache_process = launch.launch(cache_node)
@@ -130,7 +130,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         with timeout(5) as t:
             while not t.timed_out and not ssinitdone:
                 try:
-                    self.proxy.getSystemState()
+                    self.proxy.getSystemState(silent_fallback=False)
                 except rocon_python_comms.UnknownSystemState:
                     ssinitdone = False
                     time.sleep(1)
@@ -253,7 +253,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             time.sleep(0.2)
             # asserting in proxy as well
-            assert self.equalMasterSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
@@ -276,7 +276,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_publisher_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                assert self.equalMasterSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
             finally:
                 distraction_process.stop()
 
@@ -307,7 +307,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert lost_publisher_detected['diff']
         time.sleep(0.2)
         # asserting in proxy as well
-        assert self.equalMasterSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
@@ -335,7 +335,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             # asserting in proxy as well
             time.sleep(0.2)
-            assert self.equalMasterSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
@@ -358,7 +358,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_subscriber_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                assert self.equalMasterSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
             finally:
                 distraction_process.stop()
 
@@ -389,7 +389,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert lost_subscriber_detected['diff']
         time.sleep(0.2)
         # asserting in proxy as well
-        assert self.equalMasterSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
     def test_detect_service_added_lost(self):
         # Start a dummy node
@@ -416,7 +416,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             assert added_service_detected['diff']
             time.sleep(0.2)
             # asserting in proxy as well
-            assert self.equalMasterSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
             still_service_detected = {'list': False}
 
@@ -439,7 +439,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_service_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                assert self.equalMasterSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
             finally:
                 distraction_process.stop()
 
@@ -471,7 +471,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
         time.sleep(0.2)
         # asserting in proxy as well
-        assert self.equalMasterSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
     # TODO : detect actions server and client
 
@@ -562,6 +562,8 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert added_subscriber_diff_detected
 
         process.stop()
+
+    # TODO : add tests for actions, with filtering and without
 
 
 class TestConnectionCacheNodeDiff(TestConnectionCacheNode):

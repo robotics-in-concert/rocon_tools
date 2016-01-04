@@ -232,7 +232,7 @@ def create_empty_connection_type_dictionary(types = None):
       Used to initialise a dictionary with rule type keys
       and empty lists.
     '''
-    types = types or connection_types  # keeping old default for bwcompat
+    types = types or connection_types
     dic = {}
     for connection_type in types:
         dic[connection_type] = []
@@ -460,8 +460,9 @@ class ConnectionCacheProxy(object):
         self.diff_opt = diff_opt
         self.diff_sub = diff_sub or '~connections_diff'
         self._system_state_lock = threading.Lock()  # writer lock
-        self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services action_servers action_clients")
+        self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services")
         self._system_state = None
+        self._connections = create_empty_connection_type_dictionary()
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
 
     @staticmethod
@@ -478,7 +479,7 @@ class ConnectionCacheProxy(object):
     def _list_cb(self, data):
         self._system_state_lock.acquire()
         # we got a new full list : reset the local value for _system_state
-        self._system_state = self.SystemState({}, {}, {}, {}, {})
+        self._system_state = self.SystemState({}, {}, {})
         for c in data.connections:
             if c.type == c.PUBLISHER:
                 self._system_state.publishers.setdefault(c.name, set())
@@ -619,12 +620,19 @@ class ConnectionCacheProxy(object):
         actions, pubs, subs = self._get_actions(publishers, subscribers)
         return actions, pubs, subs
 
-    def getSystemState(self, filter_actions=False):
+    def getSystemState(self, filter_actions=False, silent_fallback=True):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
         if self._system_state is None:
             self._system_state_lock.release()
-            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
+            if silent_fallback:
+                # we didn't receive anything from the cache node yet.
+                # The cache node may have crashed or not be started at all.
+                # if silent fallback is allowed we ask the master directly instead of excepting
+                master = rospy.get_master()  # connecting to master via proxy object
+                return master.getSystemState()[2]
+            else:
+                raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
         else:
 
             publishers = copy.deepcopy(self._system_state.publishers)
@@ -647,3 +655,26 @@ class ConnectionCacheProxy(object):
                     [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
                 )
             return rosmaster_ss
+
+    def get_connection_state(self, filter_actions=False):
+
+        # Probably best design choice to make the "extended API" dependent on the MasterAPI (already clearly defined).
+        # The fact that we use connection for transfer from cache node to proxy is just incidental (historical reasons)
+        # and should probably not be relied upon => we rebuild connection objects from system state here
+        # => There might be some optimization we could do between node and proxy later on.
+        publishers, subscribers, services = self.getSystemState(filter_actions=filter_actions)
+
+        if filter_actions:
+            action_servers, publishers, subscribers = self._get_action_servers(publishers, subscribers)
+            action_clients, publishers, subscribers = self._get_action_clients(publishers, subscribers)
+            connections = create_empty_connection_type_dictionary(connection_types | connection_types_actions)
+            connections[ACTION_SERVER] = self._get_connections_from_action_list(action_servers, ACTION_SERVER)
+            connections[ACTION_CLIENT] = self._get_connections_from_action_list(action_clients, ACTION_CLIENT)
+        else:
+            connections = create_empty_connection_type_dictionary(connection_types)
+
+        connections[PUBLISHER] = self._get_connections_from_pub_sub_list(publishers, PUBLISHER)
+        connections[SUBSCRIBER] = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER)
+        connections[SERVICE] = self._get_connections_from_service_list(services, SERVICE)
+
+        return connections

@@ -520,7 +520,7 @@ class ConnectionCacheNode(object):
         self.conn_cache_spin_sub = rospy.Subscriber("~spin", rocon_std_msgs.ConnectionCacheSpin, self.set_spin_cb)
 
         self.conn_list = rospy.Publisher("~list", rocon_std_msgs.ConnectionsList, latch=True, queue_size=1)  # uptodate full list
-        self.conn_diff = rospy.Publisher("~diff", rocon_std_msgs.ConnectionsDiff, queue_size=1)  # differences only for faster parsing.
+        self.conn_diff = rospy.Publisher("~diff", rocon_std_msgs.ConnectionsDiff, queue_size=1, tcp_nodelay=True)  # differences only for faster parsing.
 
     def set_spin_cb(self, data):
         if data.spin_freq and not data.spin_freq == self.spin_freq:  # we change the rate if needed
@@ -582,14 +582,17 @@ class ConnectionCacheNode(object):
             rospy.core.signal_shutdown('keyboard interrupt')
 
 
+class UnknownSystemState(Exception):
+    pass
+
+
 class ConnectionCacheProxy(object):
     def __init__(self, list_sub=None, diff_sub=None):
-
-        self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
         self.diff_sub = diff_sub or '~connections_diff'
         self._system_state_lock = threading.Lock()  # writer lock
         self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services action_servers action_clients")
-        self._system_state = self.SystemState({}, {}, {}, {}, {})
+        self._system_state = None
+        self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
 
     def _list_cb(self, data):
         # building a custom system_state ( like the one provided by ROS master)
@@ -628,10 +631,14 @@ class ConnectionCacheProxy(object):
     def getSystemState(self):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
-        rosmaster_ss = (
-            [[name, [n for n in self._system_state.publishers[name]]] for name in self._system_state.publishers],
-            [[name, [n for n in self._system_state.subscribers[name]]] for name in self._system_state.subscribers],
-            [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
-        )
-        self._system_state_lock.release()
-        return rosmaster_ss
+        if self._system_state is None:
+            self._system_state_lock.release()
+            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
+        else:
+            rosmaster_ss = (
+                [[name, [n for n in self._system_state.publishers[name]]] for name in self._system_state.publishers],
+                [[name, [n for n in self._system_state.subscribers[name]]] for name in self._system_state.subscribers],
+                [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
+            )
+            self._system_state_lock.release()
+            return rosmaster_ss

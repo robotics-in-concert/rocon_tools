@@ -7,15 +7,11 @@
 # Imports
 ##############################################################################
 
-import os
-import threading
-
-import collections
-
-import rocon_python_comms
-import rocon_std_msgs.msg as rocon_std_msgs
-import rocon_std_msgs.srv as rocon_std_srvs
+import pyros_setup
+pyros_setup.delayed_import()
 import rospy
+import rocon_python_comms
+
 
 ##############################################################################
 # Main

@@ -1,17 +1,62 @@
 #!/usr/bin/env python
 
-""" Testing the find_node function """
-
+import multiprocessing
 from collections import deque
 
+import os
+import sys
+import pprint
+import subprocess
 import unittest
 import time
 
-import rospy
-import rostest
-import roslaunch
-import rocon_python_comms
-import rocon_std_msgs.msg as rocon_std_msgs
+import pyros_setup
+
+try:
+    import rospy
+    import rostest
+    import roslaunch
+    import rosgraph
+    import rosnode
+    import rocon_python_comms
+    import rocon_std_msgs.msg as rocon_std_msgs
+except ImportError:
+    pyros_setup = pyros_setup.delayed_import()
+    import rospy
+    import rostest
+    import roslaunch
+    import rosgraph
+    import rosnode
+    import rocon_python_comms
+    import rocon_std_msgs.msg as rocon_std_msgs
+
+
+roscore_process = None
+master = None
+launch = None
+
+
+def setup_module():
+    global master
+    global roscore_process
+    master, roscore_process = pyros_setup.get_master()
+    assert master.is_online()
+
+    global launch
+    # initialize the launch environment first
+    launch = roslaunch.scriptapi.ROSLaunch()
+    launch.start()
+
+    # Init the test node
+    rospy.init_node('test_connection_cache_node')
+
+
+def teardown_module():
+    # finishing all process
+    if roscore_process is not None:
+        roscore_process.terminate()  # make sure everything is stopped
+    rospy.signal_shutdown('test complete')
+
 
 class timeout(object):
     """
@@ -19,11 +64,14 @@ class timeout(object):
     """
     def __init__(self, seconds):
         self.seconds = seconds
+
     def __enter__(self):
         self.die_after = time.time() + self.seconds
         return self
+
     def __exit__(self, type, value, traceback):
         pass
+
     @property
     def timed_out(self):
         return time.time() > self.die_after
@@ -43,13 +91,6 @@ class TestConnectionCacheNode(unittest.TestCase):
         self.spin_freq = data.spin_freq
 
     def setUp(self):
-        # initialize the launch environment first
-        self.launch = roslaunch.scriptapi.ROSLaunch()
-        self.launch.start()
-
-        #Init the test node
-        rospy.init_node('test_node')
-
         # We prepare our data structure for checking messages
         self.conn_list_msgq = deque()
         self.conn_diff_msgq = deque()
@@ -58,7 +99,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         # Then we hookup to its topics and prepare a service proxy
         self.conn_list = rospy.Subscriber('/connection_cache/list', rocon_std_msgs.ConnectionsList, self._list_cb)
         self.conn_diff = rospy.Subscriber('/connection_cache/diff', rocon_std_msgs.ConnectionsDiff, self._diff_cb)
-        self.set_spin = rospy.Publisher('/connection_cache/spin', rocon_std_msgs.ConnectionCacheSpin)
+        self.set_spin = rospy.Publisher('/connection_cache/spin', rocon_std_msgs.ConnectionCacheSpin, queue_size=1)
         self.get_spin = rospy.Subscriber('/connection_cache/spin', rocon_std_msgs.ConnectionCacheSpin, self._spin_cb)
 
         # connecting to the master via proxy object
@@ -68,10 +109,40 @@ class TestConnectionCacheNode(unittest.TestCase):
                 list_sub='/connection_cache/list',
                 diff_sub='/connection_cache/diff'
         )
-        # no need to spin
-        pass
+
+        # Verify that the Proxy except properly, because the cache node is not started
+        with self.assertRaises(rocon_python_comms.UnknownSystemState):
+            self.proxy.getSystemState()
+
+        cache_node = roslaunch.core.Node('rocon_python_comms', 'connection_cache.py', name='connection_cache')
+        self.cache_process = launch.launch(cache_node)
+
+        node_api = None
+        with timeout(5) as t:
+            while not t.timed_out and node_api is None:
+                node_api = rosnode.get_api_uri(self._master, 'connection_cache')
+
+        assert node_api is not None  # make sure the connection cache node is started before moving on.
+
+        # Making sure we set System state before starting test ( needed to validate diff behavior )
+        ssinitdone = False
+        with timeout(5) as t:
+            while not t.timed_out and not ssinitdone:
+                try:
+                    self.proxy.getSystemState()
+                except rocon_python_comms.UnknownSystemState:
+                    ssinitdone = False
+                    time.sleep(1)
+                else:
+                    ssinitdone = True
+                    break
+
+        assert not t.timed_out
 
     def tearDown(self):
+        if self.cache_process:
+            self.cache_process.stop()
+            time.sleep(1)  # to make sure the process has enough time to stop.
         pass
 
     def chatter_detected(self, topicq_clist, conn_type, node_name):
@@ -110,9 +181,10 @@ class TestConnectionCacheNode(unittest.TestCase):
             print "NOT FOUND IN LIST : {0}".format(svcq_clist)
         return test
 
-    def assertSystemState(self, proxySS):
+    def equalMasterSystemState(self, proxySS):
         masterSS = self._master.getSystemState()[2]
 
+        same = True
         # masterSS set included in proxySS set
         for idx, t in enumerate(masterSS):  # connection type
             print "MASTER SYSTEM STATE CONNECTION TYPE {0}".format(t)
@@ -121,11 +193,15 @@ class TestConnectionCacheNode(unittest.TestCase):
             for c in t:  # connection list [name, [nodes]]
                 print "MASTER SYSTEM STATE CONNECTION {0}".format(c)
                 print " -> CHECK {0} in PROXY NAMES {1}".format(c[0], proxySS_names)
-                assert c[0] in proxySS_names
+                same = same and c[0] in proxySS_names
+                if not same:
+                    break
                 proxySS_conn_nodes = [fpc for pc in proxySS[idx] if c[0] == pc[0] for fpc in pc[1]]
                 for n in c[1]:
                     print " -> CHECK {0} in PROXY NODES {1}".format(n, proxySS_conn_nodes)
-                    assert n in proxySS_conn_nodes
+                    same = same and n in proxySS_conn_nodes
+                    if not same:
+                        break
 
         # proxySS set included in masterSS set
         for idx, t in enumerate(proxySS):  # connection type
@@ -135,16 +211,21 @@ class TestConnectionCacheNode(unittest.TestCase):
             for c in t:  # connection list [name, [nodes]]
                 print "PROXY SYSTEM STATE CONNECTION {0}".format(c)
                 print " -> CHECK {0} in MASTER NAMES {1}".format(c[0], masterSS_names)
-                assert c[0] in masterSS_names
+                same = same and c[0] in masterSS_names
+                if not same:
+                    break
                 masterSS_conn_nodes = [fmc for mc in masterSS[idx] if c[0] == mc[0] for fmc in mc[1]]
                 for n in c[1]:
                     print " -> CHECK {0} in MASTER NODES {1}".format(n, masterSS_conn_nodes)
-                    assert n in masterSS_conn_nodes
+                    same = same and n in masterSS_conn_nodes
+                    if not same:
+                        break
+        return same
 
     def test_detect_publisher_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-        process = self.launch.launch(talker_node)
+        process = launch.launch(talker_node)
         try:
             added_publisher_detected = {'list': False, 'diff': False}
 
@@ -162,18 +243,19 @@ class TestConnectionCacheNode(unittest.TestCase):
                         break
                     time.sleep(0.2)
 
-            assert added_publisher_detected['list'] and added_publisher_detected['diff']
+            assert added_publisher_detected['list']
+            assert added_publisher_detected['diff']
 
             time.sleep(0.2)
             # asserting in proxy as well
-            self.assertSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState())
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = self.launch.launch(server_node)
+            distraction_process = launch.launch(server_node)
             try:
                 still_publisher_detected = {'list': False}
 
@@ -189,7 +271,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_publisher_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                self.assertSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -219,12 +301,12 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert lost_publisher_detected['list'] and lost_publisher_detected['diff']
         time.sleep(0.2)
         # asserting in proxy as well
-        self.assertSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState())
 
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
         listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
-        process = self.launch.launch(listener_node)
+        process = launch.launch(listener_node)
         try:
             added_subscriber_detected = {'list': False, 'diff': False}
 
@@ -242,17 +324,19 @@ class TestConnectionCacheNode(unittest.TestCase):
                         break
                     time.sleep(0.2)
 
-            assert added_subscriber_detected['list'] and added_subscriber_detected['diff']
+            assert added_subscriber_detected['list']
+            assert added_subscriber_detected['diff']
+
             # asserting in proxy as well
             time.sleep(0.2)
-            self.assertSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState())
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = self.launch.launch(server_node)
+            distraction_process = launch.launch(server_node)
             try:
                 still_subscriber_detected = {'list': False}
 
@@ -268,7 +352,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_subscriber_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                self.assertSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -295,15 +379,16 @@ class TestConnectionCacheNode(unittest.TestCase):
                     break
                 time.sleep(0.2)
 
-        assert lost_subscriber_detected['list'] and lost_subscriber_detected['diff']
+        assert lost_subscriber_detected['list']
+        assert lost_subscriber_detected['diff']
         time.sleep(0.2)
         # asserting in proxy as well
-        self.assertSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState())
 
     def test_detect_service_added_lost(self):
         # Start a dummy node
         server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-        process = self.launch.launch(server_node)
+        process = launch.launch(server_node)
         try:
             added_service_detected = {'list': False, 'diff': False}
 
@@ -321,10 +406,11 @@ class TestConnectionCacheNode(unittest.TestCase):
                         break
                     time.sleep(0.2)
 
-            assert added_service_detected['list'] and added_service_detected['diff']
+            assert added_service_detected['list']
+            assert added_service_detected['diff']
             time.sleep(0.2)
             # asserting in proxy as well
-            self.assertSystemState(self.proxy.getSystemState())
+            assert self.equalMasterSystemState(self.proxy.getSystemState())
 
             still_service_detected = {'list': False}
 
@@ -333,7 +419,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
             # Start a dummy node
             talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-            distraction_process = self.launch.launch(talker_node)
+            distraction_process = launch.launch(talker_node)
             try:
                 # Loop a bit so we can detect the service
                 with timeout(5) as t:
@@ -347,7 +433,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 assert still_service_detected['list']
                 time.sleep(0.2)
                 # asserting in proxy as well
-                self.assertSystemState(self.proxy.getSystemState())
+                assert self.equalMasterSystemState(self.proxy.getSystemState())
             finally:
                 distraction_process.stop()
 
@@ -374,10 +460,12 @@ class TestConnectionCacheNode(unittest.TestCase):
                     break
                 time.sleep(0.2)
 
-        assert lost_service_detected['list'] and lost_service_detected['diff']
+        assert lost_service_detected['list']
+        assert lost_service_detected['diff']
+
         time.sleep(0.2)
         # asserting in proxy as well
-        self.assertSystemState(self.proxy.getSystemState())
+        assert self.equalMasterSystemState(self.proxy.getSystemState())
 
     # TODO : detect actions server and client
 
@@ -472,14 +560,8 @@ class TestConnectionCacheNode(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    # we don't really need a test file :
-    # First we start our node.
-    # self.cache_node = roslaunch.core.Node('rocon_python_comms', 'connection_cache')
-    # self.launch = roslaunch.scriptapi.ROSLaunch()
-    # self.launch.start()
-    # self.process = self.launch.launch(self.cache_node)
-    # NOT NEEDED : DONE IN ROSTTEST FILE
-
+    setup_module()
     rostest.rosrun('rocon_python_comms',
                    'test_connection_cache',
                    TestConnectionCacheNode)
+    teardown_module()

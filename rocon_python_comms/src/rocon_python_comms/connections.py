@@ -344,6 +344,8 @@ class ConnectionCache(object):
         self.connections = connections
         return new_connections, lost_connections
 
+    # TODO These should probably disappear
+    # TODO and we should probably rely on another format for transferring connection details
     @staticmethod
     def _get_connections_from_service_list(connection_list, connection_type):
         connections = []
@@ -377,6 +379,23 @@ class ConnectionCache(object):
                 connections.append(connection)
         return connections
 
+    @staticmethod
+    def _get_connections_from_action_list(connection_list, connection_type):
+        connections = []
+        for action in connection_list:
+            action_name = action[0]
+            #goal_topic = action_name + '/goal'
+            #goal_topic_type = rostopic.get_topic_type(goal_topic)
+            # topic_type = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
+            nodes = action[1]
+            for node in nodes:
+                # try:
+                #    node_uri = self.lookupNode(node)
+                # except:
+                #    continue
+                connection = Connection(connection_type, action_name, node, None, None)  # topic_type, node_uri
+                connections.append(connection)
+        return connections
 
 class ConnectionCacheNode(object):
     def __init__(self):
@@ -620,6 +639,9 @@ class ConnectionCacheProxy(object):
         actions, pubs, subs = self._get_actions(publishers, subscribers)
         return actions, pubs, subs
 
+    # TODO : check if filtering for actions is useful here.
+    # Might not be since gateway rebuild its own connections anyway
+    # If not useful, we could simplify the cache significantly by dropping that feature
     def getSystemState(self, filter_actions=False, silent_fallback=True):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
@@ -655,26 +677,3 @@ class ConnectionCacheProxy(object):
                     [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
                 )
             return rosmaster_ss
-
-    def get_connection_state(self, filter_actions=False):
-
-        # Probably best design choice to make the "extended API" dependent on the MasterAPI (already clearly defined).
-        # The fact that we use connection for transfer from cache node to proxy is just incidental (historical reasons)
-        # and should probably not be relied upon => we rebuild connection objects from system state here
-        # => There might be some optimization we could do between node and proxy later on.
-        publishers, subscribers, services = self.getSystemState(filter_actions=filter_actions)
-
-        if filter_actions:
-            action_servers, publishers, subscribers = self._get_action_servers(publishers, subscribers)
-            action_clients, publishers, subscribers = self._get_action_clients(publishers, subscribers)
-            connections = create_empty_connection_type_dictionary(connection_types | connection_types_actions)
-            connections[ACTION_SERVER] = self._get_connections_from_action_list(action_servers, ACTION_SERVER)
-            connections[ACTION_CLIENT] = self._get_connections_from_action_list(action_clients, ACTION_CLIENT)
-        else:
-            connections = create_empty_connection_type_dictionary(connection_types)
-
-        connections[PUBLISHER] = self._get_connections_from_pub_sub_list(publishers, PUBLISHER)
-        connections[SUBSCRIBER] = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER)
-        connections[SERVICE] = self._get_connections_from_service_list(services, SERVICE)
-
-        return connections

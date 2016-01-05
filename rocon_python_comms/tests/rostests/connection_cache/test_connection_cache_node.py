@@ -91,7 +91,8 @@ class TestConnectionCacheNode(unittest.TestCase):
     def _spin_cb(self, data):
         self.spin_freq = data.spin_freq
 
-    def setUp(self, cacheproxy=rocon_python_comms.ConnectionCacheProxy):
+    def setUp(self, cacheproxy=None):
+        cacheproxy = cacheproxy or partial(rocon_python_comms.ConnectionCacheProxy, diff_opt=False)
         # We prepare our data structure for checking messages
         self.conn_list_msgq = deque()
         self.conn_diff_msgq = deque()
@@ -166,7 +167,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
     def add_two_ints_detected(self, svcq_clist, conn_type, node_name):
         """
-        detect the chatter publisher in a connection list
+        detect the add_two_ints service in a connection list
         """
         test = False
         for i, conn in enumerate(svcq_clist):  # lop through all connections in the list
@@ -473,8 +474,6 @@ class TestConnectionCacheNode(unittest.TestCase):
         # asserting in proxy as well
         assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
 
-    # TODO : detect actions server and client
-
     def test_change_spin_rate_detect_sub(self):
         # constant use just to prevent spinning too fast
         overspin_sleep_val= 0.02
@@ -563,7 +562,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
         process.stop()
 
-    # TODO : add tests for actions, with filtering and without
+    # TODO : add tests on getSystemState / get_connection_state for actions, with filtering and without
 
 
 class TestConnectionCacheNodeDiff(TestConnectionCacheNode):

@@ -156,7 +156,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             test = (conn.name == '/chatter'
                     and conn.type == conn_type
                     and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
-                    and conn.type_info == ''
+                    and conn.type_info == 'std_msgs/String'
                     and conn.xmlrpc_uri == '')
             if test:  # break right away if found
                 break
@@ -228,6 +228,42 @@ class TestConnectionCacheNode(unittest.TestCase):
                         break
         return same
 
+    def equalMasterTopicTypes(self, proxyTT):
+        masterTT = self._master.getTopicTypes()[2]
+
+        same = True
+        # proxyTT set included in masterTT set
+        for pt in proxyTT:  # [topic_name, topic_type]
+            print "PROXY SYSTEM STATE TOPIC {0}".format(pt)
+            mtl = [mt for mt in masterTT if mt[0] == pt[0]]
+            print " -> MASTER SYSTEM STATE TOPIC {0}".format(mtl)
+            same = same and len(mtl) == 1
+            if not same:
+                print("ERROR : {1} has more or less than 1 element".format(pt, mtl))
+                break
+            same = same and pt[1] == mtl[0][1]
+            if not same:
+                print("ERROR : {0} not in {1}".format(pt, mtl))
+                break
+
+        if same and False:  # currently disabled since it seems master API doesnt removed topics which do not have any pub / sub anymore
+
+            # masterTT set included in proxyTT set
+            for mt in masterTT:  # [topic_name, topic_type]
+                print "MASTER SYSTEM STATE TOPIC {0}".format(mt)
+                ptl = [pt for pt in proxyTT if pt[0] == mt[0]]
+                print " -> PROXY SYSTEM STATE TOPIC {0}".format(ptl)
+                same = same and len(ptl) == 1
+                if not same:
+                    print("ERROR : {1} has more or less than 1 element".format(mt, ptl))
+                    break
+                same = same and mt[1] == ptl[0][1]
+                if not same:
+                    print("ERROR : {0} not in {1}".format(mt, ptl))
+                    break
+
+        return same
+
     def test_detect_publisher_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
@@ -255,6 +291,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             time.sleep(0.2)
             # asserting in proxy as well
             assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+            assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
@@ -278,6 +315,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 time.sleep(0.2)
                 # asserting in proxy as well
                 assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+                assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
             finally:
                 distraction_process.stop()
 
@@ -309,6 +347,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         time.sleep(0.2)
         # asserting in proxy as well
         assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+        assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
@@ -337,6 +376,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             # asserting in proxy as well
             time.sleep(0.2)
             assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+            assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
             # clean list messages to make sure we get new ones
             self.conn_list_msgq = deque()
@@ -360,6 +400,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 time.sleep(0.2)
                 # asserting in proxy as well
                 assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+                assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
             finally:
                 distraction_process.stop()
 
@@ -391,6 +432,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         time.sleep(0.2)
         # asserting in proxy as well
         assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+        assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
     def test_detect_service_added_lost(self):
         # Start a dummy node
@@ -418,6 +460,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             time.sleep(0.2)
             # asserting in proxy as well
             assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+            assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
             still_service_detected = {'list': False}
 
@@ -473,6 +516,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         time.sleep(0.2)
         # asserting in proxy as well
         assert self.equalMasterSystemState(self.proxy.getSystemState(silent_fallback=False))
+        assert self.equalMasterTopicTypes(self.proxy.getTopicTypes(silent_fallback=False))
 
     def test_change_spin_rate_detect_sub(self):
         # constant use just to prevent spinning too fast

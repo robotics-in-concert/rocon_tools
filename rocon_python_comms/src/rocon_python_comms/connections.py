@@ -256,12 +256,14 @@ class ConnectionCache(object):
         'connections',
         '_lookup_node',
         '_get_system_state',
+        '_get_topic_types',
     ]
 
     def __init__(self):
         master = rosgraph.Master(rospy.get_name())
         self._lookup_node = master.lookupNode
         self._get_system_state = master.getSystemState
+        self._get_topic_types = master.getTopicTypes
         self.connections = create_empty_connection_type_dictionary(connection_types)
 
     def generate_type_info(self, name):
@@ -322,8 +324,10 @@ class ConnectionCache(object):
         if new_system_state is None:
             try:
                 publishers, subscribers, services = self._get_system_state()
+                topic_types = self._get_topic_types()
+                #service_types = self._get_service_types()
             except socket.error:
-                rospy.logerr("Gateway : couldn't get system state from the master "
+                rospy.logerr("ConnectionCache : couldn't get system state from the master "
                              "[did you set your master uri to a wireless IP that just went down?]")
                 return new_connections, lost_connections
         else:
@@ -331,8 +335,8 @@ class ConnectionCache(object):
             subscribers = new_system_state[SUBSCRIBER]
             services = new_system_state[SERVICE]
         connections = create_empty_connection_type_dictionary(connection_types)
-        connections[PUBLISHER] = self._get_connections_from_pub_sub_list(publishers, PUBLISHER)
-        connections[SUBSCRIBER] = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER)
+        connections[PUBLISHER] = self._get_connections_from_pub_sub_list(publishers, PUBLISHER, topic_types)
+        connections[SUBSCRIBER] = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER, topic_types)
         connections[SERVICE] = self._get_connections_from_service_list(services, SERVICE)
 
         # Will probably need to check not just in, but only name, node equal
@@ -363,19 +367,19 @@ class ConnectionCache(object):
         return connections
 
     @staticmethod
-    def _get_connections_from_pub_sub_list(connection_list, connection_type):
+    def _get_connections_from_pub_sub_list(connection_list, connection_type, msg_type_list):
         connections = []
         for topic in connection_list:
             topic_name = topic[0]
-            # topic_type = rostopic.get_topic_type(topic_name)
-            # topic_type = topic_type[0]
+            topic_type = [t[1] for t in msg_type_list if t[0] == topic_name]
+            topic_type = topic_type[0]
             nodes = topic[1]
             for node in nodes:
                 # try:
                     # node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, topic_name, node, None, None)  # topic_type, node_uri
+                connection = Connection(connection_type, topic_name, node, topic_type, None)  # topic_type, node_uri
                 connections.append(connection)
         return connections
 
@@ -396,6 +400,7 @@ class ConnectionCache(object):
                 connection = Connection(connection_type, action_name, node, None, None)  # topic_type, node_uri
                 connections.append(connection)
         return connections
+
 
 class ConnectionCacheNode(object):
     def __init__(self):
@@ -475,6 +480,54 @@ class UnknownSystemState(Exception):
 
 
 class ConnectionCacheProxy(object):
+    class Channel(object):
+        """
+        Definition of a channel ( topic/service )
+        => a compressed version of a list of connection with same name
+        """
+
+        def __init__(self, name, type, nodes=None):
+            """
+            Initialize a Channel instance
+            :param name
+            :param type
+            :param nodes a set of tuple (node_name, node_uri)
+            """
+            self.name = name
+            self.type = type
+            self.nodes = nodes or set()
+
+        @staticmethod
+        def dict_factory(conn_list, chan_dict=None):
+            """
+            Merge a list of Connections in a dict of Channels
+            :param conn_list: List of connections : Each different connection name will create a new Channel
+            :param chan_dict: Preexisting channel dict. if merge wanted.
+            :return:
+            """
+            chan_dict = chan_dict or {}
+            for c in conn_list:
+                if not c.name in chan_dict.keys():
+                    chan_dict[c.name] = ConnectionCacheProxy.Channel(c.name, c.type_info)
+                chan_dict[c.name].nodes.add((c.node, c.xmlrpc_uri))
+            return chan_dict
+
+        @staticmethod
+        def dict_slaughterhouse(conn_list, chan_dict):
+            """
+            Extract a list of Connections from a dict of Channels
+            :param conn_list: List of connections : Each different connection name will affect one and only one connection
+            :param chan_dict: Preexisting channel dict. to extract from
+            :return:
+            """
+            chan_dict = chan_dict
+            for c in conn_list:
+                if c.name in chan_dict.keys():
+                    chan_dict[c.name].nodes.remove((c.node, c.xmlrpc_uri))
+                    if not chan_dict[c.name].nodes:
+                        chan_dict.pop(c.name)
+            return chan_dict
+
     def __init__(self, list_sub=None, diff_opt=False, diff_sub=None):
         self.diff_opt = diff_opt
         self.diff_sub = diff_sub or '~connections_diff'
@@ -498,17 +551,17 @@ class ConnectionCacheProxy(object):
     def _list_cb(self, data):
         self._system_state_lock.acquire()
         # we got a new full list : reset the local value for _system_state
-        self._system_state = self.SystemState({}, {}, {})
-        for c in data.connections:
-            if c.type == c.PUBLISHER:
-                self._system_state.publishers.setdefault(c.name, set())
-                self._system_state.publishers[c.name].add(c.node)
-            elif c.type == c.SUBSCRIBER:
-                self._system_state.subscribers.setdefault(c.name, set())
-                self._system_state.subscribers[c.name].add(c.node)
-            elif c.type == c.SERVICE:
-                self._system_state.services.setdefault(c.name, set())
-                self._system_state.services[c.name].add(c.node)
+        self._system_state = self.SystemState(
+                ConnectionCacheProxy.Channel.dict_factory(
+                        [c for c in data.connections if c.type == c.PUBLISHER]
+                ),
+                ConnectionCacheProxy.Channel.dict_factory(
+                        [c for c in data.connections if c.type == c.SUBSCRIBER]
+                ),
+                ConnectionCacheProxy.Channel.dict_factory(
+                        [c for c in data.connections if c.type == c.SERVICE]
+                )
+        )
         self._system_state_lock.release()
         # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
         # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
@@ -522,29 +575,37 @@ class ConnectionCacheProxy(object):
     def _diff_cb(self, data):  # This should only run when we want to have the diff message optimization
         # modifying the system_state ( like the one provided by ROS master)
         self._system_state_lock.acquire()
-        for c in data.added:
-            if c.type == c.PUBLISHER:
-                self._system_state.publishers.setdefault(c.name, set())
-                self._system_state.publishers[c.name].add(c.node)
-            elif c.type == c.SUBSCRIBER:
-                self._system_state.subscribers.setdefault(c.name, set())
-                self._system_state.subscribers[c.name].add(c.node)
-            elif c.type == c.SERVICE:
-                self._system_state.services.setdefault(c.name, set())
-                self._system_state.services[c.name].add(c.node)
-        for c in data.lost:
-            if c.type == c.PUBLISHER:
-                self._system_state.publishers[c.name].remove(c.node)
-                if not self._system_state.publishers[c.name]:
-                    self._system_state.publishers.pop(c.name, None)
-            elif c.type == c.SUBSCRIBER:
-                self._system_state.subscribers[c.name].remove(c.node)
-                if not self._system_state.subscribers[c.name]:
-                    self._system_state.subscribers.pop(c.name, None)
-            elif c.type == c.SERVICE:
-                self._system_state.services[c.name].remove(c.node)
-                if not self._system_state.services[c.name]:
-                    self._system_state.services.pop(c.name, None)
+
+        self._system_state = self.SystemState(
+                ConnectionCacheProxy.Channel.dict_factory(
+                    [c for c in data.added if c.type == c.PUBLISHER],
+                    self._system_state.publishers
+                ),
+                ConnectionCacheProxy.Channel.dict_factory(
+                    [c for c in data.added if c.type == c.SUBSCRIBER],
+                    self._system_state.subscribers
+                ),
+                ConnectionCacheProxy.Channel.dict_factory(
+                    [c for c in data.added if c.type == c.SERVICE],
+                    self._system_state.services
+                )
+        )
+
+        self._system_state = self.SystemState(
+                ConnectionCacheProxy.Channel.dict_slaughterhouse(
+                    [c for c in data.lost if c.type == c.PUBLISHER],
+                    self._system_state.publishers
+                ),
+                ConnectionCacheProxy.Channel.dict_slaughterhouse(
+                    [c for c in data.lost if c.type == c.SUBSCRIBER],
+                    self._system_state.subscribers
+                ),
+                ConnectionCacheProxy.Channel.dict_slaughterhouse(
+                    [c for c in data.lost if c.type == c.SERVICE],
+                    self._system_state.services
+                )
+        )
+
         self._system_state_lock.release()
         # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
         # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
@@ -646,7 +707,7 @@ class ConnectionCacheProxy(object):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
         if self._system_state is None:
-            self._system_state_lock.release()
+            self._system_state_lock.release()  # not using the internal one : releasing lock
             if silent_fallback:
                 # we didn't receive anything from the cache node yet.
                 # The cache node may have crashed or not be started at all.
@@ -657,23 +718,43 @@ class ConnectionCacheProxy(object):
                 raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
         else:
 
-            publishers = copy.deepcopy(self._system_state.publishers)
-            subscribers = copy.deepcopy(self._system_state.subscribers)
-            self._system_state_lock.release()
+            rosmaster_ss = (
+                [[name, [n[0] for n in self._system_state.publishers[name].nodes]] for name in self._system_state.publishers],
+                [[name, [n[0] for n in self._system_state.subscribers[name].nodes]] for name in self._system_state.subscribers],
+                [[name, [n[0] for n in self._system_state.services[name].nodes]] for name in self._system_state.services],
+            )
+
             if filter_actions:  # extending master API
-                action_servers, publishers, subscribers = self._get_action_servers(publishers, subscribers)
-                action_clients, publishers, subscribers = self._get_action_clients(publishers, subscribers)
+                action_servers, rosmaster_ss[0], rosmaster_ss[1] = self._get_action_servers(rosmaster_ss[0], rosmaster_ss[1])
+                action_clients, rosmaster_ss[0], rosmaster_ss[1] = self._get_action_clients(rosmaster_ss[0], rosmaster_ss[1])
                 rosmaster_ss = (
-                    [[name, [n for n in publishers[name]]] for name in publishers],
-                    [[name, [n for n in subscribers[name]]] for name in subscribers],
-                    [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
+                    rosmaster_ss[0],
+                    rosmaster_ss[1],
+                    rosmaster_ss[2],
                     [[name, [n for n in action_servers[name]]] for name in action_servers],
                     [[name, [n for n in action_clients[name]]] for name in action_clients],
                 )
-            else:  # copy of master API to allow dropin replacement
-                rosmaster_ss = (
-                    [[name, [n for n in publishers[name]]] for name in publishers],
-                    [[name, [n for n in subscribers[name]]] for name in subscribers],
-                    [[name, [n for n in self._system_state.services[name]]] for name in self._system_state.services],
-                )
+
+            self._system_state_lock.release()
             return rosmaster_ss
+
+    def getTopicTypes(self, silent_fallback=True):
+        # ROSmaster system_state format
+        self._system_state_lock.acquire()  # block in case we re changing it at the moment
+        if self._system_state is None:
+            self._system_state_lock.release()
+            if silent_fallback:
+                # we didn't receive anything from the cache node yet.
+                # The cache node may have crashed or not be started at all.
+                # if silent fallback is allowed we ask the master directly instead of excepting
+                master = rospy.get_master()  # connecting to master via proxy object
+                return master.getTopicTypes()[2]
+            else:
+                raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
+        else:
+            # building set of tuples to enforce unicity
+            pubset = {(name, conn.type) for name, conn in self._system_state.publishers.iteritems()}
+            subset = {(name, conn.type) for name, conn in self._system_state.subscribers.iteritems()}
+            rosmaster_tt = [list(t) for t in (pubset | subset)]
+            self._system_state_lock.release()
+            return rosmaster_tt

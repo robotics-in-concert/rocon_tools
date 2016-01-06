@@ -433,7 +433,8 @@ class ConnectionCacheNode(object):
     def __init__(self):
         self.spin_rate = rospy.Rate(1)
         self.spin_freq = 1.0
-        self.spin_freq_changed = False
+        self.spin_original_freq = self.spin_freq
+        self.spin_timer = 0.0
         self.conn_cache = ConnectionCache()  # we want a drop in replacement for ROSmaster access
 
         self.conn_cache_spin_pub = rospy.Publisher("~spin", rocon_std_msgs.ConnectionCacheSpin, latch=True, queue_size=1)
@@ -445,21 +446,34 @@ class ConnectionCacheNode(object):
     def set_spin_cb(self, data):
         if data.spin_freq and not data.spin_freq == self.spin_freq:  # we change the rate if needed
             self.spin_freq = data.spin_freq
-            self.spin_freq_changed = True
+            self.spin_timer = data.spin_timer
 
     def spin(self):
         rospy.logdebug("node[%s, %s] entering spin(), pid[%s]", rospy.core.get_caller_id(), rospy.core.get_node_uri(), os.getpid())
         try:
+            # sensible default values
             self.spin_rate = rospy.Rate(self.spin_freq)
-            self.spin_freq_changed = True
-            while not rospy.core.is_shutdown():
+            last_spinmsg = None
+            last_update = time.time()
 
-                # If needed we change our spin rate, and publish the new frequency
-                if self.spin_freq_changed:
-                    self.spin_rate = rospy.Rate(self.spin_freq)
+            while not rospy.core.is_shutdown():
+                elapsed_time = time.time() - last_update
+                self.spin_timer = max(self.spin_timer - elapsed_time, 0.0)
+                last_update = time.time()
+
+                # If needed (or first time) we change our spin rate, and publish the new frequency
+                if self.spin_timer > 0.0 or last_spinmsg is None or last_spinmsg.spin_timer > 0.0:
+                    # if spin_timer just came back to 0.0 we use self.spin_original_freq
+                    if self.spin_timer == 0.0:
+                        self.spin_freq = self.spin_original_freq
+                    # if timer is almost finished we need to increase rate to be back to original speed on time
+                    self.spin_rate = rospy.Rate(
+                            self.spin_freq if self.spin_timer == 0.0 else max(self.spin_freq, 1/self.spin_timer)
+                    )
                     spinmsg = rocon_std_msgs.ConnectionCacheSpin()
                     spinmsg.spin_freq = self.spin_freq
-                    self.spin_freq_changed = False
+                    spinmsg.spin_timer = self.spin_timer
+                    last_spinmsg = spinmsg
                     self.conn_cache_spin_pub.publish(spinmsg)
 
                 try:

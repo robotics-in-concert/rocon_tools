@@ -57,9 +57,9 @@ def teardown_module():
     if roscore_process is not None:
         roscore_process.terminate()  # make sure everything is stopped
     rospy.signal_shutdown('test complete')
-    while roscore_process.is_alive():
+    while roscore_process and roscore_process.is_alive():
         time.sleep(0.2)  # waiting for roscore to die
-    assert not master.is_online()
+    assert not (roscore_process and master.is_online())
 
 
 class timeout(object):

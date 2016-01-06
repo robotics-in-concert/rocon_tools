@@ -57,6 +57,9 @@ def teardown_module():
     if roscore_process is not None:
         roscore_process.terminate()  # make sure everything is stopped
     rospy.signal_shutdown('test complete')
+    while roscore_process and roscore_process.is_alive():
+        time.sleep(0.2)  # waiting for roscore to die
+    assert not (roscore_process and master.is_online())
 
 
 class timeout(object):
@@ -145,7 +148,10 @@ class TestConnectionCacheNode(unittest.TestCase):
     def tearDown(self):
         if self.cache_process:
             self.cache_process.stop()
-            time.sleep(1)  # to make sure the process has enough time to stop.
+            while self.cache_process.is_alive():
+                time.sleep(0.2)  # waiting for cache node to die
+            assert not self.cache_process.is_alive()
+            time.sleep(1)  # TODO : investigate : we shouldnt need this
         pass
 
     def chatter_detected(self, topicq_clist, conn_type, node_name):
@@ -540,72 +546,167 @@ class TestConnectionCacheNode(unittest.TestCase):
         mem_spin_freq = self.spin_freq
         rate_msg = rocon_std_msgs.ConnectionCacheSpin()
         rate_msg.spin_freq = self.spin_freq/3
+        rate_msg.spin_timer = 0.0
         self.set_spin.publish(rate_msg)
 
         # Start a dummy node
         listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
         process = launch.launch(listener_node)
+        try:
+            # check that we dont get any update
+            added_subscriber_diff_detected = False
 
-        # check that we dont get any update
-        added_subscriber_diff_detected = False
+            # wait - only as long as a tick - until rate has been published as changed.
+            # during this time we shouldnt detect the subscriber
+            counter = 0
+            while (counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq) and self.spin_freq == mem_spin_freq:
+                counter += 1
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
 
-        # wait - only as long as a tick - until rate has been published as changed.
-        # during this time we shouldnt detect the subscriber
-        counter = 0
-        while (counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq) and self.spin_freq == mem_spin_freq:
-            counter += 1
-            # Here we only check the last message received
-            if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
-                added_subscriber_diff_detected = True
+                assert not added_subscriber_diff_detected
+                prevent_overspin_sleep()
 
-            assert not added_subscriber_diff_detected
-            prevent_overspin_sleep()
+            # we should have waited less than one tick
+            assert counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq
 
-        # we should have waited less than one tick
-        assert counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq
+            # Start counting
+            start_wait = rospy.get_time()
+            while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/self.spin_freq:
+                # check that we get an update
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
+                prevent_overspin_sleep()
 
-        # Start counting
-        start_wait = rospy.get_time()
-        while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/self.spin_freq:
-            # check that we get an update
-            # Here we only check the last message received
-            if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
-                added_subscriber_diff_detected = True
-            prevent_overspin_sleep()
+            assert added_subscriber_diff_detected
 
-        assert added_subscriber_diff_detected
+            # Make rate fast again
+            last_freq = self.spin_freq
+            rate_msg = rocon_std_msgs.ConnectionCacheSpin()
+            rate_msg.spin_freq = mem_spin_freq
+            rate_msg.spin_timer = 0.0
+            self.set_spin.publish(rate_msg)
 
-        # Make rate fast again
-        last_freq = self.spin_freq
-        rate_msg = rocon_std_msgs.ConnectionCacheSpin()
-        rate_msg.spin_freq = mem_spin_freq
-        self.set_spin.publish(rate_msg)
+        finally:
+            process.stop()
 
         # restart the dummy node
-        process.stop()
         process = launch.launch(listener_node)
-        added_subscriber_diff_detected = False
+        try:
+            added_subscriber_diff_detected = False
 
-        # wait - only for a tick - until rate has changed
-        counter = 0
-        while (counter == 0 or 1/(counter * overspin_sleep_val) < last_freq) and not self.spin_freq == mem_spin_freq:
-            counter += 1
-            prevent_overspin_sleep()
+            # wait - only for a tick - until rate has changed
+            counter = 0
+            while (counter == 0 or 1/(counter * overspin_sleep_val) < last_freq) and not self.spin_freq == mem_spin_freq:
+                counter += 1
+                prevent_overspin_sleep()
 
-        # we should have waited less than one tick
-        assert counter == 0 or 1/(counter * overspin_sleep_val) < last_freq
+            # we should have waited less than one tick
+            assert counter == 0 or 1/(counter * overspin_sleep_val) < last_freq
 
-        # Start counting
-        start_wait = rospy.get_time()
-        while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/mem_spin_freq:
-            # check that we get an update
-            # Here we only check the last message received
-            if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
-                added_subscriber_diff_detected = True
+            # Start counting
+            start_wait = rospy.get_time()
+            while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/mem_spin_freq:
+                # check that we get an update
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
 
-        assert added_subscriber_diff_detected
+            assert added_subscriber_diff_detected
+        finally:
+            process.stop()
 
-        process.stop()
+    def test_change_spin_rate_timer_detect_sub(self):
+        # constant use just to prevent spinning too fast
+        overspin_sleep_val= 0.02
+        def prevent_overspin_sleep():
+            time.sleep(overspin_sleep_val)
+
+        # Prepare launcher
+        launch = roslaunch.scriptapi.ROSLaunch()
+        launch.start()
+
+        # wait until we get current connectioncache spin
+        with timeout(5) as t:
+            while not t.timed_out and self.spin_freq == 0.0:
+                prevent_overspin_sleep()
+
+        assert not self.spin_freq == 0.0
+
+        # Make rate 3 times slower ( enough to have time to create the node )
+        # temporarily
+        mem_spin_freq = self.spin_freq
+        rate_msg = rocon_std_msgs.ConnectionCacheSpin()
+        rate_msg.spin_freq = self.spin_freq/3
+        # Waiting just a bit (1 secs) more than the test time before we get back to speed
+        rate_msg.spin_timer = 1/mem_spin_freq + 1/self.spin_freq + 1.0
+        self.set_spin.publish(rate_msg)
+
+        # Start a dummy node
+        listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
+        process = launch.launch(listener_node)
+        try:
+            # check that we dont get any update
+            added_subscriber_diff_detected = False
+
+            # wait - only as long as a tick - until rate has been published as changed.
+            # during this time we shouldnt detect the subscriber
+            counter = 0
+            while (counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq) and self.spin_freq == mem_spin_freq:
+                counter += 1
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
+
+                assert not added_subscriber_diff_detected
+                prevent_overspin_sleep()
+
+            # we should have waited less than one tick
+            assert counter == 0 or 1/(counter * overspin_sleep_val) < mem_spin_freq
+
+            # Start counting
+            start_wait = rospy.get_time()
+            while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/self.spin_freq:
+                # check that we get an update
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
+                prevent_overspin_sleep()
+
+            assert added_subscriber_diff_detected
+
+            # the spin rate should still be set here
+            assert self.spin_timer > 0.0
+            assert self.spin_freq < mem_spin_freq
+
+            # Wait for timer to finish and rate to get fast again
+            with timeout(rate_msg.spin_timer) as t:
+                while not t.timed_out and (self.spin_timer > 0.0 or self.spin_freq < mem_spin_freq):
+                    prevent_overspin_sleep()
+
+            assert self.spin_timer == 0.0
+            assert self.spin_freq == mem_spin_freq
+        finally:
+            process.stop()
+
+        # restart the dummy node
+        process = launch.launch(listener_node)
+        try:
+            added_subscriber_diff_detected = False
+
+            # Start counting
+            start_wait = rospy.get_time()
+            while not added_subscriber_diff_detected and rospy.get_time() - start_wait < 1/mem_spin_freq:
+                # check that we get an update
+                # Here we only check the last message received
+                if self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
+                    added_subscriber_diff_detected = True
+
+            assert added_subscriber_diff_detected
+        finally:
+            process.stop()
 
     # TODO : add tests on getSystemState / get_connection_state for actions, with filtering and without
 

@@ -30,6 +30,8 @@ import threading
 
 import collections
 
+import time
+
 import rocon_std_msgs.msg as rocon_std_msgs
 import rosgraph
 import rospy
@@ -77,16 +79,15 @@ action_types = ['/goal', '/cancel', '/status', '/feedback', '/result']
 
 
 class Connection(object):
-    '''
+    """
       An object that represents a connection containing all the gory details
-      about a connection, allowing a connection to be passed through to a
-      foreign gateway.
+      about a connection, allowing a connection to be passed along to other nodes.
 
       Note, we use a ros msg type as a data structure for the variable storage.
       This lets users spin it off in the ros world as needed as well as
       providing extra operators for manipulation and handling of connection
       types on top.
-    '''
+    """
 
     def __init__(self, connection_type, name, node, type_info=None, xmlrpc_uri=None):
         '''
@@ -164,29 +165,33 @@ class Connection(object):
                 goal_topic = self.name + '/goal'
                 goal_topic_type = rostopic.get_topic_type(goal_topic)
                 self.type_info = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
+        return self  # chaining
 
     def generate_xmlrpc_info(self, master=None):
-        '''
+        """
         As with type info, detailed xmlrpc info has to be generated on a per connection
         basis which is expensive, so it's best to delay its generation until needed.
 
         :param rosgraph.Master master : if you've already got a master xmlrpc client initialised, use that.
-        '''
+        """
         if self.xmlrpc_uri is None:
             if master is None:
                 master = rosgraph.Master(self.node)
             self.xmlrpc_uri = master.lookupNode(self.node)
+        return self  # chaining
 
     def __eq__(self, other):
-        '''
+        """
           Don't need to check every characteristic of the connection to
           uniquely identify it, just the name, node and type.
-        '''
+        """
         if isinstance(other, self.__class__):
             # return self.__dict__ == other.__dict__
             return (self.name == other.name and
                     self.type == other.type and
-                    self.node == other.node)
+                    self.node == other.node and
+                    (self.type is SERVICE or self.type_info == other.type_info)  # also checking typeinfo if not service
+                    )
         else:
             return False
 
@@ -194,9 +199,9 @@ class Connection(object):
         return not self.__eq__(other)
 
     def __str__(self):
-        '''
+        """
         String representation of the connection, it differs a little by connection type.
-        '''
+        """
         if self.type == SERVICE:
             return '{type: %s, name: %s, node: %s, uri: %s, service_api: %s}' % (self.type,
                                                                                  self.name,
@@ -214,6 +219,10 @@ class Connection(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def __hash__(self):
+        return hash((self.name, self.type, self.node))
+
 
 ##############################################################################
 # Utility Methods
@@ -235,7 +244,7 @@ def create_empty_connection_type_dictionary(types = None):
     types = types or connection_types
     dic = {}
     for connection_type in types:
-        dic[connection_type] = []
+        dic[connection_type] = set()
     return dic
 
 ##############################################################################
@@ -247,9 +256,6 @@ class ConnectionCache(object):
     """
     Caches all of the connections living in a ros master. Use the 'update'
     method to force a refresh of the basic information for every connection.
-    For detailed information, run 'generate_type_info' and
-    'generate_xmlrpc_info' on the specific connection (this is a more
-    expensive call and you don't want to do this for every connection).
     """
     __slots__ = [
         'filter_actions',
@@ -292,9 +298,9 @@ class ConnectionCache(object):
         return found_connections
 
     def __str__(self):
-        '''
+        """
         String representation of the connection cache.
-        '''
+        """
         s = ""
         types = connection_types
         for connection_type in types:
@@ -307,8 +313,8 @@ class ConnectionCache(object):
                                                                                   )
         return s
 
-    def update(self, new_system_state=None):
-        '''
+    def update(self, new_system_state=None, new_topic_types = None):
+        """
           Currently completely regenerating the connections dictionary and then taking
           diffs. Could be faster if we took diffs on the system state instead, but that's
           a bit more awkward since each element has a variable list of nodes that we'd have
@@ -316,7 +322,7 @@ class ConnectionCache(object):
 
             old_publishers = ['/chatter', ['/talker']]
             new_publishers = ['/chatter', ['/talker', '/babbler']]
-        '''
+        """
         # init the variables we will return
         new_connections = create_empty_connection_type_dictionary(connection_types)
         lost_connections = create_empty_connection_type_dictionary(connection_types)
@@ -325,7 +331,6 @@ class ConnectionCache(object):
             try:
                 publishers, subscribers, services = self._get_system_state()
                 topic_types = self._get_topic_types()
-                #service_types = self._get_service_types()
             except socket.error:
                 rospy.logerr("ConnectionCache : couldn't get system state from the master "
                              "[did you set your master uri to a wireless IP that just went down?]")
@@ -334,25 +339,47 @@ class ConnectionCache(object):
             publishers = new_system_state[PUBLISHER]
             subscribers = new_system_state[SUBSCRIBER]
             services = new_system_state[SERVICE]
-        connections = create_empty_connection_type_dictionary(connection_types)
-        connections[PUBLISHER] = self._get_connections_from_pub_sub_list(publishers, PUBLISHER, topic_types)
-        connections[SUBSCRIBER] = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER, topic_types)
-        connections[SERVICE] = self._get_connections_from_service_list(services, SERVICE)
+            topic_types = new_topic_types
 
-        # Will probably need to check not just in, but only name, node equal
-        diff = lambda l1, l2: [x for x in l1 if x not in l2]
-        # TODO : use set instead
-        for connection_type in connection_types:
-            new_connections[connection_type] = diff(connections[connection_type], self.connections[connection_type])
-            lost_connections[connection_type] = diff(self.connections[connection_type], connections[connection_type])
-        self.connections = connections
+        pubs = self._get_connections_from_pub_sub_list(publishers, PUBLISHER, topic_types)
+        new_connections[PUBLISHER] = pubs - self.connections[PUBLISHER]
+        for c in new_connections[PUBLISHER]:
+            c.generate_xmlrpc_info()
+        # lost connections already have xmlrpc_uri and it s not checked by set for unicity (__hash__)
+        lost_connections[PUBLISHER] = self.connections[PUBLISHER] - pubs
+
+        subs = self._get_connections_from_pub_sub_list(subscribers, SUBSCRIBER, topic_types)
+        new_connections[SUBSCRIBER] = subs - self.connections[SUBSCRIBER]
+        for c in new_connections[SUBSCRIBER]:
+            c.generate_xmlrpc_info()
+        # lost connections already have xmlrpc_uri and it s not checked by set for unicity (__hash__)
+        lost_connections[SUBSCRIBER] = self.connections[SUBSCRIBER] - subs
+
+        svcs = self._get_connections_from_service_list(services, SERVICE)
+        new_connections[SERVICE] = svcs - self.connections[SERVICE]
+        for c in new_connections[SERVICE]:
+            c.generate_type_info()
+            c.generate_xmlrpc_info()
+        # lost connections already have xmlrpc_uri and it s not checked by set for unicity (__hash__)
+        # type_info is different but it is also not checked by set for unicity (__hash__)
+        lost_connections[SERVICE] = self.connections[SERVICE] - svcs
+
+        self.connections[PUBLISHER].update(new_connections[PUBLISHER])
+        self.connections[PUBLISHER].difference_update(lost_connections[PUBLISHER])
+
+        self.connections[SUBSCRIBER].update(new_connections[SUBSCRIBER])
+        self.connections[SUBSCRIBER].difference_update(lost_connections[SUBSCRIBER])
+
+        self.connections[SERVICE].update(new_connections[SERVICE])
+        self.connections[SERVICE].difference_update(lost_connections[SERVICE])
+
         return new_connections, lost_connections
 
     # TODO These should probably disappear
     # TODO and we should probably rely on another format for transferring connection details
     @staticmethod
     def _get_connections_from_service_list(connection_list, connection_type):
-        connections = []
+        connections = set()
         for service in connection_list:
             service_name = service[0]
             # service_uri = rosservice.get_service_uri(service_name)
@@ -362,13 +389,13 @@ class ConnectionCache(object):
                 #    node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, service_name, node, None, None)  # service_uri, node_uri
-                connections.append(connection)
+                connection = Connection(connection_type, service_name, node)  # service_uri, node_uri
+                connections.add(connection)
         return connections
 
     @staticmethod
     def _get_connections_from_pub_sub_list(connection_list, connection_type, msg_type_list):
-        connections = []
+        connections = set()
         for topic in connection_list:
             topic_name = topic[0]
             topic_type = [t[1] for t in msg_type_list if t[0] == topic_name]
@@ -379,13 +406,13 @@ class ConnectionCache(object):
                     # node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, topic_name, node, topic_type, None)  # topic_type, node_uri
-                connections.append(connection)
+                connection = Connection(connection_type, topic_name, node, topic_type)  # topic_type, node_uri
+                connections.add(connection)
         return connections
 
     @staticmethod
     def _get_connections_from_action_list(connection_list, connection_type):
-        connections = []
+        connections = set()
         for action in connection_list:
             action_name = action[0]
             #goal_topic = action_name + '/goal'
@@ -397,8 +424,8 @@ class ConnectionCache(object):
                 #    node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, action_name, node, None, None)  # topic_type, node_uri
-                connections.append(connection)
+                connection = Connection(connection_type, action_name, node)  # topic_type, node_uri
+                connections.add(connection)
         return connections
 
 

@@ -90,6 +90,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
     def _spin_cb(self, data):
         self.spin_freq = data.spin_freq
+        self.spin_timer = data.spin_timer
 
     def setUp(self, cacheproxy=None):
         cacheproxy = cacheproxy or partial(rocon_python_comms.ConnectionCacheProxy, diff_opt=False)
@@ -157,11 +158,11 @@ class TestConnectionCacheNode(unittest.TestCase):
                     and conn.type == conn_type
                     and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
                     and conn.type_info == 'std_msgs/String'
-                    and conn.xmlrpc_uri == '')
+                    and len(conn.xmlrpc_uri) > 0)
             if test:  # break right away if found
                 break
         if not test:
-            print "Expected : name:{name} type:{type} node:{node} type_info:{type_info} xmlrpc_uri:{xmlrpc_uri}".format(name='/chatter', type=conn_type, node=node_name, type_info='', xmlrpc_uri='')
+            print "Expected : name:{name} type:{type} node:{node} topic_type:{type_info}".format(name='/chatter', type=conn_type, node=node_name, type_info='std_msgs/String')
             print "NOT FOUND IN LIST : {0}".format(topicq_clist)
         return test
 
@@ -174,12 +175,12 @@ class TestConnectionCacheNode(unittest.TestCase):
             test = (conn.name == '/add_two_ints'
                     and conn.type == conn_type
                     and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
-                    and conn.type_info == ''
-                    and conn.xmlrpc_uri == '')
+                    and len(conn.type_info) > 0
+                    and len(conn.xmlrpc_uri) > 0)
             if test:  # break right away if found
                 break
         if not test:
-            print "Expected : name:{name} type:{type} node:{node} type_info:{type_info} xmlrpc_uri:{xmlrpc_uri}".format(name='/add_two_ints', type=conn_type, node=node_name, type_info='', xmlrpc_uri='')
+            print "Expected : name:{name} type:{type} node:{node}".format(name='/add_two_ints', type=conn_type, node=node_name)
             print "NOT FOUND IN LIST : {0}".format(svcq_clist)
         return test
 
@@ -622,6 +623,6 @@ if __name__ == '__main__':
 
     setup_module()
     rostest.rosrun('rocon_python_comms',
-                   'test_connection_cache',
+                   'test_connection_cache_node',
                    TestConnectionCacheNode)
     teardown_module()

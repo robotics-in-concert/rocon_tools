@@ -89,15 +89,16 @@ class Connection(object):
       types on top.
     """
 
-    def __init__(self, connection_type, name, node, type_info=None, xmlrpc_uri=None):
+    def __init__(self, connection_type, name, node, type_msg=None, type_info=None, xmlrpc_uri=None):
         '''
         :param str type: type of connection from string constants in rocon_std_msgs.Connection (e.g. PUBLISHER)
         :param str name: the topic/service name or the action base name
         :param str node: the name of the node establishing this connection
-        :param str type_info: topic, service or action type, e.g. std_msgs/String
+        :param str type_msg: topic or service type, e.g. std_msgs/String
+        :param str type_info: extra type information ( following rospy implementation ) : service uri or topic type
         :param str xmlrpc_uri: xmlrpc node uri for managing the connection
         '''
-        self._connection = rocon_std_msgs.Connection(connection_type, name, node, type_info, xmlrpc_uri)
+        self._connection = rocon_std_msgs.Connection(connection_type, name, node, type_msg, type_info, xmlrpc_uri)
 
     @property
     def type(self):
@@ -124,6 +125,14 @@ class Connection(object):
         self._connection.node = connection_node if connection_node else ""
 
     @property
+    def type_msg(self):
+        return self._connection.type_msg if self._connection.type_msg else None
+
+    @type_msg.setter
+    def type_msg(self, connection_type_msg):
+        self._connection.type_msg = connection_type_msg if connection_type_msg else ""
+
+    @property
     def type_info(self):
         return self._connection.type_info if self._connection.type_info else None
 
@@ -147,7 +156,7 @@ class Connection(object):
     def msg(self, msg):
         self._connection = msg
 
-    def generate_type_info(self):
+    def generate_type_info_msg(self):
         '''
         Basic connection details are provided by get system state from the master, which is
         a one shot call to give you information about every connection possible. it does
@@ -158,13 +167,25 @@ class Connection(object):
         '''
         if self.type_info is None:
             if self.type == PUBLISHER or self.type == SUBSCRIBER:
-                self.type_info = rostopic.get_topic_type(self.name)[0]  # message type
+                try:
+                    self.type_info = rostopic.get_topic_type(self.name)[0]  # message type
+                    self.type_msg = self.type_info
+                except rostopic.ROSTopicIOException as topic_exc:
+                    rospy.logwarn(topic_exc)
             elif self.type == SERVICE:
-                self.type_info = rosservice.get_service_uri(self.name)
+                try:
+                    self.type_info = rosservice.get_service_uri(self.name)
+                    self.type_msg = rosservice.get_service_type(self.name)
+                except rosservice.ROSServiceIOException as service_exc:
+                    rospy.logwarn(service_exc)
             elif self.type == ACTION_SERVER or self.type == ACTION_CLIENT:
-                goal_topic = self.name + '/goal'
-                goal_topic_type = rostopic.get_topic_type(goal_topic)
-                self.type_info = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
+                try:
+                    goal_topic = self.name + '/goal'
+                    goal_topic_type = rostopic.get_topic_type(goal_topic)
+                    self.type_info = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
+                    self.type_msg = self.type_info
+                except rostopic.ROSTopicIOException as topic_exc:
+                    rospy.logwarn(topic_exc.msg)
         return self  # chaining
 
     def generate_xmlrpc_info(self, master=None):
@@ -189,9 +210,7 @@ class Connection(object):
             # return self.__dict__ == other.__dict__
             return (self.name == other.name and
                     self.type == other.type and
-                    self.node == other.node and
-                    (self.type is SERVICE or self.type_info == other.type_info)  # also checking typeinfo if not service
-                    )
+                    self.node == other.node)
         else:
             return False
 
@@ -233,7 +252,7 @@ def create_connection(ConnectionMsg):
     """
     Creates a Connection instance from a Connection message
     """
-    return Connection(ConnectionMsg.type, ConnectionMsg.name, ConnectionMsg.node, ConnectionMsg.type_info, ConnectionMsg.xmlrpc_uri)
+    return Connection(ConnectionMsg.type, ConnectionMsg.name, ConnectionMsg.node, ConnectionMsg.type_msg, ConnectionMsg.type_info, ConnectionMsg.xmlrpc_uri)
 
 
 def create_empty_connection_type_dictionary(types = None):
@@ -272,23 +291,13 @@ class ConnectionCache(object):
         self._get_topic_types = master.getTopicTypes
         self.connections = create_empty_connection_type_dictionary(connection_types)
 
-    def generate_type_info(self, name):
-        '''
-        Generate type info for all nodes with the specified name.
-        '''
-        types = connection_types
-        for connection_type in types:
-            for connection in self.connections[connection_type]:
-                if name == connection.name:
-                    connection.generate_type_info()
-
     def find(self, name):
-        '''
+        """
         Convenience function for finding all connections with the
         specified name.
 
         @TODO other find methods using a mix of name, node, type.
-        '''
+        """
         types = connection_types
         found_connections = []
         for connection_type in types:
@@ -358,7 +367,7 @@ class ConnectionCache(object):
         svcs = self._get_connections_from_service_list(services, SERVICE)
         new_connections[SERVICE] = svcs - self.connections[SERVICE]
         for c in new_connections[SERVICE]:
-            c.generate_type_info()
+            c.generate_type_info_msg()
             c.generate_xmlrpc_info()
         # lost connections already have xmlrpc_uri and it s not checked by set for unicity (__hash__)
         # type_info is different but it is also not checked by set for unicity (__hash__)
@@ -406,7 +415,7 @@ class ConnectionCache(object):
                     # node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, topic_name, node, topic_type)  # topic_type, node_uri
+                connection = Connection(connection_type, topic_name, node, topic_type, topic_type)
                 connections.add(connection)
         return connections
 
@@ -424,7 +433,7 @@ class ConnectionCache(object):
                 #    node_uri = self.lookupNode(node)
                 # except:
                 #    continue
-                connection = Connection(connection_type, action_name, node)  # topic_type, node_uri
+                connection = Connection(connection_type, action_name, node)
                 connections.add(connection)
         return connections
 
@@ -797,5 +806,19 @@ class ConnectionCacheProxy(object):
             pubset = {(name, conn.type) for name, conn in self._system_state.publishers.iteritems()}
             subset = {(name, conn.type) for name, conn in self._system_state.subscribers.iteritems()}
             rosmaster_tt = [list(t) for t in (pubset | subset)]
+            self._system_state_lock.release()
+            return rosmaster_tt
+
+    # Completing Master API
+    def getServiceTypes(self):
+        # ROSmaster system_state format
+        self._system_state_lock.acquire()  # block in case we re changing it at the moment
+        if self._system_state is None:
+            self._system_state_lock.release()
+            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
+        else:
+            # building set of tuples to enforce unicity
+            svcset = {(name, conn.type) for name, conn in self._system_state.services.iteritems()}
+            rosmaster_tt = [list(t) for t in svcset]
             self._system_state_lock.release()
             return rosmaster_tt

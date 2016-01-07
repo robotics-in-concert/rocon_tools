@@ -384,8 +384,6 @@ class ConnectionCache(object):
 
         return new_connections, lost_connections
 
-    # TODO These should probably disappear
-    # TODO and we should probably rely on another format for transferring connection details
     @staticmethod
     def _get_connections_from_service_list(connection_list, connection_type):
         connections = set()
@@ -408,7 +406,7 @@ class ConnectionCache(object):
         for topic in connection_list:
             topic_name = topic[0]
             topic_type = [t[1] for t in msg_type_list if t[0] == topic_name]
-            topic_type = topic_type[0]
+            topic_type = topic_type[0] if topic_type else None
             nodes = topic[1]
             for node in nodes:
                 # try:
@@ -536,7 +534,7 @@ class ConnectionCacheProxy(object):
         => a compressed version of a list of connection with same name
         """
 
-        def __init__(self, name, type, nodes=None):
+        def __init__(self, name, type, xmlrpc_uri, nodes=None):
             """
             Initialize a Channel instance
             :param name
@@ -545,6 +543,9 @@ class ConnectionCacheProxy(object):
             """
             self.name = name
             self.type = type
+            # ROS master keeps only one URI per service ( only the last node service URI is kept )
+            # So we actually only one xmlrpc_uri per channel
+            self.xmlrpc_uri = xmlrpc_uri
             self.nodes = nodes or set()
 
         @staticmethod
@@ -558,8 +559,11 @@ class ConnectionCacheProxy(object):
             chan_dict = chan_dict or {}
             for c in conn_list:
                 if not c.name in chan_dict.keys():
-                    chan_dict[c.name] = ConnectionCacheProxy.Channel(c.name, c.type_info)
-                chan_dict[c.name].nodes.add((c.node, c.xmlrpc_uri))
+                    chan_dict[c.name] = ConnectionCacheProxy.Channel(
+                            c.name,
+                            c.type_msg,  # type_msg is always the message type (topic or service)
+                            c.type_info if c.type_info != c.type_msg else None)  # None for topics who don't have uri.
+                chan_dict[c.name].nodes.add((c.node, c.xmlrpc_uri))  # type_info is the uri of the service or the msgtype of the topic
             return chan_dict
 
         @staticmethod
@@ -662,7 +666,8 @@ class ConnectionCacheProxy(object):
         # rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
         pass
 
-    def _get_actions(self, pubs, subs):
+    @staticmethod
+    def _get_actions(pubs, subs):
         '''
           Return actions and pruned publisher, subscriber lists.
 
@@ -685,11 +690,11 @@ class ConnectionCacheProxy(object):
                 # there may be multiple nodes -- for each node search for the other topics
                 for node in nodes:
                     is_action = True
-                    is_action &= self._is_topic_node_in_list(base_topic + '/goal', node, pubs)
-                    is_action &= self._is_topic_node_in_list(base_topic + '/cancel', node, pubs)
-                    is_action &= self._is_topic_node_in_list(base_topic + '/status', node, subs)
-                    is_action &= self._is_topic_node_in_list(base_topic + '/feedback', node, subs)
-                    is_action &= self._is_topic_node_in_list(base_topic + '/result', node, subs)
+                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/goal', node, pubs)
+                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/cancel', node, pubs)
+                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/status', node, subs)
+                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/feedback', node, subs)
+                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/result', node, subs)
 
                     if is_action:
                         action_nodes.append(node)
@@ -722,7 +727,8 @@ class ConnectionCacheProxy(object):
         subs[:] = [connection for connection in subs if len(connection[1]) != 0]
         return actions, pubs, subs
 
-    def _get_action_servers(self, publishers, subscribers):
+    @staticmethod
+    def _get_action_servers(publishers, subscribers):
         '''
           Return action servers and pruned publisher, subscriber lists.
 
@@ -733,10 +739,11 @@ class ConnectionCacheProxy(object):
           @return list of actions, pruned_publishers, pruned_subscribers
           @rtype [base_topic, [nodes]], as param type, as param type
         '''
-        actions, subs, pubs = self._get_actions(subscribers, publishers)
+        actions, subs, pubs = ConnectionCacheProxy._get_actions(subscribers, publishers)
         return actions, pubs, subs
 
-    def _get_action_clients(self, publishers, subscribers):
+    @staticmethod
+    def _get_action_clients(publishers, subscribers):
         '''
           Return action clients and pruned publisher, subscriber lists.
 
@@ -747,7 +754,7 @@ class ConnectionCacheProxy(object):
           @return list of actions, pruned_publishers, pruned_subscribers
           @rtype [base_topic, [nodes]], as param type, as param type
         '''
-        actions, pubs, subs = self._get_actions(publishers, subscribers)
+        actions, pubs, subs = ConnectionCacheProxy._get_actions(publishers, subscribers)
         return actions, pubs, subs
 
     # TODO : check if filtering for actions is useful here.
@@ -763,30 +770,30 @@ class ConnectionCacheProxy(object):
                 # The cache node may have crashed or not be started at all.
                 # if silent fallback is allowed we ask the master directly instead of excepting
                 master = rospy.get_master()  # connecting to master via proxy object
-                return master.getSystemState()[2]
+                rosmaster_ss = master.getSystemState()[2]
             else:
                 raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
         else:
-
             rosmaster_ss = (
                 [[name, [n[0] for n in self._system_state.publishers[name].nodes]] for name in self._system_state.publishers],
                 [[name, [n[0] for n in self._system_state.subscribers[name].nodes]] for name in self._system_state.subscribers],
                 [[name, [n[0] for n in self._system_state.services[name].nodes]] for name in self._system_state.services],
             )
-
-            if filter_actions:  # extending master API
-                action_servers, rosmaster_ss[0], rosmaster_ss[1] = self._get_action_servers(rosmaster_ss[0], rosmaster_ss[1])
-                action_clients, rosmaster_ss[0], rosmaster_ss[1] = self._get_action_clients(rosmaster_ss[0], rosmaster_ss[1])
-                rosmaster_ss = (
-                    rosmaster_ss[0],
-                    rosmaster_ss[1],
-                    rosmaster_ss[2],
-                    [[name, [n for n in action_servers[name]]] for name in action_servers],
-                    [[name, [n for n in action_clients[name]]] for name in action_clients],
-                )
-
             self._system_state_lock.release()
-            return rosmaster_ss
+        return rosmaster_ss
+
+    @staticmethod
+    # helper function to extend master API for actions
+    def filterActions(publishers, subscribers):
+        # Note : pubs and ubs are copy of publishers and subscribers : original params should not be modified
+        action_servers, pubs, subs = ConnectionCacheProxy._get_action_servers(publishers, subscribers)
+        action_clients, pubs, subs = ConnectionCacheProxy._get_action_clients(pubs, subs)
+        return (
+            pubs,
+            subs,
+            action_servers,
+            action_clients,
+        )
 
     def getTopicTypes(self, silent_fallback=True):
         # ROSmaster system_state format
@@ -803,8 +810,8 @@ class ConnectionCacheProxy(object):
                 raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
         else:
             # building set of tuples to enforce unicity
-            pubset = {(name, conn.type) for name, conn in self._system_state.publishers.iteritems()}
-            subset = {(name, conn.type) for name, conn in self._system_state.subscribers.iteritems()}
+            pubset = {(name, chan.type) for name, chan in self._system_state.publishers.iteritems()}
+            subset = {(name, chan.type) for name, chan in self._system_state.subscribers.iteritems()}
             rosmaster_tt = [list(t) for t in (pubset | subset)]
             self._system_state_lock.release()
             return rosmaster_tt
@@ -818,7 +825,21 @@ class ConnectionCacheProxy(object):
             raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
         else:
             # building set of tuples to enforce unicity
-            svcset = {(name, conn.type) for name, conn in self._system_state.services.iteritems()}
+            svcset = {(name, chan.type) for name, chan in self._system_state.services.iteritems()}
             rosmaster_st = [list(t) for t in svcset]
             self._system_state_lock.release()
             return rosmaster_st
+
+    # Completing Master API
+    def getServiceUris(self):
+        # ROSmaster system_state format
+        self._system_state_lock.acquire()  # block in case we re changing it at the moment
+        if self._system_state is None:
+            self._system_state_lock.release()
+            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
+        else:
+            # building set of tuples to enforce unicity
+            svcset = {(name, chan.xmlrpc_uri) for name, chan in self._system_state.services.iteritems()}
+            rosmaster_su = [list(t) for t in svcset]
+            self._system_state_lock.release()
+            return rosmaster_su

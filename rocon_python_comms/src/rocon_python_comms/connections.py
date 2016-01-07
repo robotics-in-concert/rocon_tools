@@ -819,6 +819,6 @@ class ConnectionCacheProxy(object):
         else:
             # building set of tuples to enforce unicity
             svcset = {(name, conn.type) for name, conn in self._system_state.services.iteritems()}
-            rosmaster_tt = [list(t) for t in svcset]
+            rosmaster_st = [list(t) for t in svcset]
             self._system_state_lock.release()
-            return rosmaster_tt
+            return rosmaster_st

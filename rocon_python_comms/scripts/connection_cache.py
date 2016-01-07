@@ -7,8 +7,6 @@
 # Imports
 ##############################################################################
 
-import pyros_setup
-pyros_setup.delayed_import()
 import rospy
 import rocon_python_comms
 

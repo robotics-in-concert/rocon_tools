@@ -90,14 +90,14 @@ class Connection(object):
     """
 
     def __init__(self, connection_type, name, node, type_msg=None, type_info=None, xmlrpc_uri=None):
-        '''
+        """
         :param str type: type of connection from string constants in rocon_std_msgs.Connection (e.g. PUBLISHER)
         :param str name: the topic/service name or the action base name
         :param str node: the name of the node establishing this connection
         :param str type_msg: topic or service type, e.g. std_msgs/String
         :param str type_info: extra type information ( following rospy implementation ) : service uri or topic type
         :param str xmlrpc_uri: xmlrpc node uri for managing the connection
-        '''
+        """
         self._connection = rocon_std_msgs.Connection(connection_type, name, node, type_msg, type_info, xmlrpc_uri)
 
     @property
@@ -157,14 +157,14 @@ class Connection(object):
         self._connection = msg
 
     def generate_type_info_msg(self):
-        '''
+        """
         Basic connection details are provided by get system state from the master, which is
         a one shot call to give you information about every connection possible. it does
         not however provide type info information and the only way of retrieving that from
         the master is making one xmlrpc call to the master for every single connection.
         This gets expensive, so generating this information is usually delayed until we
         need it and done via this method.
-        '''
+        """
         if self.type_info is None:
             if self.type == PUBLISHER or self.type == SUBSCRIBER:
                 try:
@@ -276,19 +276,12 @@ class ConnectionCache(object):
     Caches all of the connections living in a ros master. Use the 'update'
     method to force a refresh of the basic information for every connection.
     """
-    __slots__ = [
-        'filter_actions',
-        'connections',
-        '_lookup_node',
-        '_get_system_state',
-        '_get_topic_types',
-    ]
 
     def __init__(self):
-        master = rosgraph.Master(rospy.get_name())
-        self._lookup_node = master.lookupNode
-        self._get_system_state = master.getSystemState
-        self._get_topic_types = master.getTopicTypes
+        #: rosgraph.Master: master API instance
+        self.master = rosgraph.Master(rospy.get_name())
+
+        #: dict: dict structure of connections, by type.
         self.connections = create_empty_connection_type_dictionary(connection_types)
 
     def find(self, name):
@@ -338,8 +331,8 @@ class ConnectionCache(object):
 
         if new_system_state is None:
             try:
-                publishers, subscribers, services = self._get_system_state()
-                topic_types = self._get_topic_types()
+                publishers, subscribers, services = self.master.getSystemState()
+                topic_types = self.master.getTopicTypes()
             except socket.error:
                 rospy.logerr("ConnectionCache : couldn't get system state from the master "
                              "[did you set your master uri to a wireless IP that just went down?]")

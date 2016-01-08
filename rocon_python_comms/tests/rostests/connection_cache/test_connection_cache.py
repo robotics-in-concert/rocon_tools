@@ -22,7 +22,7 @@ try:
     import rocon_python_comms
     import rocon_std_msgs.msg as rocon_std_msgs
 except ImportError:
-    pyros_setup = pyros_setup.delayed_import()
+    pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
     import rospy
     import rostest
     import roslaunch

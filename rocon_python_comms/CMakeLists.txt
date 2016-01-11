@@ -22,6 +22,7 @@ catkin_add_env_hooks(15.rospair SHELLS bash DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR
 install(
     PROGRAMS 
         scripts/rospair
+        scripts/connection_cache.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
@@ -31,8 +32,8 @@ install(
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/completion
     )
 
-#install(DIRECTORY launch
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 ##############################################################################
 # Unit Tests

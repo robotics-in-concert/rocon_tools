@@ -583,6 +583,9 @@ class ConnectionCacheProxy(object):
         self._system_state = None
         self._connections = create_empty_connection_type_dictionary()
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
+        rospy.loginfo("ConnectionCacheProxy started for {}".format(rospy.get_name()))
+        rospy.loginfo(" with list topic at {}".format(self.conn_list.name))
+        rospy.loginfo(" and diff topic at {}".format(rospy.resolve_name(self.diff_sub)))
 
     @staticmethod
     def _is_topic_node_in_list(topic, node, topic_node_list):

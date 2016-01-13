@@ -198,7 +198,10 @@ class Connection(object):
         if self.xmlrpc_uri is None:
             if master is None:
                 master = rosgraph.Master(self.node)
-            self.xmlrpc_uri = master.lookupNode(self.node)
+            try:
+                self.xmlrpc_uri = master.lookupNode(self.node)
+            except rosgraph.MasterError as exc:
+                rospy.logwarn(str(exc))  # keep going even if the node is not found.
         return self  # chaining
 
     def __eq__(self, other):

@@ -11,10 +11,9 @@ class TestSubscriberProxy(unittest.TestCase):
 
     def setUp(self):
         rospy.init_node('listener', anonymous=True)
-        pass
 
     def test_subscriber_proxy(self):
-        talker_data = rocon_python_comms.SubscriberProxy('chatter', String)()
+        talker_data = rocon_python_comms.SubscriberProxy('chatter', String)(timeout=rospy.Duration(3.0))
         self.assertEquals("dude", talker_data.data)
 
     def tearDown(self):

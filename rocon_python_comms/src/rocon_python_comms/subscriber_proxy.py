@@ -85,6 +85,9 @@ class SubscriberProxy():
             if timeout is not None:
                 if time.time() > timeout_time:
                     return None
+            # check to see if there is new data
+            with self._lock:
+                data = self._data
         return data
 
     def wait_for_next(self, timeout=None):

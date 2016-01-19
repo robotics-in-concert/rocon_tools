@@ -519,10 +519,7 @@ class ConnectionCacheNode(object):
             rospy.core.signal_shutdown('keyboard interrupt')
 
 
-class UnknownSystemState(Exception):
-    pass
-
-
+#TODO : split that in multiple files
 class ConnectionCacheProxy(object):
     class Channel(object):
         """
@@ -540,9 +537,23 @@ class ConnectionCacheProxy(object):
             self.name = name
             self.type = type
             # ROS master keeps only one URI per service ( only the last node service URI is kept )
-            # So we actually only one xmlrpc_uri per channel
+            # So we actually have only one xmlrpc_uri per channel
             self.xmlrpc_uri = xmlrpc_uri
             self.nodes = nodes or set()
+
+        def __eq__(self, other):  # used for manual == operator
+            if not isinstance(other, ConnectionCacheProxy.Channel):
+                return NotImplemented
+            elif self is other:
+                return True
+            else:
+                return (self.name == other.name and
+                        self.type == other.type and
+                        self.xmlrpc_uri == other.xmlrpc_uri and
+                        self.nodes == other.nodes)  # TODO : verify this actually compares node tuples values
+
+        def __hash__(self):  # used for comparison in sets
+            return hash((self.name, self.type))
 
         @staticmethod
         def dict_factory(conn_list, chan_dict=None):
@@ -578,14 +589,194 @@ class ConnectionCacheProxy(object):
                         chan_dict.pop(c.name)
             return chan_dict
 
-    def __init__(self, list_sub=None, diff_opt=False, diff_sub=None):
+    class ActionChannel(object):
+        """
+        Extension of a Channel for Actions
+        """
+        def __init__(self, goal_chan, cancel_chan, status_chan, feedback_chan, result_chan):
+            """
+            Initialize an ActionChannel instance
+            :param goal_chan
+            :param cancel_chan
+            :param status_chan
+            :param feedback_chan
+            :param result_chan
+            :param nodes a set of tuple (node_name, node_uri)
+            """
+            assert goal_chan.name.endswith("/goal")
+            self.goal_chan = goal_chan
+            assert cancel_chan.name.endswith("/cancel")
+            self.cancel_chan = cancel_chan
+            assert status_chan.name.endswith("/status")
+            self.status_chan = status_chan
+            assert feedback_chan.name.endswith("/feeback")
+            self.feedback_chan = feedback_chan
+            assert result_chan.name.endswith("/result")
+            self.result_chan = result_chan
+
+        @property
+        def name(self):
+            return self.goal_chan.name[:-len("/goal")]
+
+        @property
+        def type(self):
+            return  self.goal_chan.type
+
+        @property
+        def xmlrpc_uri(self):
+            return None
+
+        @property
+        def nodes(self):
+            return self.goal_chan.nodes | self.cancel_chan.nodes | self.status_chan.nodes | self.feedback_chan.nodes | self.result_chan.nodes
+
+        def __eq__(self, other):  # used for manual == operator
+            if not isinstance(other, ConnectionCacheProxy.ActionChannel):
+                return NotImplemented
+            elif self is other:
+                return True
+            else:
+                return (self.goal_chan == other.goal_chan and
+                        self.cancel_chan == other.cancel_chan and
+                        self.status_chan == other.status_chan and
+                        self.feedback_chan == other.feedback_chan and
+                        self.result_chan == other.result_chan)
+
+        def is_server(self):
+            return (
+                # only one of them present is enough to tell
+                self.goal_chan.type == SUBSCRIBER
+                or self.cancel_chan.type == SUBSCRIBER
+                or self.status_chan.type == PUBLISHER
+                or self.feedback_chan.type == PUBLISHER
+                or self.result_chan.type == PUBLISHER
+            )
+
+        def is_client(self):
+            return (
+                self.goal_chan.type == PUBLISHER
+                or self.cancel_chan.type == PUBLISHER
+                or self.status_chan.type == SUBSCRIBER
+                or self.feedback_chan.type == SUBSCRIBER
+                or self.result_chan.type == SUBSCRIBER
+            )
+
+
+        @staticmethod
+        def dict_factory_actions_from_chan(chan_dict, chan_other_dict, action_dict=None):
+            """
+            Build ActionChannels from two list of Channels, and merge them in the dictionary.
+            The behavior is symmetrical, pass pubs_list, subs_list, for action clients and the reverse for action servers
+            :param chan_dict: Dict of channels
+            :param chan_other_dict: symmetric dict of channels ( subscriber / publisher complement of chan_dict )
+            :return:
+            """
+            chan_dict = chan_dict or {}
+            action_dict = action_dict or {}
+            new_chan_dict = chan_dict
+            new_chan_other_dict = chan_other_dict
+
+            goal_chan_from_dict = {n[:-len("/goal")]: pc for n, pc in chan_dict.iteritems() if n.endswith("/goal")}
+            cancel_chan_from_dict = {n[:-len("/cancel")]: pc for n, pc in chan_dict.iteritems() if n.endswith("/cancel")}
+            status_chan_from_dict = {n[:-len("/status")]: pc for n, pc in chan_other_dict.iteritems() if n.endswith("/status")}
+            feedback_chan_from_dict = {n[:-len("/feedback")]: pc for n, pc in chan_other_dict.iteritems() if n.endswith("/feedback")}
+            result_chan_from_dict = {n[:-len("/result")]: pc for n, pc in chan_other_dict.iteritems() if n.endswith("/result")}
+
+            # since we need all the 5 topics anyway for an action,
+            # checking only in goal dict is enough
+            for k, v in goal_chan_from_dict.iteritems():
+                action_name = k
+                try:
+                    goal_chan = goal_chan_from_dict[k]
+                    cancel_chan = cancel_chan_from_dict[k]
+                    status_chan = status_chan_from_dict[k]
+                    feedback_chan = feedback_chan_from_dict[k]
+                    result_chan = result_chan_from_dict[k]
+                except KeyError:  # skip this
+                    continue
+
+                # here we should have the 5 connections
+                if action_name in new_chan_dict.keys():
+                    action_dict[action_name].goal_chan.nodes |= goal_chan.nodes
+                    action_dict[action_name].cancel_chan.nodes |= cancel_chan.nodes
+                    action_dict[action_name].status_chan.nodes |= status_chan.nodes
+                    action_dict[action_name].feedback_chan.nodes |= feedback_chan.nodes
+                    action_dict[action_name].result_chan.nodes |= result_chan.nodes
+                else:
+                    action_dict[action_name] = ConnectionCacheProxy.ActionChannel(
+                            goal_chan, cancel_chan, status_chan, feedback_chan, result_chan
+                    )
+
+                # purging old used stuff
+                new_chan_dict.pop(goal_chan.name, None)
+                new_chan_dict.pop(cancel_chan.name, None)
+
+                new_chan_other_dict.pop(status_chan.name, None)
+                new_chan_other_dict.pop(feedback_chan.name, None)
+                new_chan_other_dict.pop(result_chan.name, None)
+
+            return action_dict, new_chan_dict, new_chan_other_dict
+
+        @staticmethod
+        def dict_slaughterhouse_actions_to_chan(chan_lost_dict, chan_lost_other_dict, action_lost_dict, chan_dict=None, chan_other_dict=None):
+            """
+            Extract a list of Channels from a dict of lost ActionChannels
+            :return:
+            """
+            chan_dict = chan_dict or {}
+            chan_other_dict = chan_other_dict or {}
+
+            goal_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_dict.keys()}
+            cancel_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_dict.keys()}
+            status_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
+            feedback_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
+            result_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
+
+            for d in [goal_chan_from_dict, cancel_chan_from_dict]:
+                for n, c in d.iteritems():
+                    chan_dict[n] = c
+            for d in [status_chan_from_dict, feedback_chan_from_dict, result_chan_from_dict]:
+                for n, c in d.iteritems():
+                    chan_other_dict[n] = c
+
+            return chan_dict, chan_other_dict
+
+    def __init__(self, list_sub=None, handle_actions=False, user_callback=None, diff_opt=False, diff_sub=None):
+        """
+        Initialize a connection cache proxy to retrieve system state while minimizing call to the master or the cache node
+        This method will block until the connection cache node has sent its system state
+        :param list_sub: topic name to subscribe to to get the list from connectioncache node
+        :param handle_actions: whether connectioncacheProxy does action filtering internally
+        :param user_callback: user callback function for asynchronous state change management
+        :param diff_opt: whether we optimise the proxy by using the differences only and rebuilding the full state from it
+        :param diff_sub: topic name to subscribe to to get the diff from connectioncache node
+        :return:
+        """
         self.diff_opt = diff_opt
         self.diff_sub = diff_sub or '~connections_diff'
+        self.handle_actions = handle_actions
+        self.user_cb = None
         self._system_state_lock = threading.Lock()  # writer lock
-        self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services")
+        if self.handle_actions:
+            self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services action_servers action_clients")
+        else:
+            self.SystemState = collections.namedtuple("SystemState", "publishers subscribers services")
         self._system_state = None
-        self._connections = create_empty_connection_type_dictionary()
+
+        if user_callback:
+            if not hasattr(user_callback, '__call__'):
+                rospy.logwarn("Connection Cache Proxy user callback not callable. Ignoring user callback.")
+            else:
+                self.user_cb = user_callback
+
+        self.conn_list_called = threading.Event()
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
+
+        self.conn_list_called.wait()  # we block until we receive a message from connection node
+
+        # waiting until we are sure we are plugged in connection cache node.
+        # RAII : after __init__() ConnectionCache is ready to use (self._system_state is initialized).
+
         rospy.loginfo("ConnectionCacheProxy started for {}".format(rospy.get_name()))
         rospy.loginfo(" with list topic at {}".format(self.conn_list.name))
         rospy.loginfo(" and diff topic at {}".format(rospy.resolve_name(self.diff_sub)))
@@ -604,21 +795,33 @@ class ConnectionCacheProxy(object):
     def _list_cb(self, data):
         self._system_state_lock.acquire()
         # we got a new full list : reset the local value for _system_state
-        self._system_state = self.SystemState(
-                ConnectionCacheProxy.Channel.dict_factory(
-                        [c for c in data.connections if c.type == c.PUBLISHER]
-                ),
-                ConnectionCacheProxy.Channel.dict_factory(
-                        [c for c in data.connections if c.type == c.SUBSCRIBER]
-                ),
-                ConnectionCacheProxy.Channel.dict_factory(
-                        [c for c in data.connections if c.type == c.SERVICE]
-                )
-        )
+        pubs = [c for c in data.connections if c.type == c.PUBLISHER]
+        subs = [c for c in data.connections if c.type == c.SUBSCRIBER]
+        svcs = [c for c in data.connections if c.type == c.SERVICE]
+
+        pub_chans = ConnectionCacheProxy.Channel.dict_factory(pubs)
+        sub_chans = ConnectionCacheProxy.Channel.dict_factory(subs)
+        svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs)
+
+        if self.handle_actions:
+            action_server_chans, subs_chans, pub_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(sub_chans, pub_chans)
+            action_client_chans, pub_chans, subs_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(pub_chans, sub_chans)
+            self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans, action_server_chans, action_client_chans)
+        else:
+            self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans)
+
         self._system_state_lock.release()
         # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
         # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
         # rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
+
+        if self.user_cb is not None and hasattr(self.user_cb, '__call__'):
+            try:
+                self.user_cb(self._system_state, None, None)
+            except Exception as user_exc:
+                rospy.logerr("Connection Cache Proxy : Diff Callback Exception {0}".format(user_exc))
+
+        self.conn_list_called.set()  # signaling that the list_callback has been called ( for __init__ )
 
         if self.diff_opt:
             # hooking up to the diff and unhooking from the list
@@ -629,216 +832,133 @@ class ConnectionCacheProxy(object):
         # modifying the system_state ( like the one provided by ROS master)
         self._system_state_lock.acquire()
 
-        self._system_state = self.SystemState(
-                ConnectionCacheProxy.Channel.dict_factory(
-                    [c for c in data.added if c.type == c.PUBLISHER],
-                    self._system_state.publishers
-                ),
-                ConnectionCacheProxy.Channel.dict_factory(
-                    [c for c in data.added if c.type == c.SUBSCRIBER],
-                    self._system_state.subscribers
-                ),
-                ConnectionCacheProxy.Channel.dict_factory(
-                    [c for c in data.added if c.type == c.SERVICE],
-                    self._system_state.services
-                )
-        )
+        # we got a new full list : reset the local value for _system_state
+        pubs_added = [c for c in data.added if c.type == c.PUBLISHER]
+        subs_added = [c for c in data.added if c.type == c.SUBSCRIBER]
+        svcs_added = [c for c in data.added if c.type == c.SERVICE]
 
-        self._system_state = self.SystemState(
-                ConnectionCacheProxy.Channel.dict_slaughterhouse(
-                    [c for c in data.lost if c.type == c.PUBLISHER],
-                    self._system_state.publishers
-                ),
-                ConnectionCacheProxy.Channel.dict_slaughterhouse(
-                    [c for c in data.lost if c.type == c.SUBSCRIBER],
-                    self._system_state.subscribers
-                ),
-                ConnectionCacheProxy.Channel.dict_slaughterhouse(
-                    [c for c in data.lost if c.type == c.SERVICE],
-                    self._system_state.services
+        pubs_lost = [c for c in data.lost if c.type == c.PUBLISHER]
+        subs_lost = [c for c in data.lost if c.type == c.SUBSCRIBER]
+        svcs_lost = [c for c in data.lost if c.type == c.SERVICE]
+
+        added_pub_chans = ConnectionCacheProxy.Channel.dict_factory(pubs_added)
+        added_sub_chans = ConnectionCacheProxy.Channel.dict_factory(subs_added)
+        added_svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs_added)
+
+        lost_pub_chans = ConnectionCacheProxy.Channel.dict_factory(pubs_lost)
+        lost_sub_chans = ConnectionCacheProxy.Channel.dict_factory(subs_lost)
+        lost_svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs_lost)
+
+        # new system state
+
+        pub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(pubs_lost, ConnectionCacheProxy.Channel.dict_factory(pubs_added, self._system_state.publishers))
+        sub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(subs_lost, ConnectionCacheProxy.Channel.dict_factory(subs_added, self._system_state.subscribers))
+        svc_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(svcs_lost, ConnectionCacheProxy.Channel.dict_factory(svcs_added, self._system_state.services))
+
+        # calculating actions
+        if self.handle_actions:
+            new_action_servers, sub_chans_af, pub_chans_af =\
+                ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
+                         sub_chans, pub_chans, self._system_state.action_servers
                 )
-        )
+
+            new_action_clients, pub_chans_af, sub_chans_af =\
+                ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
+                        pub_chans_af, sub_chans_af, self._system_state.action_clients
+                )
+
+            lost_action_servers = {n: c for n, c in self._system_state.action_servers if n not in new_action_servers.keys()}
+            lost_action_clients = {n: c for n, c in self._system_state.action_clients if n not in new_action_clients.keys()}
+
+            pub_chans_af, sub_chans_af =\
+                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
+                    lost_pub_chans, lost_sub_chans, lost_action_clients, pub_chans_af, sub_chans_af
+                )
+
+            sub_chans_af, pub_chans_af =\
+                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
+                         lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans_af, pub_chans_af
+                )
+
+            # recalculating difference after actions ( can modify current system state )
+            _added_system_state = self.SystemState(
+                {n: c for n, c in pub_chans_af.iteritems() if not (n in self._system_state.publishers.keys() and self._system_state.publishers[n] == c)},
+                {n: c for n, c in sub_chans_af.iteritems() if not (n in self._system_state.subscribers.keys() and self._system_state.subscribers[n] == c)},
+                added_svc_chans,
+                {n: c for n, c in new_action_servers.iteritems() if not (n in self._system_state.action_servers.keys() and self._system_state.action_servers[n] == c)},
+                {n: c for n, c in new_action_clients.iteritems() if not (n in self._system_state.action_clients.keys() and self._system_state.action_clients[n] == c)},
+            )
+
+            _lost_system_state = self.SystemState(
+                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in pub_chans_af.keys() and pub_chans_af[n] == c)},
+                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in sub_chans_af.keys() and sub_chans_af[n] == c)},
+                lost_svc_chans,
+                {n: c for n, c in self._system_state.action_servers.iteritems() if not (n in new_action_servers.keys() and new_action_servers[n] == c)},
+                {n: c for n, c in self._system_state.action_clients.iteritems() if not (n in new_action_clients.keys() and new_action_clients[n] == c)},
+            )
+
+            self._system_state = self.SystemState(
+                pub_chans_af,
+                sub_chans_af,
+                svc_chans,
+                new_action_servers,
+                new_action_clients,
+            )
+        else:
+            _added_system_state = self.SystemState(added_pub_chans, added_sub_chans, added_svc_chans)
+            _lost_system_state = self.SystemState(lost_pub_chans, lost_sub_chans, lost_svc_chans)
+            self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans)
 
         self._system_state_lock.release()
         # rospy.loginfo("CACHE PROXY LIST_CB PUBLISHERS : {pubs}".format(pubs=self._system_state.publishers))
         # rospy.loginfo("CACHE PROXY LIST_CB SUBSCRIBERS : {subs}".format(subs=self._system_state.subscribers))
         # rospy.loginfo("CACHE PROXY LIST_CB SERVICES : {svcs}".format(svcs=self._system_state.services))
+
+        if self.user_cb is not None and hasattr(self.user_cb, '__call__'):
+            try:
+                self.user_cb(self._system_state, _added_system_state, _lost_system_state)
+            except Exception as user_exc:
+                rospy.logerr("Connection Cache Proxy : Diff Callback Exception {0}".format(user_exc))
+
         pass
 
-    @staticmethod
-    def _get_actions(pubs, subs):
-        '''
-          Return actions and pruned publisher, subscriber lists.
-
-          @param publishers
-          @type list of publishers in the form returned by rosgraph.Master.get_system_state
-          @param subscribers
-          @type list of subscribers in the form returned by rosgraph.Master.get_system_state
-          @return list of actions, pruned_publishers, pruned_subscribers
-          @rtype [base_topic, [nodes]], as param type, as param type
-        '''
-
-        actions = []
-        for goal_candidate in pubs:
-            if re.search('\/goal$', goal_candidate[0]):
-                # goal found, extract base topic
-                base_topic = re.sub('\/goal$', '', goal_candidate[0])
-                nodes = goal_candidate[1]
-                action_nodes = []
-
-                # there may be multiple nodes -- for each node search for the other topics
-                for node in nodes:
-                    is_action = True
-                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/goal', node, pubs)
-                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/cancel', node, pubs)
-                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/status', node, subs)
-                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/feedback', node, subs)
-                    is_action &= ConnectionCacheProxy._is_topic_node_in_list(base_topic + '/result', node, subs)
-
-                    if is_action:
-                        action_nodes.append(node)
-
-                if len(action_nodes) != 0:
-                    # yay! an action has been found
-                    actions.append([base_topic, action_nodes])
-                    # remove action entries from publishers/subscribers
-                    for connection in pubs:
-                        if connection[0] in [base_topic + '/goal', base_topic + '/cancel']:
-                            for node in action_nodes:
-                                try:
-                                    connection[1].remove(node)
-                                except ValueError:
-                                    rospy.logerr(
-                                        "Gateway : couldn't remove an action publisher " +
-                                        "from the master connections list [%s][%s]" %
-                                        (connection[0], node))
-                    for connection in subs:
-                        if connection[0] in [base_topic + '/status', base_topic + '/feedback', base_topic + '/result']:
-                            for node in action_nodes:
-                                try:
-                                    connection[1].remove(node)
-                                except ValueError:
-                                    rospy.logerr(
-                                        "Gateway : couldn't remove an action subscriber " +
-                                        "from the master connections list [%s][%s]" %
-                                        (connection[0], node))
-        pubs[:] = [connection for connection in pubs if len(connection[1]) != 0]
-        subs[:] = [connection for connection in subs if len(connection[1]) != 0]
-        return actions, pubs, subs
-
-    @staticmethod
-    def _get_action_servers(publishers, subscribers):
-        '''
-          Return action servers and pruned publisher, subscriber lists.
-
-          @param publishers
-          @type list of publishers in the form returned by rosgraph.Master.get_system_state
-          @param subscribers
-          @type list of subscribers in the form returned by rosgraph.Master.get_system_state
-          @return list of actions, pruned_publishers, pruned_subscribers
-          @rtype [base_topic, [nodes]], as param type, as param type
-        '''
-        actions, subs, pubs = ConnectionCacheProxy._get_actions(subscribers, publishers)
-        return actions, pubs, subs
-
-    @staticmethod
-    def _get_action_clients(publishers, subscribers):
-        '''
-          Return action clients and pruned publisher, subscriber lists.
-
-          @param publishers
-          @type list of publishers in the form returned by rosgraph.Master.get_system_state
-          @param subscribers
-          @type list of subscribers in the form returned by rosgraph.Master.get_system_state
-          @return list of actions, pruned_publishers, pruned_subscribers
-          @rtype [base_topic, [nodes]], as param type, as param type
-        '''
-        actions, pubs, subs = ConnectionCacheProxy._get_actions(publishers, subscribers)
-        return actions, pubs, subs
-
-    # TODO : check if filtering for actions is useful here.
-    # Might not be since gateway rebuild its own connections anyway
-    # If not useful, we could simplify the cache significantly by dropping that feature
-    def getSystemState(self, filter_actions=False, silent_fallback=True):
+    def getSystemState(self):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
-        if self._system_state is None:
-            self._system_state_lock.release()  # not using the internal one : releasing lock
-            if silent_fallback:
-                # we didn't receive anything from the cache node yet.
-                # The cache node may have crashed or not be started at all.
-                # if silent fallback is allowed we ask the master directly instead of excepting
-                master = rospy.get_master()  # connecting to master via proxy object
-                rosmaster_ss = master.getSystemState()[2]
-            else:
-                raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
-        else:
-            rosmaster_ss = (
-                [[name, [n[0] for n in self._system_state.publishers[name].nodes]] for name in self._system_state.publishers],
-                [[name, [n[0] for n in self._system_state.subscribers[name].nodes]] for name in self._system_state.subscribers],
-                [[name, [n[0] for n in self._system_state.services[name].nodes]] for name in self._system_state.services],
-            )
-            self._system_state_lock.release()
+        rosmaster_ss = (
+            [[name, [n[0] for n in self._system_state.publishers[name].nodes]] for name in self._system_state.publishers],
+            [[name, [n[0] for n in self._system_state.subscribers[name].nodes]] for name in self._system_state.subscribers],
+            [[name, [n[0] for n in self._system_state.services[name].nodes]] for name in self._system_state.services],
+        )
+        self._system_state_lock.release()
         return rosmaster_ss
 
-    @staticmethod
-    # helper function to extend master API for actions
-    def filterActions(publishers, subscribers):
-        # Note : pubs and ubs are copy of publishers and subscribers : original params should not be modified
-        action_servers, pubs, subs = ConnectionCacheProxy._get_action_servers(publishers, subscribers)
-        action_clients, pubs, subs = ConnectionCacheProxy._get_action_clients(pubs, subs)
-        return (
-            pubs,
-            subs,
-            action_servers,
-            action_clients,
-        )
-
-    def getTopicTypes(self, silent_fallback=True):
+    def getTopicTypes(self):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
-        if self._system_state is None:
-            self._system_state_lock.release()
-            if silent_fallback:
-                # we didn't receive anything from the cache node yet.
-                # The cache node may have crashed or not be started at all.
-                # if silent fallback is allowed we ask the master directly instead of excepting
-                master = rospy.get_master()  # connecting to master via proxy object
-                return master.getTopicTypes()[2]
-            else:
-                raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
-        else:
-            # building set of tuples to enforce unicity
-            pubset = {(name, chan.type) for name, chan in self._system_state.publishers.iteritems()}
-            subset = {(name, chan.type) for name, chan in self._system_state.subscribers.iteritems()}
-            rosmaster_tt = [list(t) for t in (pubset | subset)]
-            self._system_state_lock.release()
-            return rosmaster_tt
+        # building set of tuples to enforce unicity
+        pubset = {(name, chan.type) for name, chan in self._system_state.publishers.iteritems()}
+        subset = {(name, chan.type) for name, chan in self._system_state.subscribers.iteritems()}
+        rosmaster_tt = [list(t) for t in (pubset | subset)]
+        self._system_state_lock.release()
+        return rosmaster_tt
 
     # Completing Master API
     def getServiceTypes(self):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
-        if self._system_state is None:
-            self._system_state_lock.release()
-            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
-        else:
-            # building set of tuples to enforce unicity
-            svcset = {(name, chan.type) for name, chan in self._system_state.services.iteritems()}
-            rosmaster_st = [list(t) for t in svcset]
-            self._system_state_lock.release()
-            return rosmaster_st
+        # building set of tuples to enforce unicity
+        svcset = {(name, chan.type) for name, chan in self._system_state.services.iteritems()}
+        rosmaster_st = [list(t) for t in svcset]
+        self._system_state_lock.release()
+        return rosmaster_st
 
     # Completing Master API
     def getServiceUris(self):
         # ROSmaster system_state format
         self._system_state_lock.acquire()  # block in case we re changing it at the moment
-        if self._system_state is None:
-            self._system_state_lock.release()
-            raise UnknownSystemState("No message has been received on the list subscriber yet. Connection Cache node is probably not started.")
-        else:
-            # building set of tuples to enforce unicity
-            svcset = {(name, chan.xmlrpc_uri) for name, chan in self._system_state.services.iteritems()}
-            rosmaster_su = [list(t) for t in svcset]
-            self._system_state_lock.release()
-            return rosmaster_su
+        # building set of tuples to enforce unicity
+        svcset = {(name, chan.xmlrpc_uri) for name, chan in self._system_state.services.iteritems()}
+        rosmaster_su = [list(t) for t in svcset]
+        self._system_state_lock.release()
+        return rosmaster_su

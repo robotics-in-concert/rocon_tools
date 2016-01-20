@@ -29,7 +29,6 @@ import socket
 import threading
 
 import collections
-
 import time
 
 import rocon_std_msgs.msg as rocon_std_msgs
@@ -519,8 +518,11 @@ class ConnectionCacheNode(object):
             rospy.core.signal_shutdown('keyboard interrupt')
 
 
-#TODO : split that in multiple files
+# TODO : split that in multiple files
 class ConnectionCacheProxy(object):
+    class InitializationTimeout(Exception):
+        pass
+
     class Channel(object):
         """
         Definition of a channel ( topic/service )
@@ -741,7 +743,7 @@ class ConnectionCacheProxy(object):
 
             return chan_dict, chan_other_dict
 
-    def __init__(self, list_sub=None, handle_actions=False, user_callback=None, diff_opt=False, diff_sub=None):
+    def __init__(self, list_sub=None, handle_actions=False, user_callback=None, diff_opt=False, diff_sub=None, list_wait_timeout=5):
         """
         Initialize a connection cache proxy to retrieve system state while minimizing call to the master or the cache node
         This method will block until the connection cache node has sent its system state
@@ -750,6 +752,7 @@ class ConnectionCacheProxy(object):
         :param user_callback: user callback function for asynchronous state change management
         :param diff_opt: whether we optimise the proxy by using the differences only and rebuilding the full state from it
         :param diff_sub: topic name to subscribe to to get the diff from connectioncache node
+        :param list_wait_timeout: seconds to wait for list in list topic before timing out
         :return:
         """
         self.diff_opt = diff_opt
@@ -772,7 +775,9 @@ class ConnectionCacheProxy(object):
         self.conn_list_called = threading.Event()
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
 
-        self.conn_list_called.wait()  # we block until we receive a message from connection node
+        if not self.conn_list_called.wait(list_wait_timeout):  # we block until we receive a message from connection node
+            # if we timeout we except to prevent using the object uninitialized
+            raise ConnectionCacheProxy.InitializationTimeout("Connection Cache Proxy timed out on initialization. aborting")
 
         # waiting until we are sure we are plugged in connection cache node.
         # RAII : after __init__() ConnectionCache is ready to use (self._system_state is initialized).

@@ -611,7 +611,7 @@ class ConnectionCacheProxy(object):
             self.cancel_chan = cancel_chan
             assert status_chan.name.endswith("/status")
             self.status_chan = status_chan
-            assert feedback_chan.name.endswith("/feeback")
+            assert feedback_chan.name.endswith("/feedback")
             self.feedback_chan = feedback_chan
             assert result_chan.name.endswith("/result")
             self.result_chan = result_chan
@@ -872,8 +872,8 @@ class ConnectionCacheProxy(object):
                         pub_chans_af, sub_chans_af, self._system_state.action_clients
                 )
 
-            lost_action_servers = {n: c for n, c in self._system_state.action_servers if n not in new_action_servers.keys()}
-            lost_action_clients = {n: c for n, c in self._system_state.action_clients if n not in new_action_clients.keys()}
+            lost_action_servers = {n: c for n, c in self._system_state.action_servers.iteritems() if n not in new_action_servers.keys()}
+            lost_action_clients = {n: c for n, c in self._system_state.action_clients.iteritems() if n not in new_action_clients.keys()}
 
             pub_chans_af, sub_chans_af =\
                 ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(

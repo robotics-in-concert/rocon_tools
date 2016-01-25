@@ -11,7 +11,7 @@ import unittest
 import time
 from functools import partial
 
-import pyros_setup
+# import pyros_setup
 
 try:
     import rospy
@@ -22,44 +22,38 @@ try:
     import rocon_python_comms
     import rocon_std_msgs.msg as rocon_std_msgs
 except ImportError:
-    pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
-    import rospy
-    import rostest
-    import roslaunch
-    import rosgraph
-    import rosnode
-    import rocon_python_comms
-    import rocon_std_msgs.msg as rocon_std_msgs
+    raise
+
+    # pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
+    # import rospy
+    # import rostest
+    # import roslaunch
+    # import rosgraph
+    # import rosnode
+    # import rocon_python_comms
+    # import rocon_std_msgs.msg as rocon_std_msgs
 
 
-roscore_process = None
-master = None
-launch = None
+# roscore_process = None
+# master = None
 
 
-def setup_module():
-    global master
-    global roscore_process
-    master, roscore_process = pyros_setup.get_master()
-    assert master.is_online()
-
-    global launch
-    # initialize the launch environment first
-    launch = roslaunch.scriptapi.ROSLaunch()
-    launch.start()
-
-    # Init the test node
-    rospy.init_node('test_connection_cache')
+# def setup_module():
+#     global master
+#     global roscore_process
+#     master, roscore_process = pyros_setup.get_master()
+#     assert master.is_online()
 
 
-def teardown_module():
-    # finishing all process
-    if roscore_process is not None:
-        roscore_process.terminate()  # make sure everything is stopped
-    rospy.signal_shutdown('test complete')
-    while roscore_process and roscore_process.is_alive():
-        time.sleep(0.2)  # waiting for roscore to die
-    assert not (roscore_process and master.is_online())
+
+# def teardown_module():
+#     # finishing all process
+#     if roscore_process is not None:
+#         roscore_process.terminate()  # make sure everything is stopped
+#     rospy.signal_shutdown('test complete')
+#     while roscore_process and roscore_process.is_alive():
+#         time.sleep(0.2)  # waiting for roscore to die
+#     assert not (roscore_process and master.is_online())
 
 
 class timeout(object):
@@ -82,6 +76,23 @@ class timeout(object):
 
 
 class TestConnectionCache(unittest.TestCase):
+    launch = None
+
+    @classmethod
+    def setUpClass(cls):
+
+        # initialize the launch API first
+        cls.launch = roslaunch.scriptapi.ROSLaunch()
+        cls.launch.start()
+
+        # Note this should be called only once by process.
+        # We only run one process here, for all tests
+        rospy.init_node('test_connection_cache')
+
+    @classmethod
+    def tearDownClass(cls):
+        # shutting down process here
+        pass
 
     def setUp(self):
         self.cache = rocon_python_comms.ConnectionCache()
@@ -210,7 +221,7 @@ class TestConnectionCache(unittest.TestCase):
     def test_detect_publisher_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-        process = launch.launch(talker_node)
+        process = self.launch.launch(talker_node)
         try:
 
             # Loop a bit so we can detect the publisher appeared
@@ -231,7 +242,7 @@ class TestConnectionCache(unittest.TestCase):
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = launch.launch(server_node)
+            distraction_process = self.launch.launch(server_node)
             try:
 
                 # Loop a bit so we can detect the distraction service appeared
@@ -275,7 +286,7 @@ class TestConnectionCache(unittest.TestCase):
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
-        process = launch.launch(talker_node)
+        process = self.launch.launch(talker_node)
         try:
 
             # Loop a bit so we can detect the publisher appeared
@@ -296,7 +307,7 @@ class TestConnectionCache(unittest.TestCase):
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-            distraction_process = launch.launch(server_node)
+            distraction_process = self.launch.launch(server_node)
             try:
 
                 # Loop a bit so we can detect the distraction service appeared
@@ -340,7 +351,7 @@ class TestConnectionCache(unittest.TestCase):
     def test_detect_service_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
-        process = launch.launch(talker_node)
+        process = self.launch.launch(talker_node)
         try:
 
             # Loop a bit so we can detect the publisher appeared
@@ -361,7 +372,7 @@ class TestConnectionCache(unittest.TestCase):
 
             # Start a dummy node to trigger a change
             server_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
-            distraction_process = launch.launch(server_node)
+            distraction_process = self.launch.launch(server_node)
             try:
 
                 # Loop a bit so we can detect the distraction service appeared
@@ -404,8 +415,8 @@ class TestConnectionCache(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    setup_module()
+    # setup_module()
     rostest.rosrun('rocon_python_comms',
                    'test_connection_cache',
                    TestConnectionCache)
-    teardown_module()
+    # teardown_module()

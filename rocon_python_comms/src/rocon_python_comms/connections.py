@@ -552,7 +552,7 @@ class ConnectionCacheProxy(object):
                 return (self.name == other.name and
                         self.type == other.type and
                         self.xmlrpc_uri == other.xmlrpc_uri and
-                        self.nodes == other.nodes)  # TODO : verify this actually compares node tuples values
+                        self.nodes == other.nodes)
 
         def __hash__(self):  # used for comparison in sets
             return hash((self.name, self.type))
@@ -578,7 +578,7 @@ class ConnectionCacheProxy(object):
         @staticmethod
         def dict_slaughterhouse(conn_list, chan_dict):
             """
-            Extract a list of Connections from a dict of Channels
+            Removes a list of Connections from a dict of Channels
             :param conn_list: List of connections : Each different connection name will affect one and only one connection
             :param chan_dict: Preexisting channel dict. to extract from
             :return:
@@ -586,7 +586,11 @@ class ConnectionCacheProxy(object):
             chan_dict = chan_dict
             for c in conn_list:
                 if c.name in chan_dict.keys():
-                    chan_dict[c.name].nodes.remove((c.node, c.xmlrpc_uri))
+                    try:
+                        chan_dict[c.name].nodes.remove((c.node, c.xmlrpc_uri))
+                    except KeyError:  # keep it working even if unexpected things happen
+                        rospy.logwarn("Trying to remove inexistent ({c.node}, {c.xmlrpc_uri}) from connection {c.name} nodes : {chan_dict[c.name].nodes} ".format(**locals()))
+                        pass  # node not in set. no need to remove
                     if not chan_dict[c.name].nodes:
                         chan_dict.pop(c.name)
             return chan_dict
@@ -622,7 +626,7 @@ class ConnectionCacheProxy(object):
 
         @property
         def type(self):
-            return  self.goal_chan.type
+            return self.goal_chan.type
 
         @property
         def xmlrpc_uri(self):
@@ -854,57 +858,59 @@ class ConnectionCacheProxy(object):
         lost_sub_chans = ConnectionCacheProxy.Channel.dict_factory(subs_lost)
         lost_svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs_lost)
 
-        # new system state
+        old_system_state = copy.deepcopy(self._system_state)
 
-        pub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(pubs_lost, ConnectionCacheProxy.Channel.dict_factory(pubs_added, self._system_state.publishers))
-        sub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(subs_lost, ConnectionCacheProxy.Channel.dict_factory(subs_added, self._system_state.subscribers))
-        svc_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(svcs_lost, ConnectionCacheProxy.Channel.dict_factory(svcs_added, self._system_state.services))
+        # new system state
+        pub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(pubs_lost, ConnectionCacheProxy.Channel.dict_factory(pubs_added, old_system_state.publishers))
+        sub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(subs_lost, ConnectionCacheProxy.Channel.dict_factory(subs_added, old_system_state.subscribers))
+        svc_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(svcs_lost, ConnectionCacheProxy.Channel.dict_factory(svcs_added, old_system_state.services))
 
         # calculating actions
         if self.handle_actions:
-            new_action_servers, sub_chans_af, pub_chans_af =\
+            # we need to copy the system_state lists to be able to get meaningful diff afterwards
+            new_action_servers, sub_chans, pub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                         sub_chans, pub_chans, self._system_state.action_servers
+                         sub_chans, pub_chans, old_system_state.action_servers
                 )
 
-            new_action_clients, pub_chans_af, sub_chans_af =\
+            new_action_clients, pub_chans, sub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                        pub_chans_af, sub_chans_af, self._system_state.action_clients
+                        pub_chans, sub_chans, old_system_state.action_clients
                 )
 
-            lost_action_servers = {n: c for n, c in self._system_state.action_servers.iteritems() if n not in new_action_servers.keys()}
-            lost_action_clients = {n: c for n, c in self._system_state.action_clients.iteritems() if n not in new_action_clients.keys()}
+            lost_action_servers = {n: c for n, c in old_system_state.action_servers.iteritems() if n not in new_action_servers.keys()}
+            lost_action_clients = {n: c for n, c in old_system_state.action_clients.iteritems() if n not in new_action_clients.keys()}
 
-            pub_chans_af, sub_chans_af =\
+            pub_chans, sub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
-                    lost_pub_chans, lost_sub_chans, lost_action_clients, pub_chans_af, sub_chans_af
+                    lost_pub_chans, lost_sub_chans, lost_action_clients, pub_chans, sub_chans
                 )
 
-            sub_chans_af, pub_chans_af =\
+            sub_chans, pub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
-                         lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans_af, pub_chans_af
+                         lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans, pub_chans
                 )
 
-            # recalculating difference after actions ( can modify current system state )
+            # recalculating difference after actions
             _added_system_state = self.SystemState(
-                {n: c for n, c in pub_chans_af.iteritems() if not (n in self._system_state.publishers.keys() and self._system_state.publishers[n] == c)},
-                {n: c for n, c in sub_chans_af.iteritems() if not (n in self._system_state.subscribers.keys() and self._system_state.subscribers[n] == c)},
+                {n: c for n, c in pub_chans.iteritems() if not (n in self._system_state.publishers.keys() and self._system_state.publishers[n] == c)},
+                {n: c for n, c in sub_chans.iteritems() if not (n in self._system_state.subscribers.keys() and self._system_state.subscribers[n] == c)},
                 added_svc_chans,
                 {n: c for n, c in new_action_servers.iteritems() if not (n in self._system_state.action_servers.keys() and self._system_state.action_servers[n] == c)},
                 {n: c for n, c in new_action_clients.iteritems() if not (n in self._system_state.action_clients.keys() and self._system_state.action_clients[n] == c)},
             )
 
             _lost_system_state = self.SystemState(
-                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in pub_chans_af.keys() and pub_chans_af[n] == c)},
-                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in sub_chans_af.keys() and sub_chans_af[n] == c)},
+                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in pub_chans.keys() and pub_chans[n] == c)},
+                {n: c for n, c in self._system_state.subscribers.iteritems() if not (n in sub_chans.keys() and sub_chans[n] == c)},
                 lost_svc_chans,
                 {n: c for n, c in self._system_state.action_servers.iteritems() if not (n in new_action_servers.keys() and new_action_servers[n] == c)},
                 {n: c for n, c in self._system_state.action_clients.iteritems() if not (n in new_action_clients.keys() and new_action_clients[n] == c)},
             )
 
             self._system_state = self.SystemState(
-                pub_chans_af,
-                sub_chans_af,
+                pub_chans,  # these have been modified when processing actions
+                sub_chans,  # these have been modified when processing actions
                 svc_chans,
                 new_action_servers,
                 new_action_clients,

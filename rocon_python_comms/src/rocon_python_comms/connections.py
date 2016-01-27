@@ -317,7 +317,7 @@ class ConnectionCache(object):
                                                                                   )
         return s
 
-    def update(self, new_system_state=None, new_topic_types = None):
+    def update(self, new_system_state=None, new_topic_types=None):
         """
           Currently completely regenerating the connections dictionary and then taking
           diffs. Could be faster if we took diffs on the system state instead, but that's
@@ -434,7 +434,7 @@ class ConnectionCache(object):
 class ConnectionCacheNode(object):
     def __init__(self):
         self.spin_rate = rospy.Rate(1)
-        self.spin_freq = 1.0
+        self.spin_freq = 0.1
         self.spin_original_freq = self.spin_freq
         self.spin_timer = 0.0
         self.conn_cache = ConnectionCache()  # we want a drop in replacement for ROSmaster access
@@ -778,7 +778,6 @@ class ConnectionCacheProxy(object):
 
         self.conn_list_called = threading.Event()
         self.conn_list = rospy.Subscriber(list_sub or '~connections_list', rocon_std_msgs.ConnectionsList, self._list_cb)
-
         if not self.conn_list_called.wait(list_wait_timeout):  # we block until we receive a message from connection node
             # if we timeout we except to prevent using the object uninitialized
             raise ConnectionCacheProxy.InitializationTimeout("Connection Cache Proxy timed out on initialization. aborting")
@@ -786,9 +785,9 @@ class ConnectionCacheProxy(object):
         # waiting until we are sure we are plugged in connection cache node.
         # RAII : after __init__() ConnectionCache is ready to use (self._system_state is initialized).
 
-        rospy.loginfo("ConnectionCacheProxy started for {}".format(rospy.get_name()))
-        rospy.loginfo(" with list topic at {}".format(self.conn_list.name))
-        rospy.loginfo(" and diff topic at {}".format(rospy.resolve_name(self.diff_sub)))
+        rospy.loginfo("ConnectionCacheProxy: started inside node {}".format(rospy.get_name()))
+        rospy.loginfo("                    : with list topic at {}".format(self.conn_list.name))
+        rospy.loginfo("                    : and diff topic at {}".format(rospy.resolve_name(self.diff_sub)))
 
     @staticmethod
     def _is_topic_node_in_list(topic, node, topic_node_list):

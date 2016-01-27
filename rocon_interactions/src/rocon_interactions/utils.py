@@ -131,20 +131,21 @@ def load_msgs_from_yaml_file(file_path):
             pass
         try:
             interaction_yaml_objects = yaml_objects['interactions']
-            # now drop it into message format
-            for interaction_yaml_object in interaction_yaml_objects:
-                # convert the parameters from a freeform yaml variable to a yaml string suitable for
-                # shipping off in ros msgs (where parameters is a string variable)
-                if 'parameters' in interaction_yaml_object:  # it's an optional key
-                    # chomp trailing newlines
-                    interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()
-                interaction = interaction_msgs.Interaction()
-                try:
-                    genpy.message.fill_message_args(interaction, interaction_yaml_object)
-                except genpy.MessageException as e:
-                    raise MalformedInteractionsYaml(
-                        "malformed yaml preventing converting of yaml to interaction msg [%s]" % str(e))
-                interactions.append(interaction)
+            if interaction_yaml_objects is not None:
+                # now drop it into message format
+                for interaction_yaml_object in interaction_yaml_objects:
+                    # convert the parameters from a freeform yaml variable to a yaml string suitable for
+                    # shipping off in ros msgs (where parameters is a string variable)
+                    if 'parameters' in interaction_yaml_object:  # it's an optional key
+                        # chomp trailing newlines
+                        interaction_yaml_object['parameters'] = yaml.dump(interaction_yaml_object['parameters']).rstrip()
+                    interaction = interaction_msgs.Interaction()
+                    try:
+                        genpy.message.fill_message_args(interaction, interaction_yaml_object)
+                    except genpy.MessageException as e:
+                        raise MalformedInteractionsYaml(
+                            "malformed yaml preventing converting of yaml to interaction msg [%s]" % str(e))
+                    interactions.append(interaction)
         except KeyError:
             # probably just pairings in this yaml file - not an error, so just continue
             pass

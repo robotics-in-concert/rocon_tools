@@ -433,8 +433,8 @@ class ConnectionCache(object):
 
 class ConnectionCacheNode(object):
     def __init__(self):
-        self.spin_rate = rospy.Rate(1)
-        self.spin_freq = 0.1
+
+        self.spin_freq = rospy.get_param("~spin_freq", 0.1)
         self.spin_original_freq = self.spin_freq
         self.spin_timer = 0.0
         self.conn_cache = ConnectionCache()  # we want a drop in replacement for ROSmaster access

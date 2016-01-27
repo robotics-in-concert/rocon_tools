@@ -95,7 +95,7 @@ class TestConnectionCacheNode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         # shutting down process here
-        pass
+        cls.launch.stop()
 
     def _list_cb(self, data):
         self.conn_list_msgq.append(data)
@@ -142,6 +142,8 @@ class TestConnectionCacheNode(unittest.TestCase):
         # connecting to the master via proxy object
         self._master = rospy.get_master()
 
+        self.node_default_spin_freq = 1  # change this to test different spin speed for the connection cache node
+        rospy.set_param("/connection_cache/spin_freq", self.node_default_spin_freq)
         cache_node = roslaunch.core.Node('rocon_python_comms', 'connection_cache.py', name='connection_cache')
         self.cache_process = self.launch.launch(cache_node)
 
@@ -358,7 +360,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
@@ -400,7 +402,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_publisher_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
@@ -435,7 +437,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we DONT find it
@@ -471,7 +473,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_publisher_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
@@ -512,7 +514,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_publisher_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_publisher_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
@@ -547,7 +549,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we DONT find it
@@ -584,7 +586,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
@@ -626,7 +628,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_subscriber_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
@@ -661,7 +663,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_subscriber_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we DONT find it
@@ -700,7 +702,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_subscriber_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
@@ -741,7 +743,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_subscriber_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_subscriber_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
@@ -776,7 +778,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_subscriber_detected['list'] and self.conn_list_msgq and not self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we DONT find it
@@ -813,7 +815,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_service_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the service
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
@@ -854,7 +856,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             distraction_process = self.launch.launch(talker_node)
             try:
                 # Loop a bit so we can detect the service
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
@@ -887,7 +889,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_service_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the service is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_service_detected['list'] and self.conn_list_msgq and not self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we DONT find it
@@ -919,7 +921,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
     def test_change_spin_rate_detect_sub(self):
         # constant use just to prevent spinning too fast
-        overspin_sleep_val= 0.02
+        overspin_sleep_val = 0.02
         def prevent_overspin_sleep():
             time.sleep(overspin_sleep_val)
 
@@ -1099,8 +1101,6 @@ class TestConnectionCacheNode(unittest.TestCase):
             assert added_subscriber_diff_detected
         finally:
             process.stop()
-
-    # TODO : add tests on getSystemState / get_connection_state for actions, with filtering and without
 
 
 class TestConnectionCacheNodeDiff(TestConnectionCacheNode):

@@ -11,7 +11,7 @@ import unittest
 import time
 from functools import partial
 
-# import pyros_setup
+import pyros_setup
 
 try:
     import rospy
@@ -21,39 +21,42 @@ try:
     import rosnode
     import rocon_python_comms
     import rocon_std_msgs.msg as rocon_std_msgs
+    import std_msgs.msg as std_msgs
+
 except ImportError:
-    raise
+    # raise
 
-    # pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
-    # import rospy
-    # import rostest
-    # import roslaunch
-    # import rosgraph
-    # import rosnode
-    # import rocon_python_comms
-    # import rocon_std_msgs.msg as rocon_std_msgs
-
-
-# roscore_process = None
-# master = None
+    pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
+    import rospy
+    import rostest
+    import roslaunch
+    import rosgraph
+    import rosnode
+    import rocon_python_comms
+    import rocon_std_msgs.msg as rocon_std_msgs
+    import std_msgs.msg as std_msgs
 
 
-# def setup_module():
-#     global master
-#     global roscore_process
-#     master, roscore_process = pyros_setup.get_master()
-#     assert master.is_online()
+roscore_process = None
+master = None
+
+
+def setup_module():
+    global master
+    global roscore_process
+    master, roscore_process = pyros_setup.get_master()
+    assert master.is_online()
 
 
 
-# def teardown_module():
-#     # finishing all process
-#     if roscore_process is not None:
-#         roscore_process.terminate()  # make sure everything is stopped
-#     rospy.signal_shutdown('test complete')
-#     while roscore_process and roscore_process.is_alive():
-#         time.sleep(0.2)  # waiting for roscore to die
-#     assert not (roscore_process and master.is_online())
+def teardown_module():
+    # finishing all process
+    if roscore_process is not None:
+        roscore_process.terminate()  # make sure everything is stopped
+    rospy.signal_shutdown('test complete')
+    while roscore_process and roscore_process.is_alive():
+        time.sleep(0.2)  # waiting for roscore to die
+    assert not (roscore_process and master.is_online())
 
 
 class timeout(object):
@@ -111,6 +114,42 @@ class TestConnectionCache(unittest.TestCase):
                     and conn.type == conn_type
                     and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
                     and conn.type_info == 'std_msgs/String'
+                    and len(conn.xmlrpc_uri) > 0)
+            if test:  # break right away if found
+                break
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node} topic_type:{type_info}".format(name='/chatter', type=conn_type, node=node_name, type_info='std_msgs/String')
+            print "NOT FOUND IN LIST : {0}".format(topicq_clist)
+        return test
+
+    def string_detected(self, topicq_clist, conn_type, node_name):
+        """
+        detect the chatter publisher in a connection list
+        """
+        test = False
+        for i, conn in enumerate(topicq_clist):  # loop through all connections in the list
+            test = (conn.name == '/test/string'
+                    and conn.type == conn_type
+                    and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
+                    and conn.type_info == 'std_msgs/String'
+                    and len(conn.xmlrpc_uri) > 0)
+            if test:  # break right away if found
+                break
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node} topic_type:{type_info}".format(name='/chatter', type=conn_type, node=node_name, type_info='std_msgs/String')
+            print "NOT FOUND IN LIST : {0}".format(topicq_clist)
+        return test
+
+    def empty_detected(self, topicq_clist, conn_type, node_name):
+        """
+        detect the chatter publisher in a connection list
+        """
+        test = False
+        for i, conn in enumerate(topicq_clist):  # loop through all connections in the list
+            test = (conn.name == '/test/empty'
+                    and conn.type == conn_type
+                    and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
+                    and conn.type_info == 'std_msgs/Empty'
                     and len(conn.xmlrpc_uri) > 0)
             if test:  # break right away if found
                 break
@@ -283,6 +322,69 @@ class TestConnectionCache(unittest.TestCase):
         # asserting it s been removed from the internal list of connections in the cache
         assert not self.chatter_detected(self.cache.connections[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/talker')
 
+    def test_detect_publisher_added_lost_unregister(self):
+        # Start a dummy publisher
+        string_pub = rospy.Publisher('/test/string', std_msgs.String, queue_size=1)
+        try:
+
+            # Loop a bit so we can detect the publisher appeared
+            with timeout(5) as t:
+                found_in_new = False
+                while not t.timed_out:
+
+                    new, lost = self.cache.update()
+                    # asserting update detected it
+                    found_in_new = self.string_detected(new[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+                    if found_in_new:
+                        break
+                    time.sleep(0.2)
+
+                assert found_in_new
+            # asserting it s been added to the internal list of connections in the cache
+            assert self.string_detected(self.cache.connections[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+
+            # Start a dummy publisher to trigger a change
+            empty_pub = rospy.Publisher('/test/empty', std_msgs.Empty, queue_size=1)
+            try:
+
+                # Loop a bit so we can detect the distraction service appeared
+                with timeout(5) as t:
+                    found_distraction_in_new = False
+                    while not t.timed_out:
+
+                        new, lost = self.cache.update()
+                        # asserting update detected it
+                        found_distraction_in_new = self.empty_detected(new[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+                        if found_distraction_in_new:
+                            break
+                        time.sleep(0.2)
+
+                    assert found_distraction_in_new
+                # asserting it s still in the internal list of connections in the cache
+                assert self.string_detected(self.cache.connections[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+
+            finally:
+                empty_pub.unregister()
+
+        finally:
+            string_pub.unregister()
+
+        # Loop a bit so we can detect the service is gone
+        with timeout(5) as t:
+            found_in_lost = False
+            while not t.timed_out:
+
+                new, lost = self.cache.update()
+                # asserting update detected it
+                found_in_lost = self.string_detected(lost[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+                if found_in_lost:
+                    break
+                time.sleep(0.2)
+
+            assert found_in_lost
+        # asserting it s been removed from the internal list of connections in the cache
+        assert not self.string_detected(self.cache.connections[rocon_python_comms.PUBLISHER], rocon_python_comms.PUBLISHER, '/test_connection_cache')
+
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
@@ -347,6 +449,72 @@ class TestConnectionCache(unittest.TestCase):
             assert found_in_lost
         # asserting it s been removed from the internal list of connections in the cache
         assert not self.chatter_detected(self.cache.connections[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/listener')
+
+    def test_detect_subscriber_added_lost_unregister(self):
+        def dummy_cb(data):
+            pass
+
+        # Start a dummy subscriber
+        string_sub = rospy.Subscriber('/test/string', std_msgs.String, dummy_cb)
+        try:
+
+            # Loop a bit so we can detect the publisher appeared
+            with timeout(5) as t:
+                found_in_new = False
+                while not t.timed_out:
+
+                    new, lost = self.cache.update()
+                    # asserting update detected it
+                    found_in_new = self.string_detected(new[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
+                    if found_in_new:
+                        break
+                    time.sleep(0.2)
+
+                assert found_in_new
+            # asserting it s been added to the internal list of connections in the cache
+            assert self.string_detected(self.cache.connections[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
+
+            # Start a dummy subscriber to trigger a change
+            empty_sub = rospy.Subscriber('/test/empty', std_msgs.Empty, dummy_cb)
+            try:
+
+                # Loop a bit so we can detect the distraction service appeared
+                with timeout(5) as t:
+                    found_distraction_in_new = False
+                    while not t.timed_out:
+
+                        new, lost = self.cache.update()
+                        # asserting update detected it
+                        found_distraction_in_new = self.empty_detected(new[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
+                        if found_distraction_in_new:
+                            break
+                        time.sleep(0.2)
+
+                    assert found_distraction_in_new
+                # asserting it s still in the internal list of connections in the cache
+                assert self.string_detected(self.cache.connections[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
+
+            finally:
+                empty_sub.unregister()
+
+        finally:
+            string_sub.unregister()
+
+        # Loop a bit so we can detect the service is gone
+        with timeout(5) as t:
+            found_in_lost = False
+            while not t.timed_out:
+
+                new, lost = self.cache.update()
+                # asserting update detected it
+                found_in_lost = self.string_detected(lost[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
+                if found_in_lost:
+                    break
+                time.sleep(0.2)
+
+            assert found_in_lost
+        # asserting it s been removed from the internal list of connections in the cache
+        assert not self.string_detected(self.cache.connections[rocon_python_comms.SUBSCRIBER], rocon_python_comms.SUBSCRIBER, '/test_connection_cache')
 
     def test_detect_service_added_lost(self):
         # Start a dummy node
@@ -415,8 +583,8 @@ class TestConnectionCache(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    # setup_module()
+    setup_module()
     rostest.rosrun('rocon_python_comms',
                    'test_connection_cache',
                    TestConnectionCache)
-    # teardown_module()
+    teardown_module()

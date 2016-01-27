@@ -29,6 +29,8 @@
   <run_depend>uuid_msgs</run_depend>
 
   <test_depend>rosunit</test_depend>
+  <!-- this is only for convenience running tests, and can be removed from the tests if it creates problems -->
+  <test_depend>pyros_setup</test_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml"/>    

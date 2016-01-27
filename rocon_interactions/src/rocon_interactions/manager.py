@@ -487,6 +487,12 @@ class InteractionsManager(object):
             return interaction_srvs.StartPairingResponse(interaction_msgs.ErrorCodes.ALREADY_PAIRING, interaction_msgs.ErrorCodes.MSG_ALREADY_PAIRING)
         try:
             pairing = self.pairings_table.find(request.name)
+            if pairing is None:
+                rospy.logwarn("Interactions : requested pairing is not available [%s]" % request.name)
+                response = interaction_srvs.StartPairingResponse()
+                response.result = interaction_msgs.ErrorCodes.PAIRING_UNAVAILABLE
+                response.message = "requested pairing is not available [%s]" % request.name
+                return response
             self.active_pairing = pairing
             self._rapp_handler.start(pairing.rapp, pairing.remappings, pairing.parameters)
             return interaction_srvs.StartPairingResponse(interaction_msgs.ErrorCodes.SUCCESS, "firing up.")

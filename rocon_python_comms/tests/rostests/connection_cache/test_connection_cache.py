@@ -11,7 +11,7 @@ import unittest
 import time
 from functools import partial
 
-import pyros_setup
+# import pyros_setup
 
 try:
     import rospy
@@ -24,39 +24,38 @@ try:
     import std_msgs.msg as std_msgs
 
 except ImportError:
-    # raise
+    raise
 
-    pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
-    import rospy
-    import rostest
-    import roslaunch
-    import rosgraph
-    import rosnode
-    import rocon_python_comms
-    import rocon_std_msgs.msg as rocon_std_msgs
-    import std_msgs.msg as std_msgs
-
-
-roscore_process = None
-master = None
+    # pyros_setup = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
+    # import rospy
+    # import rostest
+    # import roslaunch
+    # import rosgraph
+    # import rosnode
+    # import rocon_python_comms
+    # import rocon_std_msgs.msg as rocon_std_msgs
+    # import std_msgs.msg as std_msgs
 
 
-def setup_module():
-    global master
-    global roscore_process
-    master, roscore_process = pyros_setup.get_master()
-    assert master.is_online()
+# roscore_process = None
+# master = None
 
 
+# def setup_module():
+#     global master
+#     global roscore_process
+#     master, roscore_process = pyros_setup.get_master()
+#     assert master.is_online()
 
-def teardown_module():
-    # finishing all process
-    if roscore_process is not None:
-        roscore_process.terminate()  # make sure everything is stopped
-    rospy.signal_shutdown('test complete')
-    while roscore_process and roscore_process.is_alive():
-        time.sleep(0.2)  # waiting for roscore to die
-    assert not (roscore_process and master.is_online())
+
+# def teardown_module():
+#     # finishing all process
+#     if roscore_process is not None:
+#         roscore_process.terminate()  # make sure everything is stopped
+#     rospy.signal_shutdown('test complete')
+#     while roscore_process and roscore_process.is_alive():
+#         time.sleep(0.2)  # waiting for roscore to die
+#     assert not (roscore_process and master.is_online())
 
 
 class timeout(object):
@@ -583,8 +582,8 @@ class TestConnectionCache(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    setup_module()
+    # setup_module()
     rostest.rosrun('rocon_python_comms',
                    'test_connection_cache',
                    TestConnectionCache)
-    teardown_module()
+    # teardown_module()

@@ -585,14 +585,19 @@ class ConnectionCacheProxy(object):
             """
             chan_dict = chan_dict
             for c in conn_list:
-                if c.name in chan_dict.keys():
+                try:
+                    nodelist = chan_dict[c.name].nodes
                     try:
-                        chan_dict[c.name].nodes.remove((c.node, c.xmlrpc_uri))
+                        nodelist.remove((c.node, c.xmlrpc_uri))
                     except KeyError:  # keep it working even if unexpected things happen
-                        rospy.logwarn("Trying to remove inexistent ({c.node}, {c.xmlrpc_uri}) from connection {c.name} nodes : {chan_dict[c.name].nodes} ".format(**locals()))
+                        rospy.logwarn("Trying to remove inexistent ({c.node}, {c.xmlrpc_uri}) from connection {c.name} nodes : {nodelist} ".format(**locals()))
                         pass  # node not in set. no need to remove
-                    if not chan_dict[c.name].nodes:
+                    if not nodelist:
                         chan_dict.pop(c.name)
+                except KeyError:  # keep it working even if unexpected things happen
+                    rospy.logwarn("Trying to access nodes for inexistent {c.name} in {chan_dict} ".format(**locals()))
+                    pass  # node not in set. no need to remove
+
             return chan_dict
 
     class ActionChannel(object):

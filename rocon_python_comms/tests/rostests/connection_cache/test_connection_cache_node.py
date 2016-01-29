@@ -23,6 +23,7 @@ try:
     import rosnode
     import rocon_python_comms
     import rocon_std_msgs.msg as rocon_std_msgs
+    import std_msgs.msg as std_msgs
 except ImportError:
     raise
 
@@ -34,6 +35,7 @@ except ImportError:
     # import rosnode
     # import rocon_python_comms
     # import rocon_std_msgs.msg as rocon_std_msgs
+    # import std_msgs.msg as std_msgs
 
 
 # roscore_process = None
@@ -93,7 +95,7 @@ class TestConnectionCacheNode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         # shutting down process here
-        pass
+        cls.launch.stop()
 
     def _list_cb(self, data):
         self.conn_list_msgq.append(data)
@@ -140,6 +142,8 @@ class TestConnectionCacheNode(unittest.TestCase):
         # connecting to the master via proxy object
         self._master = rospy.get_master()
 
+        self.node_default_spin_freq = 1  # change this to test different spin speed for the connection cache node
+        rospy.set_param("/connection_cache/spin_freq", self.node_default_spin_freq)
         cache_node = roslaunch.core.Node('rocon_python_comms', 'connection_cache.py', name='connection_cache')
         self.cache_process = self.launch.launch(cache_node)
 
@@ -199,6 +203,38 @@ class TestConnectionCacheNode(unittest.TestCase):
         )
         if not test:
             print "Expected : name:{name} type:{type} node:{node}".format(name='/chatter', node=node_name, type='std_msgs/String')
+            print "NOT FOUND IN DICT : {0}".format(topicq_cdict)
+        return test
+
+    def string_detected(self, topicq_clist, conn_type, node_name):
+        """
+        detect the chatter publisher in a connection list
+        """
+        test = False
+        for i, conn in enumerate(topicq_clist):  # loop through all connections in the list
+            test = (conn.name == '/test/string'
+                    and conn.type == conn_type
+                    and conn.node.startswith(node_name)  # sometime the node gets suffixes with uuid ??
+                    and conn.type_info == 'std_msgs/String'
+                    and len(conn.xmlrpc_uri) > 0)
+            if test:  # break right away if found
+                break
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node} topic_type:{type_info}".format(name='/chatter', type=conn_type, node=node_name, type_info='std_msgs/String')
+            print "NOT FOUND IN LIST : {0}".format(topicq_clist)
+        return test
+
+    def string_chan_detected(self, topicq_cdict, node_name):
+        """
+        detect the chatter publisher in a connection list
+        """
+        test = '/test/string' in topicq_cdict.keys() and (
+            topicq_cdict['/test/string'].name == '/test/string'
+            and topicq_cdict['/test/string'].type == 'std_msgs/String'
+            and len([n for n in topicq_cdict['/test/string'].nodes if n[0].startswith(node_name)]) > 0  # sometime the node gets suffixes with uuid
+        )
+        if not test:
+            print "Expected : name:{name} type:{type} node:{node}".format(name='/test/string', node=node_name, type='std_msgs/String')
             print "NOT FOUND IN DICT : {0}".format(topicq_cdict)
         return test
 
@@ -316,7 +352,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
         return same
 
-    def test_detect_publisher_added_lost(self):
+    def test_detect_publisher_added_lost(self,):
         # Start a dummy node
         talker_node = roslaunch.core.Node('roscpp_tutorials', 'talker')
         process = self.launch.launch(talker_node)
@@ -324,7 +360,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
@@ -366,7 +402,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_publisher_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_publisher_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we find it
@@ -401,7 +437,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/talker'):  # if we DONT find it
@@ -430,6 +466,118 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert self.equalMasterSystemState(self.proxy.getSystemState())
         assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
 
+    def test_detect_publisher_added_lost_unregister(self):
+        # Start a dummy publisher
+        string_pub = rospy.Publisher('/test/string', std_msgs.String, queue_size=1)
+        try:
+            added_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
+
+            # Loop a bit so we can detect the topic
+            with timeout(5/self.node_default_spin_freq) as t:
+                while not t.timed_out:
+                    # Here we only check the last message received
+                    if not added_publisher_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
+                        added_publisher_detected['list'] = True
+
+                    if not added_publisher_detected['diff'] and self.conn_diff_msgq and self.string_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
+                        added_publisher_detected['diff'] = True
+
+                    # asserting in proxy callback as well
+                    with self._ss_lock:
+                        if not added_publisher_detected['cb_list'] and self._current_ss and self.string_chan_detected(self._current_ss.publishers, '/test_connection_cache_node'):
+                            added_publisher_detected['cb_list'] = True
+                        if self.proxy.diff_opt and self._added_ss and self.string_chan_detected(self._added_ss.publishers, '/test_connection_cache_node'):
+                            added_publisher_detected['cb_diff'] = True
+
+                    if added_publisher_detected['list'] and added_publisher_detected['diff'] and added_publisher_detected['cb_list'] and (added_publisher_detected['cb_diff'] or not self.proxy.diff_opt):
+                        break
+                    time.sleep(0.2)
+
+            assert added_publisher_detected['list']
+            assert added_publisher_detected['diff']
+            assert added_publisher_detected['cb_list']
+            assert (self.proxy.diff_opt and added_publisher_detected['cb_diff']) or (not self.proxy.diff_opt and not added_publisher_detected['cb_diff'])
+
+            time.sleep(0.2)
+            # asserting in proxy as well
+            assert self.equalMasterSystemState(self.proxy.getSystemState())
+            assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+            self.cleanup_user_cb_ss()
+
+            # Start a dummy extra publisher to trigger a change
+            empty_pub = rospy.Publisher('/test/empty', std_msgs.String, queue_size=1)
+            try:
+                still_publisher_detected = {'list': False, 'cb_list': False}
+
+                # Loop a bit so we can detect the topic
+                with timeout(5/self.node_default_spin_freq) as t:
+                    while not t.timed_out:
+                        # Here we only check the last message received
+                        if not still_publisher_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
+                            still_publisher_detected['list'] = True
+
+                        # asserting in proxy callback as well
+                        with self._ss_lock:
+                            if not still_publisher_detected['cb_list'] and self._current_ss and self.string_chan_detected(self._current_ss.publishers, '/test_connection_cache_node'):
+                                still_publisher_detected['cb_list'] = True
+
+                        if still_publisher_detected['list'] and still_publisher_detected['cb_list']:
+                            break
+                        time.sleep(0.2)
+
+                assert still_publisher_detected['list']
+                assert still_publisher_detected['cb_list']
+                time.sleep(0.2)
+                # asserting in proxy as well
+                assert self.equalMasterSystemState(self.proxy.getSystemState())
+                assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+            finally:
+                empty_pub.unregister()
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+            self.cleanup_user_cb_ss()
+
+        finally:
+            string_pub.unregister()
+
+        lost_publisher_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
+
+        # Loop a bit so we can detect the topic is gone
+        with timeout(5/self.node_default_spin_freq) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not lost_publisher_detected['list'] and self.conn_list_msgq and not self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we DONT find it
+                    lost_publisher_detected['list'] = True
+
+                if not lost_publisher_detected['diff'] and self.conn_diff_msgq and self.string_detected(self.conn_diff_msgq[-1].lost, rocon_python_comms.PUBLISHER, '/test_connection_cache_node'):  # if we find it
+                    lost_publisher_detected['diff'] = True
+
+                # asserting in proxy callback as well
+                with self._ss_lock:
+                    if not lost_publisher_detected['cb_list'] and self._current_ss and not self.string_chan_detected(self._current_ss.publishers, '/test_connection_cache_node'):
+                        lost_publisher_detected['cb_list'] = True
+                    if not lost_publisher_detected['cb_diff'] and self._lost_ss and self.string_chan_detected(self._lost_ss.publishers, '/test_connection_cache_node'):
+                        lost_publisher_detected['cb_diff'] = True
+
+                if lost_publisher_detected['list'] and lost_publisher_detected['diff'] and lost_publisher_detected['cb_list'] and (lost_publisher_detected['cb_diff'] or not self.proxy.diff_opt):
+                    break
+                time.sleep(0.2)
+
+        assert lost_publisher_detected['list']
+        assert lost_publisher_detected['diff']
+        assert lost_publisher_detected['cb_list']
+        assert (self.proxy.diff_opt and lost_publisher_detected['cb_diff']) or (not self.proxy.diff_opt and not lost_publisher_detected['cb_diff'])
+        time.sleep(0.2)
+        # asserting in proxy as well
+        assert self.equalMasterSystemState(self.proxy.getSystemState())
+        assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+
     def test_detect_subscriber_added_lost(self):
         # Start a dummy node
         listener_node = roslaunch.core.Node('roscpp_tutorials', 'listener')
@@ -438,7 +586,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the topic
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
@@ -480,7 +628,7 @@ class TestConnectionCacheNode(unittest.TestCase):
                 still_subscriber_detected = {'list': False, 'cb_list': False}
 
                 # Loop a bit so we can detect the topic
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_subscriber_detected['list'] and self.conn_list_msgq and self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we find it
@@ -515,7 +663,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the topic is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_subscriber_detected['list'] and self.conn_list_msgq and not self.chatter_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/listener'):  # if we DONT find it
@@ -544,6 +692,121 @@ class TestConnectionCacheNode(unittest.TestCase):
         assert self.equalMasterSystemState(self.proxy.getSystemState())
         assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
 
+    def test_detect_subscriber_added_lost_unregister(self):
+        def dummy_cb(data):
+            pass
+
+        # Start a dummy subscriber
+        string_sub = rospy.Subscriber('/test/string', std_msgs.String, dummy_cb)
+        try:
+            added_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
+
+            # Loop a bit so we can detect the topic
+            with timeout(5/self.node_default_spin_freq) as t:
+                while not t.timed_out:
+                    # Here we only check the last message received
+                    if not added_subscriber_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
+                        added_subscriber_detected['list'] = True
+
+                    if not added_subscriber_detected['diff'] and self.conn_diff_msgq and self.string_detected(self.conn_diff_msgq[-1].added, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
+                        added_subscriber_detected['diff'] = True
+
+                    # asserting in proxy callback as well
+                    with self._ss_lock:
+                        if not added_subscriber_detected['cb_list'] and self._current_ss and self.string_chan_detected(self._current_ss.subscribers, '/test_connection_cache_node'):
+                            added_subscriber_detected['cb_list'] = True
+                        if not added_subscriber_detected['cb_diff'] and self._added_ss and self.string_chan_detected(self._added_ss.subscribers, '/test_connection_cache_node'):
+                            added_subscriber_detected['cb_diff'] = True
+
+                    if added_subscriber_detected['list'] and added_subscriber_detected['diff'] and added_subscriber_detected['cb_list'] and (added_subscriber_detected['cb_diff'] or not self.proxy.diff_opt):
+                        break
+                    time.sleep(0.2)
+
+            assert added_subscriber_detected['list']
+            assert added_subscriber_detected['diff']
+            assert added_subscriber_detected['cb_list']
+            assert (self.proxy.diff_opt and added_subscriber_detected['cb_diff']) or (not self.proxy.diff_opt and not added_subscriber_detected['cb_diff'])
+
+            # asserting in proxy as well
+            time.sleep(0.2)
+            assert self.equalMasterSystemState(self.proxy.getSystemState())
+            assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+            self.cleanup_user_cb_ss()
+
+            # Start a dummy sub to trigger a change
+            empty_sub = rospy.Subscriber('/test/empty', std_msgs.Empty, dummy_cb)
+            try:
+                still_subscriber_detected = {'list': False, 'cb_list': False}
+
+                # Loop a bit so we can detect the topic
+                with timeout(5/self.node_default_spin_freq) as t:
+                    while not t.timed_out:
+                        # Here we only check the last message received
+                        if not still_subscriber_detected['list'] and self.conn_list_msgq and self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
+                            still_subscriber_detected['list'] = True
+
+                        # asserting in proxy callback as well
+                        with self._ss_lock:
+                            if not still_subscriber_detected['cb_list'] and self._current_ss and self.string_chan_detected(self._current_ss.subscribers, '/test_connection_cache_node'):
+                                still_subscriber_detected['cb_list'] = True
+
+                        if still_subscriber_detected['list'] and still_subscriber_detected['cb_list']:
+                            break
+                        time.sleep(0.2)
+
+                assert still_subscriber_detected['list']
+                assert still_subscriber_detected['cb_list']
+                time.sleep(0.2)
+                # asserting in proxy as well
+                assert self.equalMasterSystemState(self.proxy.getSystemState())
+                assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+            finally:
+                empty_sub.unregister()
+
+            # clean list messages to make sure we get new ones
+            self.conn_list_msgq = deque()
+            self.conn_diff_msgq = deque()
+            self.cleanup_user_cb_ss()
+
+        finally:
+            string_sub.unregister()
+
+        lost_subscriber_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
+
+        # Loop a bit so we can detect the topic is gone
+        with timeout(5/self.node_default_spin_freq) as t:
+            while not t.timed_out:
+                # Here we only check the last message received
+                if not lost_subscriber_detected['list'] and self.conn_list_msgq and not self.string_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we DONT find it
+                    lost_subscriber_detected['list'] = True
+
+                if not lost_subscriber_detected['diff'] and self.conn_diff_msgq and self.string_detected(self.conn_diff_msgq[-1].lost, rocon_python_comms.SUBSCRIBER, '/test_connection_cache_node'):  # if we find it
+                    lost_subscriber_detected['diff'] = True
+
+                # asserting in proxy callback as well
+                with self._ss_lock:
+                    if not lost_subscriber_detected['cb_list'] and self._current_ss and not self.string_chan_detected(self._current_ss.subscribers, '/test_connection_cache_node'):
+                        lost_subscriber_detected['cb_list'] = True
+                    if not lost_subscriber_detected['cb_diff'] and self._lost_ss and self.string_chan_detected(self._lost_ss.subscribers, '/test_connection_cache_node'):
+                        lost_subscriber_detected['cb_diff'] = True
+
+                if lost_subscriber_detected['list'] and lost_subscriber_detected['diff'] and lost_subscriber_detected['cb_list'] and (lost_subscriber_detected['cb_diff'] or not self.proxy.diff_opt):
+                    break
+                time.sleep(0.2)
+
+        assert lost_subscriber_detected['list']
+        assert lost_subscriber_detected['diff']
+        assert lost_subscriber_detected['cb_list']
+        assert (self.proxy.diff_opt and lost_subscriber_detected['cb_diff']) or (not self.proxy.diff_opt and not lost_subscriber_detected['cb_diff'])
+        time.sleep(0.2)
+        # asserting in proxy as well
+        assert self.equalMasterSystemState(self.proxy.getSystemState())
+        assert self.equalMasterTopicTypes(self.proxy.getTopicTypes())
+
     def test_detect_service_added_lost(self):
         # Start a dummy node
         server_node = roslaunch.core.Node('roscpp_tutorials', 'add_two_ints_server')
@@ -552,7 +815,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             added_service_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
             # Loop a bit so we can detect the service
-            with timeout(5) as t:
+            with timeout(5/self.node_default_spin_freq) as t:
                 while not t.timed_out:
                     # Here we only check the last message received
                     if not added_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
@@ -593,7 +856,7 @@ class TestConnectionCacheNode(unittest.TestCase):
             distraction_process = self.launch.launch(talker_node)
             try:
                 # Loop a bit so we can detect the service
-                with timeout(5) as t:
+                with timeout(5/self.node_default_spin_freq) as t:
                     while not t.timed_out:
                         # Here we only check the last message received
                         if not still_service_detected['list'] and self.conn_list_msgq and self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we find it
@@ -626,7 +889,7 @@ class TestConnectionCacheNode(unittest.TestCase):
         lost_service_detected = {'list': False, 'diff': False, 'cb_list': False, 'cb_diff': False}
 
         # Loop a bit so we can detect the service is gone
-        with timeout(5) as t:
+        with timeout(5/self.node_default_spin_freq) as t:
             while not t.timed_out:
                 # Here we only check the last message received
                 if not lost_service_detected['list'] and self.conn_list_msgq and not self.add_two_ints_detected(self.conn_list_msgq[-1].connections, rocon_python_comms.SERVICE, '/add_two_ints_server'):  # if we DONT find it
@@ -658,7 +921,7 @@ class TestConnectionCacheNode(unittest.TestCase):
 
     def test_change_spin_rate_detect_sub(self):
         # constant use just to prevent spinning too fast
-        overspin_sleep_val= 0.02
+        overspin_sleep_val = 0.02
         def prevent_overspin_sleep():
             time.sleep(overspin_sleep_val)
 
@@ -838,8 +1101,6 @@ class TestConnectionCacheNode(unittest.TestCase):
             assert added_subscriber_diff_detected
         finally:
             process.stop()
-
-    # TODO : add tests on getSystemState / get_connection_state for actions, with filtering and without
 
 
 class TestConnectionCacheNodeDiff(TestConnectionCacheNode):

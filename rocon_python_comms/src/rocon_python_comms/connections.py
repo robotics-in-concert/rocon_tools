@@ -257,7 +257,7 @@ def create_connection(ConnectionMsg):
     return Connection(ConnectionMsg.type, ConnectionMsg.name, ConnectionMsg.node, ConnectionMsg.type_msg, ConnectionMsg.type_info, ConnectionMsg.xmlrpc_uri)
 
 
-def create_empty_connection_type_dictionary(types = None):
+def create_empty_connection_type_dictionary(types=None):
     '''
       Used to initialise a dictionary with rule type keys
       and empty lists.
@@ -417,8 +417,8 @@ class ConnectionCache(object):
         connections = set()
         for action in connection_list:
             action_name = action[0]
-            #goal_topic = action_name + '/goal'
-            #goal_topic_type = rostopic.get_topic_type(goal_topic)
+            # goal_topic = action_name + '/goal'
+            # goal_topic_type = rostopic.get_topic_type(goal_topic)
             # topic_type = re.sub('ActionGoal$', '', goal_topic_type[0])  # Base type for action
             nodes = action[1]
             for node in nodes:
@@ -470,7 +470,7 @@ class ConnectionCacheNode(object):
                         self.spin_freq = self.spin_original_freq
                     # if timer is almost finished we need to increase rate to be back to original speed on time
                     self.spin_rate = rospy.Rate(
-                            self.spin_freq if self.spin_timer == 0.0 else max(self.spin_freq, 1/self.spin_timer)
+                        self.spin_freq if self.spin_timer == 0.0 else max(self.spin_freq, 1 / self.spin_timer)
                     )
                     spinmsg = rocon_std_msgs.ConnectionCacheSpin()
                     spinmsg.spin_freq = self.spin_freq
@@ -567,11 +567,11 @@ class ConnectionCacheProxy(object):
             """
             chan_dict = chan_dict or {}
             for c in conn_list:
-                if not c.name in chan_dict.keys():
+                if c.name not in chan_dict.keys():
                     chan_dict[c.name] = ConnectionCacheProxy.Channel(
-                            c.name,
-                            c.type_msg,  # type_msg is always the message type (topic or service)
-                            c.type_info if c.type_info != c.type_msg else None)  # None for topics who don't have uri.
+                        c.name,
+                        c.type_msg,  # type_msg is always the message type (topic or service)
+                        c.type_info if c.type_info != c.type_msg else None)  # None for topics who don't have uri.
                 chan_dict[c.name].nodes.add((c.node, c.xmlrpc_uri))  # type_info is the uri of the service or the msgtype of the topic
             return chan_dict
 
@@ -672,7 +672,6 @@ class ConnectionCacheProxy(object):
                 or self.result_chan.type == SUBSCRIBER
             )
 
-
         @staticmethod
         def dict_factory_actions_from_chan(chan_dict, chan_other_dict, action_dict=None):
             """
@@ -715,7 +714,7 @@ class ConnectionCacheProxy(object):
                     action_dict[action_name].result_chan.nodes |= result_chan.nodes
                 else:
                     action_dict[action_name] = ConnectionCacheProxy.ActionChannel(
-                            goal_chan, cancel_chan, status_chan, feedback_chan, result_chan
+                        goal_chan, cancel_chan, status_chan, feedback_chan, result_chan
                     )
 
                 # purging old used stuff
@@ -817,8 +816,8 @@ class ConnectionCacheProxy(object):
         svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs)
 
         if self.handle_actions:
-            action_server_chans, subs_chans, pub_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(sub_chans, pub_chans)
-            action_client_chans, pub_chans, subs_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(pub_chans, sub_chans)
+            action_server_chans, unused_subs_chans, pub_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(sub_chans, pub_chans)
+            action_client_chans, pub_chans, unused_subs_chans = ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(pub_chans, sub_chans)
             self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans, action_server_chans, action_client_chans)
         else:
             self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans)
@@ -874,12 +873,12 @@ class ConnectionCacheProxy(object):
             # we need to copy the system_state lists to be able to get meaningful diff afterwards
             new_action_servers, sub_chans, pub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                         sub_chans, pub_chans, old_system_state.action_servers
+                    sub_chans, pub_chans, old_system_state.action_servers
                 )
 
             new_action_clients, pub_chans, sub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                        pub_chans, sub_chans, old_system_state.action_clients
+                    pub_chans, sub_chans, old_system_state.action_clients
                 )
 
             lost_action_servers = {n: c for n, c in old_system_state.action_servers.iteritems() if n not in new_action_servers.keys()}
@@ -892,7 +891,7 @@ class ConnectionCacheProxy(object):
 
             sub_chans, pub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
-                         lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans, pub_chans
+                    lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans, pub_chans
                 )
 
             # recalculating difference after actions

@@ -728,28 +728,73 @@ class ConnectionCacheProxy(object):
             return action_dict, new_chan_dict, new_chan_other_dict
 
         @staticmethod
-        def dict_slaughterhouse_actions_to_chan(chan_lost_dict, chan_lost_other_dict, action_lost_dict, chan_dict=None, chan_other_dict=None):
+        def dict_slaughterhouse_actions_from_chan(chan_dict, chan_other_dict, action_dict):
             """
-            Extract a list of Channels from a dict of lost ActionChannels
+            Destroy ActionChannels from action_lost_dict, and merge lost pubs/subs in the chan_lost_dict and chan_lost_other_dict.
+            The behavior is symmetrical, pass pubs_list, subs_list, for action clients and the reverse for action servers
+            :param chan_dict: Dict of channels
+            :param chan_other_dict: symmetric dict of channels ( subscriber / publisher complement of chan_dict )
             :return:
             """
             chan_dict = chan_dict or {}
-            chan_other_dict = chan_other_dict or {}
+            action_dict = action_dict or {}
+            new_chan_dict = chan_dict
+            new_chan_other_dict = chan_other_dict
 
-            goal_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_dict.keys()}
-            cancel_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_dict.keys()}
-            status_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
-            feedback_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
-            result_chan_from_dict = {pc.name: pc for n, pc in action_lost_dict.iteritems() if pc.name not in chan_lost_other_dict.keys()}
+            goal_chan_from_dict = {n: act.goal_chan for n, act in action_dict.iteritems() if act.goal_chan.name in chan_dict.keys()}
+            cancel_chan_from_dict = {n: act.cancel_chan for n, act in action_dict.iteritems() if act.cancel_chan.name in chan_dict.keys()}
+            status_chan_from_dict = {n: act.status_chan for n, act in action_dict.iteritems() if act.status_chan.name in chan_other_dict.keys()}
+            feedback_chan_from_dict = {n: act.feedback_chan for n, act in action_dict.iteritems() if act.feedback_chan.name in chan_other_dict.keys()}
+            result_chan_from_dict = {n: act.result_chan for n, act in action_dict.iteritems() if act.result_chan.name in chan_other_dict.keys()}
 
-            for d in [goal_chan_from_dict, cancel_chan_from_dict]:
-                for n, c in d.iteritems():
-                    chan_dict[n] = c
-            for d in [status_chan_from_dict, feedback_chan_from_dict, result_chan_from_dict]:
-                for n, c in d.iteritems():
-                    chan_other_dict[n] = c
+            # since we need all the 5 topics anyway for an action,
+            # losing only one is enough to break the action
+            to_del = []
+            for k, v in action_dict.iteritems():
+                action_name = k
+                goal_chan = None
+                cancel_chan = None
+                status_chan = None
+                feedback_chan = None
+                result_chan = None
+                # removing the matching channels from channel dict.
+                # registering action as lost is enough.
+                try:
+                    goal_chan = goal_chan_from_dict[k]
+                    chan_dict.pop(goal_chan.name)
+                except KeyError:  # doesnt matter
+                    pass
+                try:
+                    cancel_chan = cancel_chan_from_dict[k]
+                    chan_dict.pop(cancel_chan.name)
+                except KeyError:  # doesnt matter
+                    pass
+                try:
+                    status_chan = status_chan_from_dict[k]
+                    chan_other_dict.pop(status_chan.name)
+                except KeyError:  # doesnt matter
+                    pass
+                try:
+                    feedback_chan = feedback_chan_from_dict[k]
+                    chan_other_dict.pop(feedback_chan.name)
+                except KeyError:  # doesnt matter
+                    pass
+                try:
+                    result_chan = result_chan_from_dict[k]
+                    chan_other_dict.pop(result_chan.name)
+                except KeyError:  # doesnt matter
+                    pass
 
-            return chan_dict, chan_other_dict
+                if (goal_chan is not None or cancel_chan is not None) or (
+                    status_chan is not None or feedback_chan is not None or result_chan is not None
+                ):
+                    to_del.append(action_name)
+
+            # purging lost actions
+            for action_name in to_del:
+                action_dict.pop(action_name)
+
+            return action_dict, new_chan_dict, new_chan_other_dict
 
     def __init__(self, list_sub=None, handle_actions=False, user_callback=None, diff_opt=False, diff_sub=None, list_wait_timeout=5):
         """
@@ -861,64 +906,72 @@ class ConnectionCacheProxy(object):
         lost_sub_chans = ConnectionCacheProxy.Channel.dict_factory(subs_lost)
         lost_svc_chans = ConnectionCacheProxy.Channel.dict_factory(svcs_lost)
 
+        # we need to copy the system_state lists to be able to get meaningful diff afterwards
         old_system_state = copy.deepcopy(self._system_state)
 
-        # new system state
-        pub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(pubs_lost, ConnectionCacheProxy.Channel.dict_factory(pubs_added, old_system_state.publishers))
-        sub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(subs_lost, ConnectionCacheProxy.Channel.dict_factory(subs_added, old_system_state.subscribers))
+        # new system state for services not going to change for actions
         svc_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(svcs_lost, ConnectionCacheProxy.Channel.dict_factory(svcs_added, old_system_state.services))
 
-        # calculating actions
         if self.handle_actions:
-            # we need to copy the system_state lists to be able to get meaningful diff afterwards
-            new_action_servers, sub_chans, pub_chans =\
+            # changing new pubs/subs chan to new actionchans
+            new_action_servers, added_sub_chans, added_pub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                    sub_chans, pub_chans, old_system_state.action_servers
+                    added_sub_chans, added_pub_chans, old_system_state.action_servers
                 )
 
-            new_action_clients, pub_chans, sub_chans =\
+            new_action_clients, added_pub_chans, added_sub_chans =\
                 ConnectionCacheProxy.ActionChannel.dict_factory_actions_from_chan(
-                    pub_chans, sub_chans, old_system_state.action_clients
+                    added_pub_chans, added_sub_chans, old_system_state.action_clients
                 )
 
-            lost_action_servers = {n: c for n, c in old_system_state.action_servers.iteritems() if n not in new_action_servers.keys()}
-            lost_action_clients = {n: c for n, c in old_system_state.action_clients.iteritems() if n not in new_action_clients.keys()}
-
-            pub_chans, sub_chans =\
-                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
-                    lost_pub_chans, lost_sub_chans, lost_action_clients, pub_chans, sub_chans
+            # changing lost pubs/subs chans to lost actionchans
+            new_action_servers, lost_sub_chans, lost_pub_chans =\
+                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_from_chan(
+                    lost_sub_chans, lost_pub_chans, new_action_servers
                 )
 
-            sub_chans, pub_chans =\
-                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_to_chan(
-                    lost_sub_chans, lost_pub_chans, lost_action_servers, sub_chans, pub_chans
+            new_action_clients, lost_pub_chans, lost_sub_chans =\
+                ConnectionCacheProxy.ActionChannel.dict_slaughterhouse_actions_from_chan(
+                    lost_pub_chans, lost_sub_chans, new_action_clients
                 )
 
             # recalculating difference after actions
             _added_system_state = self.SystemState(
-                {n: c for n, c in pub_chans.iteritems() if not (n in self._system_state.publishers.keys() and self._system_state.publishers[n] == c)},
-                {n: c for n, c in sub_chans.iteritems() if not (n in self._system_state.subscribers.keys() and self._system_state.subscribers[n] == c)},
+                added_pub_chans,
+                added_sub_chans,
                 added_svc_chans,
                 {n: c for n, c in new_action_servers.iteritems() if not (n in self._system_state.action_servers.keys() and self._system_state.action_servers[n] == c)},
                 {n: c for n, c in new_action_clients.iteritems() if not (n in self._system_state.action_clients.keys() and self._system_state.action_clients[n] == c)},
             )
 
             _lost_system_state = self.SystemState(
-                {n: c for n, c in self._system_state.publishers.iteritems() if not (n in pub_chans.keys() and pub_chans[n] == c)},
-                {n: c for n, c in self._system_state.subscribers.iteritems() if not (n in sub_chans.keys() and sub_chans[n] == c)},
+                lost_pub_chans,
+                lost_sub_chans,
                 lost_svc_chans,
                 {n: c for n, c in self._system_state.action_servers.iteritems() if not (n in new_action_servers.keys() and new_action_servers[n] == c)},
                 {n: c for n, c in self._system_state.action_clients.iteritems() if not (n in new_action_clients.keys() and new_action_clients[n] == c)},
             )
 
+            pub_chans = old_system_state.publishers
+            pub_chans.update(added_pub_chans)
+            pub_chans = {k: v for k, v in pub_chans.iteritems() if k not in lost_pub_chans.keys()}
+
+            sub_chans = old_system_state.subscribers
+            sub_chans.update(added_sub_chans)
+            sub_chans = {k: v for k, v in sub_chans.iteritems() if k not in lost_sub_chans.keys()}
+
             self._system_state = self.SystemState(
-                pub_chans,  # these have been modified when processing actions
-                sub_chans,  # these have been modified when processing actions
+                pub_chans,
+                sub_chans,
                 svc_chans,
                 new_action_servers,
                 new_action_clients,
             )
+
         else:
+            pub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(pubs_lost, ConnectionCacheProxy.Channel.dict_factory(pubs_added, old_system_state.publishers))
+            sub_chans = ConnectionCacheProxy.Channel.dict_slaughterhouse(subs_lost, ConnectionCacheProxy.Channel.dict_factory(subs_added, old_system_state.subscribers))
+
             _added_system_state = self.SystemState(added_pub_chans, added_sub_chans, added_svc_chans)
             _lost_system_state = self.SystemState(lost_pub_chans, lost_sub_chans, lost_svc_chans)
             self._system_state = self.SystemState(pub_chans, sub_chans, svc_chans)

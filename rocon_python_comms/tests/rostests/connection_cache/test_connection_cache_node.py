@@ -13,7 +13,7 @@ import time
 from functools import partial
 import nose
 
-# import pyros_setup
+import pyros_setup
 
 try:
     import rospy

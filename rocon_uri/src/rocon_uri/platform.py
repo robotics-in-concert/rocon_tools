@@ -29,7 +29,9 @@ import rocon_python_utils
 def generate_platform_rocon_uri(robot_type, robot_name):
     """
     Detect the platform and rosdistro underneath and determine
-    an appropriate rocon uri.
+    an appropriate rocon uri. It is up to the user to check that this is
+    a valid rocon uri for comparison checks (e.g. robot type is officially
+    registered).
 
     :param str robot_type: one of the robot types listed in the rocon uri yaml database
     :param str name: name of the robot

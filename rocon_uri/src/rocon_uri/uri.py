@@ -72,12 +72,20 @@ def is_compatible(rocon_uri_a, rocon_uri_b):
 
     .. todo:: tighten up the name pattern matching
     '''
+    completely_compatible_rocon_uri_list = ["rocon:/", "rocon://", "rocon:/*"]
     try:  # python 2.7 (use basestring to get unicode objects)
         requires_conversion_a = isinstance(rocon_uri_a, basestring)
         requires_conversion_b = isinstance(rocon_uri_b, basestring)
     except NameError:  # python3
         requires_conversion_a = isinstance(rocon_uri_a, str)
         requires_conversion_b = isinstance(rocon_uri_b, str)
+    # do some preliminary checks now before we parse for official rocon uris
+    # i.e. allow compatibility true if one is rocon:/ regardless of the other
+    if requires_conversion_a and rocon_uri_a in completely_compatible_rocon_uri_list:
+        return True
+    if requires_conversion_b and rocon_uri_b in completely_compatible_rocon_uri_list:
+        return True
+    # Parse - this makes sure it is an official rocon uri being parsed in
     a = parse(rocon_uri_a) if requires_conversion_a else rocon_uri_a
     b = parse(rocon_uri_b) if requires_conversion_b else rocon_uri_b
     no_wildcards = lambda l1, l2: '*' not in l1 and '*' not in l2
@@ -92,7 +100,7 @@ def is_compatible(rocon_uri_a, rocon_uri_b):
             # check for our regex subset (i.e. '*' at the end of a string)
             matches = False
             for a_name in a.name.list:
-                if matches == True:
+                if matches is True:
                     break
                 for b_name in b.name.list:
                     match_result_a = re.match(r"(.*)[*]+$", a_name)

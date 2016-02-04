@@ -19,6 +19,7 @@
     - furo
     - aldebaran_nao
     - robotis_op1
+    - srb
   - mobile_device:
     - phone:
       - galaxy

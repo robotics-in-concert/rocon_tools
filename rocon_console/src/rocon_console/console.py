@@ -136,16 +136,16 @@ def loginfo(message):
 
     :param message str: message to log.
     '''
-    print("[info] " + message)
+    print("[info ] " + message)
 
 
 def logwarn(message):
     '''
-    Prefixes '[warn]' and colours the message yellow.
+    Prefixes '[warn ]' and colours the message yellow.
 
     :param message str: message to log.
     '''
-    print(yellow + "[warning] " + message + reset)
+    print(yellow + "[warn ] " + message + reset)
 
 
 def logerror(message):

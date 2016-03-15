@@ -463,9 +463,10 @@ class InteractionsManager(object):
                     response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.PAIRING_UNAVAILABLE)
                     return response
                 try:
-                    self._rapp_handler.start(pairing.rapp, pairing.remappings, pairing.parameters)
                     self.active_pairing = pairing
+                    self._rapp_handler.start(pairing.rapp, pairing.remappings, pairing.parameters)
                 except FailedToStartRappError as e:
+                    self.active_pairing = None
                     rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")
                     response = utils.generate_request_interaction_response(interaction_msgs.ErrorCodes.START_PAIRED_RAPP_FAILED)
                     response.message = "Failed to start the rapp [%s]" % str(e)  # custom response

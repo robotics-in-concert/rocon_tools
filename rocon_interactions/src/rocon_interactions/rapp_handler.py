@@ -198,7 +198,8 @@ class RappHandler(object):
         get_rapp_list = rocon_python_comms.SubscriberProxy('~rapp_list', rocon_app_manager_msgs.RappList)
         while not rospy.is_shutdown():
             # msg is rocon_app_manager_msgs/RappList
-            msg = get_rapp_list(rospy.Duration(3.0))
+            # this returns almost immediately with None if rospy gets shutdown, so a long duration is ok
+            msg = get_rapp_list(rospy.Duration(30.0))
             if msg is None:
                 rospy.logwarn("Interactions : unable to connect with the rapp manager : {0} not found, will keep trying.".format(rospy.resolve_name('~rapp_list')))
             else:

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.3.1 (2016-03-16)
+------------------
+* [rocon_interactions] bugfix various pairing problems
+
 0.3.0 (2015-10-10)
 ------------------
 * overhauled for better pairing management

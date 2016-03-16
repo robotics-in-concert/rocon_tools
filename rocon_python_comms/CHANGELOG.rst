@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.3.1 (2016-03-16)
+------------------
+* [rocon_python_comms] connection cache node
+
 0.3.0 (2015-10-10)
 ------------------
 * lots of minor api added

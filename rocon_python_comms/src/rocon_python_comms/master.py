@@ -44,7 +44,7 @@ def check():
     # of rospy.client._init_node_args in many cases as all we need to know
     # is if the node initialised.
     try:
-        unused_foo = rospy.get_param('foo')
+        unused_foo = rospy.get_param('foo', default='bar')
         return True
     except socket.error:
         return False

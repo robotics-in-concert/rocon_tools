@@ -61,7 +61,14 @@ class Services(object):
         :type services: list of (str, str, function) tuples representing (service_name, service_type, callback) pairs.
         :param str introspection_topic_name: where to put the introspection topic that shows the resolved names at runtime
         """
-        self.__dict__ = {namespace.basename(service_name): rospy.Service(service_name, service_type, callback) for (service_name, service_type, callback) in services}
+        service_details = []
+        for info in services:
+            if len(info) == 3:
+                service_details.append((namespace.basename(info[0]), info[0], info[1], info[2]))
+            else:
+                # naively assume the user got it right and added exactly 4 fields
+                service_details.append(info)
+        self.__dict__ = {name: rospy.Service(service_name, service_type, callback) for (name, service_name, service_type, callback) in service_details}
         publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher

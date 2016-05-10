@@ -7,30 +7,10 @@ import multiprocessing
 import time
 import cProfile
 
-
-
-try:
-    import rospy
-    import rosgraph
-    import roslaunch
-    import rocon_python_comms
-    import pyros_setup
-except ImportError as exc:
-    import os
-    import pyros_setup
-    import sys
-    sys.modules["pyros_setup"] = pyros_setup.delayed_import_auto(base_path=os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', '..'))
-    import rospy
-    import rosgraph
-    import roslaunch
-    import rocon_python_comms
-
-roscore_process = None
-master = None
-
-if not rosgraph.masterapi.is_online():
-    master, roscore_process = pyros_setup.get_master()
-    assert master.is_online()
+import rospy
+import rosgraph
+import roslaunch
+import rocon_python_comms
 
 # Start roslaunch
 launch = roslaunch.scriptapi.ROSLaunch()
@@ -54,6 +34,3 @@ def update_loop():
 cProfile.run('update_loop()')
 
 rospy.signal_shutdown('test complete')
-
-if roscore_process is not None:
-    roscore_process.terminate()  # make sure everything is stopped

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.3.2 (2016-05-11)
+------------------
+* master check via the rosparam server bugfix
+* allow named services in batching functions
+* drop pyros_test
+
 0.3.1 (2016-03-16)
 ------------------
 * [rocon_python_comms] connection cache node

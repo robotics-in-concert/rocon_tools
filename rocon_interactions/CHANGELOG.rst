@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.2 (2016-05-11)
+------------------
+* test case for global executable with args
+* longer looping between warning messages when checking for the rapp list
+
 0.3.1 (2016-03-16)
 ------------------
 * [rocon_interactions] bugfix various pairing problems

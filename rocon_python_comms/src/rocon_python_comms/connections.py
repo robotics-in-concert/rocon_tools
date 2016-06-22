@@ -490,8 +490,10 @@ class ConnectionCacheNode(object):
                             for c in new_conns[ct]:
                                 create_connection(c)
                                 diff_msg.added.append(c.msg)
+                                rospy.logdebug("[rocon_python_comms] Connection Cache + {0}".format(c))
                             for c in lost_conns[ct]:
                                 create_connection(c)
+                                rospy.logdebug("[rocon_python_comms] Connection Cache - {0}".format(c))
                                 diff_msg.lost.append(c.msg)
                         # we always need all connections types in the full list
                         for c in self.conn_cache.connections[ct]:
@@ -500,16 +502,14 @@ class ConnectionCacheNode(object):
 
                     if changed:
                         # rospy.loginfo("COMPLETE LIST : {0}".format(self.conn_cache.connections))
-                        # rospy.loginfo("NEW : {0}".format(new_conns))
-                        # rospy.loginfo("LOST : {0}".format(lost_conns))
 
                         self.conn_diff.publish(diff_msg)  # new_conns, old_conns
                         self.conn_list.publish(list_msg)  # conn_cache.connections
 
                 except rospy.ROSException:
-                    rospy.logerr("ROS Watcher : Connections list unavailable.")
+                    rospy.logerr("[rocon_python_comms] Connection Cache ROS Watcher : Connections list unavailable.")
                 except rospy.ROSInterruptException:
-                    rospy.logerr("ROS Watcher : ros shutdown while looking for Connections .")
+                    rospy.logerr("[rocon_python_comms] Connection Cache ROS Watcher : ros shutdown while looking for Connections .")
 
                 self.spin_rate.sleep()
 

@@ -101,17 +101,20 @@ class InteractionsManager(object):
         # Filter pairings w/o rapps & Load
         #############################################
         available_pairings = []
-        for p in all_pairings:
-            rapp = self._rapp_handler.get_rapp(p.rapp)
-            if rapp is not None:
-                if not p.icon.resource_name:
-                    p.icon = rapp["icon"]
-                if not p.description:
-                    p.description = rapp["description"]
-                available_pairings.append(p)
-            else:
-                rospy.logwarn("Interactions : pairing '%s' requires rapp '%s', but it is unavailable." % (p.name, p.rapp))
-        self.pairings_table.load(available_pairings)
+        if self._rapp_handler is None:
+            rospy.logerr("Interactions : pairings defined, but the interactions manager is not configured for handling rapps.")
+        else:
+            for p in all_pairings:
+                rapp = self._rapp_handler.get_rapp(p.rapp)
+                if rapp is not None:
+                    if not p.icon.resource_name:
+                        p.icon = rapp["icon"]
+                    if not p.description:
+                        p.description = rapp["description"]
+                    available_pairings.append(p)
+                else:
+                    rospy.logwarn("Interactions : pairing '%s' requires rapp '%s', but it is unavailable." % (p.name, p.rapp))
+            self.pairings_table.load(available_pairings)
         #############################################
         # Filter interactions w/o pairings & Load
         #############################################

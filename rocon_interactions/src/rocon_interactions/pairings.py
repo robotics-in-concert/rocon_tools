@@ -63,6 +63,10 @@ class Pairing(object):
         return self.msg.icon
 
     @property
+    def requires_interaction(self):
+        return self.msg.requires_interaction
+
+    @property
     def remappings(self):
         return self.msg.remappings
 
@@ -79,13 +83,14 @@ class Pairing(object):
         s += console.cyan + "  Rapp" + console.reset + "             : " + console.yellow + "%s" % str(self.rapp) + console.reset + '\n'  # noqa
         s += console.cyan + "  Icon" + console.reset + "             : " + console.yellow + "%s" % str(self.icon.resource_name) + console.reset + '\n'  # noqa
         s += console.cyan + "  Description" + console.reset + "      : " + console.yellow + "%s" % self.description + console.reset + '\n'  # noqa
+        s += console.cyan + "  Req'd Interaction" + console.reset + ": " + console.yellow + "%s" % self.requires_interaction + console.reset + '\n'  # noqa
         already_prefixed = False
         for remapping in self.remappings:
             if not already_prefixed:
                 s += console.cyan + "    Remappings" + console.reset + "     : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
                 already_prefixed = True
             else:
-                s += "               : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
+                s += "              : " + console.yellow + "%s->%s" % (remapping.remap_from, remapping.remap_to) + console.reset + '\n'  # noqa
         already_prefixed = False
         for pair in self.parameters:
             if not already_prefixed:

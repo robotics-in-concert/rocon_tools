@@ -5,6 +5,7 @@
 pairings:
     - name: Talker
       rapp: rocon_apps/talker
+      requires_interaction: true
       remappings:
           - remap_from: chatter
             remap_to: /conversation/chatter
@@ -47,7 +48,7 @@ interactions:
       teardown_pairing: true
       required_pairings:
           - Talker
-    
+
     - name: Babbler Listener
       command: rocon_qt_listener/qt_listener.py
       group: Pairing
@@ -60,4 +61,3 @@ interactions:
       required_pairings:
           - Babbler
 
-    

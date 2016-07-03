@@ -1,4 +1,4 @@
-<!-- 
+<!--
    A example that loads up a variety of interactions using either params or the
    external ros api loader.
 
@@ -22,7 +22,7 @@
     <rosparam param="interactions">[rocon_interactions/android, rocon_interactions/pc, rocon_interactions/web_apps, rocon_interactions/binding]</rosparam>
     <param name="test" value="This is param to demo internal param binding"/>
   </node>
-  
+
   <!-- instead of params, use the external loader and configure groups with default namespaces -->
   <node pkg="rocon_interactions" type="load_interactions" name="load_interactions" args="-n '/web' rocon_interactions web">
     <remap from="load_interactions/set_interactions" to="interactions/set_interactions"/>

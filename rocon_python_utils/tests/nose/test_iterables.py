@@ -11,7 +11,7 @@
 from __future__ import print_function
 import os
 import rocon_console.console as console
-from rocon_python_utils.iterables import looktotheend, lookahead
+from rocon_python_utils.iterables import looktotheend, lookahead, iterate_over_pairs
 
 ##############################################################################
 # Tests
@@ -40,3 +40,15 @@ def test_lookahead():
     assert(next_results[0] == 1)
     assert(next_results[1] == 2)
     assert(next_results[2] is None)
+
+def test_iterate_over_pairs():
+    print(console.bold + "\n****************************************************************************************" + console.reset)
+    print(console.bold + "* Iterate Over Pairs" + console.reset)
+    print(console.bold + "****************************************************************************************" + console.reset)
+    next_results = []
+    for current, next in iterate_over_pairs(range(3)):
+        print("%s, %s" % (current, next))
+        next_results.append(next)
+    assert(next_results[0] == 1)
+    assert(next_results[1] == 2)
+    assert(len(next_results) == 2)

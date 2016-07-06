@@ -68,3 +68,24 @@ def lookahead(iterable):
         yield last, val
         last = val
     yield last, None
+
+
+def iterate_over_pairs(iterable):
+    """
+    Like :func:`lookahead`, but does not yield half of a pair at the last
+    element.
+
+    .. code:: python
+       for current, next in lookahead(range(3)):
+           print("%s, %s" % (current, next))
+
+       # outputs:
+       #
+       # 0 1
+       # 1 2
+    """
+    it = iter(iterable)
+    last = it.next()  # next(it) in Python 3
+    for val in it:
+        yield last, val
+        last = val

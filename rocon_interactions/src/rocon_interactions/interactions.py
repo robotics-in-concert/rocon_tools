@@ -149,6 +149,10 @@ class Interaction(object):
         return self.msg.hash
 
     @property
+    def hidden(self):
+        return self.msg.hidden
+
+    @property
     def bringup_pairing(self):
         return self.msg.bringup_pairing
 
@@ -199,5 +203,6 @@ class Interaction(object):
             s += console.cyan + "  Bringup Pairing " + console.reset + " : " + console.yellow + "%s" % self.msg.bringup_pairing + console.reset + '\n'  # noqa
             s += console.cyan + "  Teardown Pairing " + console.reset + ": " + console.yellow + "%s" % self.msg.teardown_pairing + console.reset + '\n'  # noqa
             s += console.cyan + "  Required Pairings" + console.reset + ": " + console.yellow + "%s" % self.msg.required_pairings + console.reset + '\n'  # noqa
+        s += console.cyan + "  Hidden" + console.reset + "           : " + console.yellow + "%s" % self.msg.hidden + console.reset + '\n'  # noqa
         s += console.cyan + "  Hash" + console.reset + "             : " + console.yellow + "%s" % str(self.msg.hash) + console.reset + '\n'  # noqa
         return s

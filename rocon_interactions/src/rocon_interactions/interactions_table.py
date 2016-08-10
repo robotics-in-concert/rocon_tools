@@ -184,6 +184,21 @@ class InteractionsTable(object):
                             if interaction.hash == interaction_hash), None)
         return interaction
 
+    def find_by_name(self, name):
+        '''
+        Not guaranteed to find a unique solution since it uses the name, not
+        the hash. In this case, it will just return the first interaction found
+        with the specified name.
+
+        :param str name: string name for the interaction (ideally unique)
+
+        :returns: first interaction with matching name if found, None otherwise.
+        :rtype: :class:`.Interaction`
+        '''
+        interaction = next((interaction for interaction in self.interactions
+                            if interaction.name == name), None)
+        return interaction
+
     def _bind_dynamic_symbols(self, interaction_msgs):
         '''
           Provide some intelligence to the interactions specification by binding designated

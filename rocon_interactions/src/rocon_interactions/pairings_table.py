@@ -118,3 +118,13 @@ class PairingsTable(object):
 
     def is_available_pairing(self, pairing_name):
         return pairing_name in [p.name for p in self.pairings]
+
+    def groups(self):
+        '''
+          List all groups for the currently stored pairings.
+
+          :returns: a list of all groups
+          :rtype: str[]
+        '''
+        # uniquify the list
+        return sorted(list(set([p.group for p in self.pairings])))

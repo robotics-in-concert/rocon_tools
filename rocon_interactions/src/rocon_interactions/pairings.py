@@ -51,6 +51,10 @@ class Pairing(object):
         return self.msg.name
 
     @property
+    def group(self):
+        return self.msg.group
+
+    @property
     def rapp(self):
         return self.msg.rapp
 
@@ -78,8 +82,10 @@ class Pairing(object):
         '''
           Format the interaction into a human-readable string.
         '''
+        group = self.group if self.group else "none"
         s = ''
         s += console.green + "%s" % self.name + console.reset + '\n'
+        s += console.cyan + "  Group" + console.reset + "            : " + console.yellow + "%s" % group + console.reset + '\n'  # noqa
         s += console.cyan + "  Rapp" + console.reset + "             : " + console.yellow + "%s" % str(self.rapp) + console.reset + '\n'  # noqa
         s += console.cyan + "  Icon" + console.reset + "             : " + console.yellow + "%s" % str(self.icon.resource_name) + console.reset + '\n'  # noqa
         s += console.cyan + "  Description" + console.reset + "      : " + console.yellow + "%s" % self.description + console.reset + '\n'  # noqa

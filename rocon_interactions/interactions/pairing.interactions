@@ -4,8 +4,9 @@
 
 pairings:
     - name: Talker
+      group: Bundled
       rapp: rocon_apps/talker
-      requires_interaction: true
+      requires_interaction: Listener
       remappings:
           - remap_from: chatter
             remap_to: /conversation/chatter
@@ -13,6 +14,7 @@ pairings:
           - key: message
             value: "gday dude"
     - name: Babbler
+      group: Standalone
       rapp: rocon_apps/talker
       description: Talker remapped to a babbler.
       remappings:
@@ -37,6 +39,7 @@ interactions:
       teardown_pairing: true
       required_pairings:
           - Talker
+      hidden: true
 
     - name: Rostopic Listener
       command: "terminal/rostopic echo /conversation/chatter"

@@ -147,7 +147,8 @@ class InteractionsTable(object):
                 self.interactions.append(interaction)
                 self.interactions = list(set(self.interactions))  # uniquify the list, just in case
                 new.append(interaction)
-            except InvalidInteraction:
+            except InvalidInteraction as e:
+                rospy.logwarn("Interactions: malformed interaction [{0}][{1}]".format(str(e), msg.name))
                 invalid.append(msg)
         return new, invalid
 

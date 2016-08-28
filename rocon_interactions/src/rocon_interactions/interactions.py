@@ -68,7 +68,9 @@ class Interaction(object):
         if self.msg.max == 0:
             self.msg.max = 1
         if self.msg.group == '':
-            raise InvalidInteraction("group not configured [%s]" % self.msg.name)
+            self.msg.group = "Other"
+        if self.msg.hidden:
+            self.msg.group = "Hidden"
         if self.msg.icon.resource_name == "":
             self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
         if not self.msg.icon.data:

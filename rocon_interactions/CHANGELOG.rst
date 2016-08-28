@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.5.0 (2016-08-28)
+------------------
+* [interactions] make group field non-compulsory
+* [interactions] two way pairing-interaction requirements
+* [interactions] better filtering on pairing/interaction tables
+* [interactions] hidden flag for interactions required by a pairing
+
 0.3.2 (2016-05-11)
 ------------------
 * test case for global executable with args

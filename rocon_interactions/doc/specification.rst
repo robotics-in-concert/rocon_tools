@@ -2,7 +2,7 @@ Interaction Specification
 =========================
 
 Interactions are specified in yaml_ to be loaded onto the interactions manager node,
-via either the parameter server or over the node ros api. 
+via either the parameter server or over the node ros api.
 
 Interaction Types
 -----------------
@@ -13,7 +13,7 @@ Interaction Types
  * Web url
  * Web app
  * Android activity
- 
+
 Yaml Specification
 ------------------
 
@@ -28,7 +28,7 @@ A single interaction specification in yaml has the following format:
    description:
    icon:
      resource_name:
-   parameters: 
+   parameters:
    remappings:
      - remap_from:
        remap_to:
@@ -37,9 +37,9 @@ The names above resolve as follows:
 
  * ``name`` : the name used to determine interaction type and start the interactivity
 
-   * direct executable : either program name (must be on the PATH), or absolute path to the program, e.g. rqt_graph 
-   * rosrunnable : a ros resource name (pkg/filename) pair, e.g. rocon_interactions/loader 
-   * roslaunchable : a ros resource name (pkg/launcher) where the filename is a .launch file, e.g. rocon_interactions/rviz_markers.launch 
+   * direct executable : either program name (must be on the PATH), or absolute path to the program, e.g. rqt_graph
+   * rosrunnable : a ros resource name (pkg/filename) pair, e.g. rocon_interactions/loader
+   * roslaunchable : a ros resource name (pkg/launcher) where the filename is a .launch file, e.g. rocon_interactions/rviz_markers.launch
    * web url : a normal web url with the ``web_url()`` wrapper, e.g. web_url(http://wiki.ros.org/rocon_interactions)
    * web app : a normal web url pointing to a valid ros web app with the ``web_app()`` wrapper, e.g. web_app(http://robotics-in-concert.github.io/rocon_interactions/js/listener.html)
    * android activity : the fully qualified name for launching an activity, e.g. com.github.robotics_in_concert.rocon_android.SolutionManager
@@ -49,13 +49,13 @@ The names above resolve as follows:
  * ``display_name``: a human friendly name to show to the user
  * ``description``: provide some info about the interaction, important as the name can be usually configured in various ways
  * ``icon``: an icon to represent this interaction (optional)
- 
-   * ``resource_name``: ros resource name to locate this icon
+
+   * ``resource_name``: an absolute path to the icon, or a ros resource name to locate this icon
 
  * ``parameters``: is a free-form yaml variable used to configure the interaction in various ways:
 
    * *direct exes/rosrunnables/android app* : loads the yaml directly as private ros parameters.
-   * *roslaunchables* : utilise key-value pairs only and passes these in as roslaunch args. 
+   * *roslaunchables* : utilise key-value pairs only and passes these in as roslaunch args.
    * *web app* : utilise key-value pairs only and reads these from the query string of the url.
 
  * ``remappings``: same meaning as remappings in `roslaunch xml`_ files, see the examples
@@ -87,7 +87,7 @@ Web app:
    description: Simple listener using rosjs in a web app.
    icon:
      resource_name: rocon_bubble_icons/rocon.png
-   parameters: 
+   parameters:
      rosbridge_address: __ROSBRIDGE_ADDRESS__
      rosbridge_port: __ROSBRIDGE_PORT__
    remappings:

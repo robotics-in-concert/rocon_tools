@@ -11,17 +11,14 @@
    :platform: Unix
    :synopsis: Representative class and methods for an *interaction*.
 
-
-This module defines a class and methods that represent the core of what
-an interaction is.
-
-----
-
+Oh my spaghettified magnificence,
+Bless my noggin with a tickle from your noodly appendages!
 """
 ##############################################################################
 # Imports
 ##############################################################################
 
+import os
 import rospkg
 import rocon_console.console as console
 import rocon_python_utils
@@ -76,9 +73,13 @@ class Interaction(object):
         if not self.msg.icon.data:
             try:
                 self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
-            except rospkg.common.ResourceNotFound as unused_e:  # replace with default icon if icon resource is not found.
-                self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
-                self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
+            except rospkg.common.ResourceNotFound as unused_e:
+                if os.path.isfile(self.msg.icon.resource_name):
+                    self.msg.icon = rocon_python_utils.ros.icon_to_msg(self.msg.icon.resource_name)
+                else:
+                    # replace with default icon if icon resource is not found.
+                    self.msg.icon.resource_name = 'rocon_bubble_icons/rocon.png'
+                    self.msg.icon = rocon_python_utils.ros.icon_resource_to_msg(self.msg.icon.resource_name)
         if self.msg.namespace == '':
             self.msg.namespace = '/'
         self.msg.hash = utils.generate_hash(self.msg.name, self.msg.group, self.msg.namespace)

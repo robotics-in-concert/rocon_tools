@@ -45,6 +45,8 @@ def icon_to_msg(filename):
       :returns: the icon in msg format
       :rtype: `rocon_std_msgs.Icon`_
 
+      :todo:: should really raise a not found error if filename could not be found
+
       .. include:: weblinks.rst
     '''
     icon = rocon_std_msgs.Icon()

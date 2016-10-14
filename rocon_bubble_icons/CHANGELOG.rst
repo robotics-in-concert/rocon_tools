@@ -3,7 +3,7 @@ Changelog
 
 Forthcoming
 -----------
-* [bubble_icons] gopher docking, navigation lost, battery icons
+* [bubble_icons] gopher docking, navigation lost, battery, elevator icons
 
 0.1.10 (2014-11-21)
 -------------------

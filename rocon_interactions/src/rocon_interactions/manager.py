@@ -240,7 +240,10 @@ class InteractionsManager(object):
             if to_be_removed_signature is not None:
                 if to_be_removed_signature.interaction.teardown_pairing:
                     try:
-                        self._rapp_handler.stop()
+                        # a remocon might have torn down the rapp before the causal chain started by an interaction
+                        # stopping, so check first if a rapp is running
+                        if self._rapp_handler.is_running:
+                            self._rapp_handler.stop()
                     except FailedToStopRappError as e:
                         rospy.logerr("Interactions : failed to stop a paired rapp [%s]" % e)
                 self.active_paired_interactions.remove(to_be_removed_signature)
@@ -508,12 +511,11 @@ class InteractionsManager(object):
             return response
 
     def _ros_service_stop_pairing(self, request):
-        print("Got a request to stop pairing [%s]" % request.name)
         try:
             self._rapp_handler.stop()
             return interaction_srvs.StopPairingResponse(result=interaction_msgs.ErrorCodes.SUCCESS, message="stopping.")
         except FailedToStopRappError as e:
-            rospy.loginfo("Interactions : rejected interaction request [failed to start the paired rapp]")
+            rospy.loginfo("Interactions : rejected interaction request [failed to stop the paired rapp]")
             response = interaction_srvs.StopPairingResponse()
             response.result = interaction_msgs.ErrorCodes.STOP_PAIRING_FAILED
             response.message = "failed to stop the pairing [%s]" % str(e)  # custom response

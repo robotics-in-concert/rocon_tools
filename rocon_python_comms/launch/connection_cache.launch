@@ -1,5 +1,6 @@
 <launch>
     <arg name="spin_freq" default="0.1"/>
+    <!-- nice gives a default increment of 10, i.e. puts the process in the background by 'this' much -->
     <node pkg="rocon_python_comms" type="connection_cache.py" name="connection_cache" launch-prefix="nice">
         <param name="spin_freq" value="$(arg spin_freq)"/>
     </node>

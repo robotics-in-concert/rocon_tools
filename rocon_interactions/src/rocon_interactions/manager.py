@@ -101,8 +101,8 @@ class InteractionsManager(object):
         # Filter pairings w/o rapps & Load
         #############################################
         available_pairings = []
-        if self._rapp_handler is None:
-            rospy.logerr("Interactions : pairings defined, but the interactions manager is not configured for handling rapps.")
+        if all_pairings and self._rapp_handler is None:
+            rospy.logerr("Interactions : configured to work without a rapp manager, but also configured to load pairings (which need a rapp manager).")
         else:
             for p in all_pairings:
                 rapp = self._rapp_handler.get_rapp(p.rapp)

@@ -25,6 +25,7 @@
   <run_depend>python-yaml</run_depend>
   <run_depend>rocon_console</run_depend>
   <run_depend>rocon_service_pair_msgs</run_depend>
+  <run_depend>rocon_std_msgs</run_depend>
   <run_depend>unique_id</run_depend>
   <run_depend>uuid_msgs</run_depend>
 

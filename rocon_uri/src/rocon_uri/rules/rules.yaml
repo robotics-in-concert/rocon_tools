@@ -21,6 +21,7 @@
     - furo
     - aldebaran_nao
     - robotis_op1
+    - roch
     - srb
   - mobile_device:
     - phone:

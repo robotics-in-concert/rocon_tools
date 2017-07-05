@@ -93,7 +93,14 @@ class ServiceProxies(object):
         :param services: incoming list of service proxy specifications
         :type services: list of (str, str) tuples representing (service_name, service_type) pairs.
         """
-        self.__dict__ = {namespace.basename(service_name): rospy.ServiceProxy(service_name, service_type) for (service_name, service_type) in service_proxies}
+        proxy_details = []
+        for info in service_proxies:
+            if len(info) == 2:
+                proxy_details.append((namespace.basename(info[0]), info[0], info[1]))
+            else:
+                # naively assume the user got it right and added exactly 3 fields
+                proxy_details.append(info)
+        self.__dict__ = {name: rospy.ServiceProxy(service_name, service_type) for (name, service_name, service_type) in proxy_details}
         publisher = rospy.Publisher("~introspection/" + introspection_topic_name, std_msgs.String, latch=True, queue_size=1)
         publish_resolved_names(publisher, self.__dict__.values())
         self.introspection_publisher = publisher
